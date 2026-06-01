@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BorderShop — Order from India</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <header class="site-header">
+    <span class="logo">🇧🇹 BorderShop</span>
+  </header>
+
+  <main class="order-page">
+    <div class="hero">
+      <h1>Order from India</h1>
+      <p>Paste a product link, upload a screenshot, and we'll bring it from Phuntsholing.</p>
+    </div>
+
+    <form class="order-form" id="orderForm">
+      <!-- Product Link -->
+      <div class="field">
+        <label>Product Link <span class="optional">(Amazon, Flipkart, etc.)</span></label>
+        <input 
+          type="url" 
+          name="productLink" 
+          placeholder="https://www.amazon.in/..."
+          required
+        >
+      </div>
+
+      <!-- Screenshot Upload -->
+      <div class="field">
+        <label>Product Screenshot <span class="optional">(required)</span></label>
+        <div class="upload-zone" id="uploadZone">
+          <input 
+            type="file" 
+            name="screenshot" 
+            accept="image/*" 
+            capture="environment"
+            id="fileInput"
+            required
+          >
+          <div class="upload-prompt" id="uploadPrompt">
+            <span class="upload-icon">📷</span>
+            <p>Tap to take photo or choose from gallery</p>
+            <span class="upload-hint">Shows product name, price, image</span>
+          </div>
+          <div class="upload-preview" id="uploadPreview" style="display:none;">
+            <img id="previewImg" alt="Preview">
+            <button type="button" class="change-btn" id="changeBtn">Change</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Product Details -->
+      <div class="field">
+        <label>Product Name / Description</label>
+        <input 
+          type="text" 
+          name="productName" 
+          placeholder="iPhone 15 128GB Blue"
+          required
+        >
+      </div>
+
+      <div class="field-row">
+        <div class="field half">
+          <label>Quantity</label>
+          <input type="number" name="quantity" value="1" min="1" required>
+        </div>
+        <div class="field half">
+          <label>Size / Variant</label>
+          <input type="text" name="variant" placeholder="128GB / Blue / M">
+        </div>
+      </div>
+
+      <div class="field">
+        <label>Any specific requirements?</label>
+        <textarea 
+          name="notes" 
+          rows="2" 
+          placeholder="Must be original, sealed box preferred..."
+        ></textarea>
+      </div>
+
+      <!-- Customer Details -->
+      <div class="section-divider">
+        <span>Delivery Details</span>
+      </div>
+
+      <div class="field">
+        <label>Your Name</label>
+        <input type="text" name="customerName" required>
+      </div>
+
+      <div class="field">
+        <label>Phone Number</label>
+        <input 
+          type="tel" 
+          name="phone" 
+          placeholder="17XXXXXX or 77XXXXXX"
+          pattern="[0-9]{8}"
+          required
+        >
+      </div>
+
+      <div class="field">
+        <label>Dzongkhag</label>
+        <select name="dzongkhag" required>
+          <option value="">Select your dzongkhag...</option>
+          <option>Thimphu</option>
+          <option>Paro</option>
+          <option>Punakha</option>
+          <option>Wangdue Phodrang</option>
+          <option>Haa</option>
+          <option>Chhukha</option>
+          <option>Samtse</option>
+          <option>Sarpang</option>
+          <option>Samdrup Jongkhar</option>
+          <option>Trongsa</option>
+          <option>Bumthang</option>
+          <option>Zhemgang</option>
+          <option>Tsirang</option>
+          <option>Dagana</option>
+          <option>Gasa</option>
+          <option>Lhuntse</option>
+          <option>Mongar</option>
+          <option>Pemagatshel</option>
+          <option>Trashigang</option>
+          <option>Trashiyangtse</option>
+        </select>
+      </div>
+
+      <div class="field">
+        <label>Address & Landmark</label>
+        <textarea 
+          name="address" 
+          rows="3" 
+          placeholder="Near Tashichho Dzong, below the bakery, red gate..."
+          required
+        ></textarea>
+      </div>
+
+      <!-- Trip Selection -->
+      <div class="field">
+        <label>When do you need it?</label>
+        <div class="trip-options" id="tripOptions">
+          <!-- Filled by JS -->
+        </div>
+      </div>
+
+      <!-- Payment -->
+      <div class="field">
+        <label>Payment Method</label>
+        <div class="payment-options">
+          <label class="payment-option">
+            <input type="radio" name="payment" value="cod" checked>
+            <span>Cash on Delivery</span>
+          </label>
+          <label class="payment-option">
+            <input type="radio" name="payment" value="mbob">
+            <span>MBoB Transfer</span>
+          </label>
+          <label class="payment-option">
+            <input type="radio" name="payment" value="bank">
+            <span>Bank Deposit</span>
+          </label>
+        </div>
+      </div>
+
+      <button type="submit" class="btn-primary btn-large" id="submitBtn">
+        Submit Order
+      </button>
+
+      <p class="form-note">
+        We'll check the price in Phuntsholing and confirm before buying.
+        No payment needed now.
+      </p>
+    </form>
+  </main>
+
+  <nav class="bottom-nav">
+    <a href="/" class="active">📝 Order</a>
+    <a href="/track.html">📦 Track</a>
+    <a href="/admin.html">⚙️ Admin</a>
+  </nav>
+
+  <script type="module" src="js/order.js"></script>
+</body>
+</html>

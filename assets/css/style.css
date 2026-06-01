@@ -1,0 +1,115 @@
+/* Confirmation Page */
+.confirm-page { padding: 16px; max-width: 480px; margin: 0 auto; }
+.confirm-card {
+  background: white; border-radius: 20px;
+  padding: 24px; box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+}
+.confirm-card h2 { font-size: 22px; font-weight: 700; text-align: center; }
+.confirm-sub { text-align: center; color: #64748b; margin-top: 4px; margin-bottom: 20px; }
+
+.confirm-image {
+  aspect-ratio: 1; background: #f1f5f9; border-radius: 16px;
+  overflow: hidden; margin-bottom: 20px;
+}
+.confirm-image img { width: 100%; height: 100%; object-fit: cover; }
+
+.confirm-product h3 { font-size: 18px; font-weight: 600; }
+.confirm-meta { font-size: 14px; color: #64748b; margin-top: 4px; }
+
+.confirm-price {
+  background: #f0fdf4; border: 2px solid #059669;
+  border-radius: 16px; padding: 20px;
+  text-align: center; margin: 20px 0;
+}
+.price-label { display: block; font-size: 14px; color: #059669; font-weight: 600; }
+.price-amount { display: block; font-size: 32px; font-weight: 700; color: #0f172a; margin: 8px 0; }
+.price-note { display: block; font-size: 13px; color: #64748b; }
+
+.confirm-note {
+  background: #fef3c7; border-left: 4px solid #f59e0b;
+  padding: 12px; border-radius: 8px; font-size: 14px;
+  margin: 16px 0;
+}
+
+.confirm-actions { display: flex; flex-direction: column; gap: 10px; margin-top: 20px; }
+.btn-approve {
+  padding: 16px; background: #059669; color: white;
+  border: none; border-radius: 12px; font-size: 16px;
+  font-weight: 700; cursor: pointer;
+}
+.btn-reject {
+  padding: 14px; background: white; color: #dc2626;
+  border: 2px solid #fecaca; border-radius: 12px;
+  font-size: 15px; font-weight: 600; cursor: pointer;
+}
+.confirm-help { text-align: center; margin-top: 20px; font-size: 14px; }
+.confirm-help a { color: #059669; font-weight: 600; }
+
+/* Admin Enhancements */
+.order-price { color: #059669; font-weight: 700; font-size: 15px; margin-top: 4px; }
+.status-badge {
+  display: inline-block; padding: 4px 10px;
+  border-radius: 20px; font-size: 12px;
+  font-weight: 600; margin-top: 6px;
+}
+.status-badge.submitted { background: #fef3c7; color: #92400e; }
+.status-badge.price_confirmed { background: #dbeafe; color: #1e40af; }
+.status-badge.price_confirmed.approved { background: #d1fae5; color: #065f46; }
+.status-badge.price_confirmed.rejected { background: #fee2e2; color: #991b1b; }
+.status-badge.purchased { background: #e0e7ff; color: #3730a3; }
+.status-badge.in_transit { background: #ddd6fe; color: #5b21b6; }
+.status-badge.out_for_delivery { background: #fce7f3; color: #9d174d; }
+.status-badge.delivered { background: #d1fae5; color: #065f46; }
+.status-badge.cancelled { background: #fee2e2; color: #991b1b; }
+
+.waiting-tag { color: #f59e0b; font-size: 12px; font-weight: 600; margin-top: 4px; }
+
+.waiting-actions { display: flex; gap: 8px; }
+.btn-remind {
+  flex: 1; padding: 10px; background: #fef3c7;
+  color: #92400e; border: none; border-radius: 8px;
+  font-weight: 600; cursor: pointer;
+}
+
+.btn-notify {
+  padding: 10px 16px; background: #f1f5f9;
+  color: #475569; border: none; border-radius: 8px;
+  font-size: 13px; font-weight: 600; cursor: pointer;
+}
+
+.note-input {
+  padding: 8px 12px; border: 1px solid #e2e8f0;
+  border-radius: 8px; font-size: 14px;
+}
+
+.order-note.admin {
+  background: #eff6ff; border-left-color: #3b82f6;
+}
+
+/* Progress bar for tracking */
+.progress-bar {
+  height: 6px; background: #e2e8f0;
+  border-radius: 3px; margin: 16px 0; overflow: hidden;
+}
+.progress-fill {
+  height: 100%; background: #059669;
+  border-radius: 3px; transition: width 0.5s;
+}
+
+.status-steps {
+  display: flex; justify-content: space-between;
+  margin-top: 12px;
+}
+.step {
+  display: flex; flex-direction: column; align-items: center;
+  gap: 4px; opacity: 0.4;
+}
+.step.active { opacity: 1; }
+.step.current .step-icon { background: #059669; color: white; }
+.step-icon {
+  width: 32px; height: 32px; border-radius: 50%;
+  background: #e2e8f0; display: flex;
+  align-items: center; justify-content: center;
+  font-size: 14px;
+}
+.step-label { font-size: 10px; font-weight: 600; text-align: center; }

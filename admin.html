@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin — BorderShop</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body class="admin-body">
+  <header class="admin-header">
+    <h1>🇧🇹 BorderShop</h1>
+    <p id="nextTrip">Next trip: loading...</p>
+  </header>
+
+  <div class="admin-stats" id="adminStats">
+    <div class="stat-card">
+      <span class="stat-number" id="statNew">0</span>
+      <span class="stat-label">New</span>
+    </div>
+    <div class="stat-card">
+      <span class="stat-number" id="statThisWeek">0</span>
+      <span class="stat-label">This Week</span>
+    </div>
+    <div class="stat-card">
+      <span class="stat-number" id="statRevenue">0</span>
+      <span class="stat-label">Est. Revenue</span>
+    </div>
+  </div>
+
+  <nav class="admin-tabs">
+    <button class="active" data-tab="new">📝 New Orders</button>
+    <button data-tab="week">📅 This Week</button>
+    <button data-tab="all">📋 All Orders</button>
+  </nav>
+
+  <main class="admin-content" id="adminContent">
+    <!-- Filled by JS -->
+  </main>
+
+  <script type="module" src="js/admin.js"></script>
+</body>
+</html>

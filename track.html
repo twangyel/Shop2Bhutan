@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Track Order — BorderShop</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <header class="site-header">
+    <a href="/" class="back">← Back</a>
+    <span class="logo">🇧🇹 BorderShop</span>
+  </header>
+
+  <main class="track-page" id="trackPage">
+    <h1 class="page-title">Track Your Order</h1>
+    
+    <div class="track-form" id="trackForm">
+      <div class="field">
+        <label>Enter your phone number</label>
+        <input 
+          type="tel" 
+          id="trackPhone" 
+          placeholder="17XXXXXX"
+          value=""
+        >
+      </div>
+      <button class="btn-primary" id="trackBtn">Find My Orders</button>
+    </div>
+    
+    <div class="orders-list" id="ordersList" style="display:none;">
+      <!-- Filled by JS -->
+    </div>
+  </main>
+
+  <nav class="bottom-nav">
+    <a href="/">📝 Order</a>
+    <a href="/track.html" class="active">📦 Track</a>
+    <a href="/admin.html">⚙️ Admin</a>
+  </nav>
+
+  <script type="module" src="js/track.js"></script>
+</body>
+</html>
