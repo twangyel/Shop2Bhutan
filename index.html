@@ -23,6 +23,59 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 
   <link rel="stylesheet" href="assets/css/style.css">
+<style>
+  .cart-item-meta { display: flex; align-items: center; gap: 6px; margin-top: 6px; }
+  .qty-label { font-size: 12px; color: #888; font-weight: 500; }
+  .cart-qty { width: 56px; padding: 4px 6px; font-size: 14px; border: 1px solid #ddd; border-radius: 6px; text-align: center; background: #fff; }
+  .cart-qty:focus { outline: none; border-color: #e94560; }
+<style>
+  /* --- Cart drawer image + qty --- */
+  .cart-item { display: flex; align-items: center; gap: 12px; padding: 14px 0; border-bottom: 1px solid #eee; }
+  .cart-item-thumb, .cart-item-screenshot { width: 48px; height: 48px; border-radius: 8px; object-fit: cover; flex-shrink: 0; background: #f5f5f5; }
+  .cart-item-thumb.placeholder { display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 14px; color: #fff; }
+  .cart-item-details { flex: 1; min-width: 0; }
+  .cart-item-name { margin: 4px 0 0; font-size: 14px; font-weight: 500; color: #222; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .cart-item-meta { display: flex; align-items: center; gap: 8px; margin-top: 6px; }
+  .qty-label { font-size: 12px; color: #888; font-weight: 500; }
+  .cart-qty { width: 56px; padding: 4px 6px; font-size: 14px; border: 1px solid #ddd; border-radius: 6px; text-align: center; background: #fff; }
+  .cart-qty:focus { outline: none; border-color: #e94560; }
+
+  /* --- Detected URL bar image input --- */
+  .detected-url-bar { display: flex; flex-direction: column; gap: 10px; }
+  .detected-url-top { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+  .url-image-input { width: 100%; }
+  .screenshot-label { display: flex; align-items: center; gap: 8px; padding: 10px 14px; font-size: 13px; color: #555; border: 1.5px dashed #ccc; border-radius: 8px; cursor: pointer; transition: all .2s; background: #fafafa; }
+  .screenshot-label:hover { border-color: #e94560; color: #e94560; background: #fff5f7; }
+  .screenshot-label svg { flex-shrink: 0; }
+  .screenshot-preview { position: relative; display: inline-block; margin-top: 8px; }
+  .screenshot-preview[hidden] { display: none !important; }
+  .screenshot-preview img { width: 120px; height: 120px; object-fit: cover; border-radius: 8px; border: 1px solid #eee; }
+  .screenshot-remove { position: absolute; top: -6px; right: -6px; width: 22px; height: 22px; border-radius: 50%; background: #e94560; color: #fff; border: none; font-size: 14px; line-height: 1; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+
+  /* --- Modal product summary with image + qty --- */
+  .product-summary-box { display: flex; align-items: center; gap: 12px; padding: 12px; background: #f9f9f9; border-radius: 10px; border: 1px solid #eee; }
+  .product-summary-box img, .product-summary-box .screenshot-thumb { width: 52px; height: 52px; border-radius: 8px; object-fit: cover; flex-shrink: 0; background: #eee; }
+  .product-summary-info { flex: 1; min-width: 0; }
+  .product-summary-info .badge { display: inline-block; padding: 2px 8px; font-size: 11px; font-weight: 600; text-transform: uppercase; border-radius: 4px; background: #e94560; color: #fff; margin-bottom: 4px; }
+  .product-summary-info span:last-child { display: block; font-size: 14px; font-weight: 500; color: #222; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .product-summary-qty { display: flex; flex-direction: column; align-items: center; gap: 2px; }
+  .product-summary-qty label { font-size: 11px; color: #888; font-weight: 600; text-transform: uppercase; }
+  .product-summary-qty input { width: 56px; padding: 6px; font-size: 14px; text-align: center; border: 1px solid #ddd; border-radius: 6px; }
+  .product-summary-qty input:focus { outline: none; border-color: #e94560; }
+
+  /* --- Checkout summary items with image + qty --- */
+  .checkout-item { display: flex; align-items: center; gap: 12px; padding: 10px 0; border-bottom: 1px solid #eee; }
+  .checkout-item:last-child { border-bottom: none; }
+  .checkout-thumb, .checkout-screenshot { width: 44px; height: 44px; border-radius: 8px; object-fit: cover; flex-shrink: 0; background: #eee; }
+  .checkout-item-info { flex: 1; min-width: 0; }
+  .checkout-item-info .badge { display: inline-block; padding: 2px 8px; font-size: 11px; font-weight: 600; text-transform: uppercase; border-radius: 4px; background: #e94560; color: #fff; margin-bottom: 4px; }
+  .checkout-item-info span:last-child { display: block; font-size: 13px; font-weight: 500; color: #222; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .checkout-item-qty { display: flex; flex-direction: column; align-items: center; gap: 2px; }
+  .checkout-item-qty label { font-size: 11px; color: #888; font-weight: 600; text-transform: uppercase; }
+  .checkout-item-qty input { width: 52px; padding: 5px; font-size: 13px; text-align: center; border: 1px solid #ddd; border-radius: 6px; }
+  .checkout-item-qty input:focus { outline: none; border-color: #e94560; }
+</style>
+<base target="_blank">
 </head>
 <body>
   <a href="#main" class="skip-link">Skip to main content</a>
@@ -30,7 +83,7 @@
   <header class="site-header">
     <nav class="main-nav" aria-label="Main navigation">
       <a href="/" class="logo" aria-label="Shop2Bhutan Home">
-        <img src="/image/logo.png" alt="Shop2Bhutan Logo" width="44" height="44" loading="eager" decoding="async">
+        <img src="/image/logo.svg" alt="Shop2Bhutan Logo" width="44" height="44" loading="eager" decoding="async">
       </a>
 
       <div class="nav-actions">
@@ -287,8 +340,15 @@
         <div class="form-group" id="productSummaryGroup">
           <label>Product</label>
           <div class="product-summary-box" id="productSummaryBox">
-            <span class="badge" id="productSummaryBadge">Amazon</span>
-            <span id="productSummaryText">Product Name</span>
+            <img id="productSummaryScreenshot" src="" alt="" hidden>
+            <div class="product-summary-info">
+              <span class="badge" id="productSummaryBadge">Amazon</span>
+              <span id="productSummaryText">Product Name</span>
+            </div>
+            <div class="product-summary-qty">
+              <label for="modalOrderQty">Qty</label>
+              <input type="number" id="modalOrderQty" value="1" min="1" max="99">
+            </div>
           </div>
           <input type="hidden" id="orderProductUrl">
           <input type="hidden" id="orderProductName">
@@ -362,15 +422,9 @@
           </div>
         </div>
 
-        <div class="form-row">
-          <div class="form-group">
-            <label for="orderQuantity">Quantity</label>
-            <input type="number" id="orderQuantity" value="1" min="1" max="10">
-          </div>
-          <div class="form-group">
-            <label for="orderVariant">Variant / Size <span class="optional">(optional)</span></label>
-            <input type="text" id="orderVariant" placeholder="e.g. 128GB, Blue, Size M">
-          </div>
+        <div class="form-group">
+          <label for="orderVariant">Variant / Size <span class="optional">(optional)</span></label>
+          <input type="text" id="orderVariant" placeholder="e.g. 128GB, Blue, Size M">
         </div>
 
         <div class="form-group">

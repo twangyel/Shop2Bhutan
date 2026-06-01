@@ -10,16 +10,31 @@
         body{background:#f4f6f8;color:#1a1a2e;min-height:100vh}
 
         /* Login */
-        .login-screen{position:fixed;inset:0;background:linear-gradient(135deg,#1a1a2e,#16213e);display:flex;align-items:center;justify-content:center;z-index:9999}
-        .login-box{background:#fff;padding:2.5rem;border-radius:16px;width:100%;max-width:380px;box-shadow:0 20px 60px rgba(0,0,0,.3)}
-        .login-box h2{margin-bottom:0.5rem;color:#1a1a2e}
-        .login-box p{color:#888;margin-bottom:1.5rem;font-size:0.9rem}
-        .login-box input{width:100%;padding:0.85rem 1rem;border:2px solid #e8e8e8;border-radius:10px;margin-bottom:1rem;font-size:1rem;outline:none}
+        .login-screen{position:fixed;inset:0;background:linear-gradient(135deg,#1a1a2e,#16213e);display:flex;align-items:center;justify-content:center;z-index:9999;padding:1rem}
+        .login-box{background:#fff;padding:2.5rem;border-radius:16px;width:100%;max-width:400px;box-shadow:0 20px 60px rgba(0,0,0,.3)}
+        .login-logo{width:140px;height:60px;background:linear-gradient(135deg,var(--accent),#6bffba);border-radius:10px;margin:0 auto 1.5rem;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:0.9rem;letter-spacing:0.5px;box-shadow:0 4px 15px rgba(233,69,96,.3)}
+        .login-box h2{margin-bottom:0.25rem;color:#1a1a2e;text-align:center;font-size:1.5rem}
+        .login-box .subtitle{color:#888;margin-bottom:1.75rem;font-size:0.9rem;text-align:center}
+        .login-box input{width:100%;padding:0.85rem 1rem;border:2px solid #e8e8e8;border-radius:10px;margin-bottom:0.25rem;font-size:1rem;outline:none;transition:border-color .2s}
         .login-box input:focus{border-color:var(--accent)}
-        .login-box button{width:100%;padding:1rem;background:var(--accent);color:#fff;border:none;border-radius:10px;font-weight:700;cursor:pointer;font-size:1rem}
-        .login-box button:hover{opacity:.9}
-        .login-box button:disabled{opacity:.5;cursor:not-allowed}
-        .login-error{color:#e94560;font-size:0.85rem;margin-top:0.5rem;display:none}
+        .input-group{margin-bottom:1rem}
+        .input-group label{display:block;font-size:0.8rem;color:#666;font-weight:600;margin-bottom:0.35rem;text-transform:uppercase;letter-spacing:0.5px}
+        .input-group .hint{font-size:0.8rem;color:#888;margin-top:0.35rem}
+        .password-wrap{position:relative}
+        .password-wrap input{padding-right:2.75rem;margin-bottom:0}
+        .btn-preview{position:absolute;right:0.6rem;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:#888;font-size:1.1rem;padding:0.25rem;display:flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:6px;transition:all .2s}
+        .btn-preview:hover{background:#f0f0f0;color:#1a1a2e}
+        .remember-row{display:flex;align-items:center;justify-content:space-between;margin:1.25rem 0 1.5rem}
+        .remember-label{display:flex;align-items:center;gap:0.5rem;cursor:pointer;font-size:0.9rem;color:#555;user-select:none}
+        .remember-label input[type="checkbox"]{width:18px;height:18px;accent-color:var(--accent);cursor:pointer}
+        .forgot-link{font-size:0.85rem;color:var(--accent);text-decoration:none;font-weight:600}
+        .forgot-link:hover{text-decoration:underline}
+        .login-box button{width:100%;padding:1rem;background:var(--accent);color:#fff;border:none;border-radius:10px;font-weight:700;cursor:pointer;font-size:1rem;transition:all .2s;box-shadow:0 4px 15px rgba(233,69,96,.3)}
+        .login-box button:hover{opacity:.9;transform:translateY(-1px);box-shadow:0 6px 20px rgba(233,69,96,.4)}
+        .login-box button:disabled{opacity:.5;cursor:not-allowed;transform:none;box-shadow:none}
+        .login-error{color:#e94560;font-size:0.85rem;margin-top:0.75rem;text-align:center;display:none;align-items:center;justify-content:center;gap:0.35rem}
+        .login-error::before{content:"⚠️"}
+        
 
         /* Layout */
         .admin-layout{display:none;grid-template-columns:260px 1fr;min-height:100vh}
@@ -98,10 +113,12 @@
         .page-btn.active{background:var(--accent);color:#fff;border-color:var(--accent)}
 
         /* Toast */
-        .toast{position:fixed;top:1.5rem;right:1.5rem;background:#1a1a2e;color:#fff;padding:1rem 1.5rem;border-radius:10px;box-shadow:0 10px 30px rgba(0,0,0,.2);transform:translateX(150%);transition:transform .3s;z-index:3000;font-weight:500}
+        .toast{position:fixed;top:1.5rem;right:1.5rem;background:#1a1a2e;color:#fff;padding:1rem 1.5rem;border-radius:10px;box-shadow:0 10px 30px rgba(0,0,0,.2);transform:translateX(150%);transition:transform .3s;z-index:3000;font-weight:500;display:flex;align-items:center;gap:0.5rem}
         .toast.show{transform:translateX(0)}
         .toast-success{background:var(--success)}
         .toast-error{background:#c0392b}
+        .toast-info{background:var(--info)}
+        .toast-warning{background:var(--warning)}
 
         /* Order Detail Modal */
         .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);backdrop-filter:blur(4px);z-index:2000;display:none;align-items:center;justify-content:center;padding:1rem}
@@ -141,6 +158,7 @@
             .detail-grid{grid-template-columns:1fr}
             .form-row{grid-template-columns:1fr}
             .filters{flex-direction:column;align-items:stretch}
+            .login-box{padding:2rem 1.5rem}
         }
     </style>
 </head>
@@ -149,10 +167,48 @@
 <!-- LOGIN -->
 <div class="login-screen" id="loginScreen">
     <div class="login-box">
-        <h2>Admin Login</h2>
-        <p>Sign in with your admin credentials</p>
-        <input type="email" id="adminEmail" placeholder="Admin email" onkeydown="if(event.key==='Enter')doLogin()">
-        <input type="password" id="adminPassword" placeholder="Password" onkeydown="if(event.key==='Enter')doLogin()">
+        <!-- Logo Rectangle -->
+        <div class="login-logo" id="loginLogo">
+          <img src="/image/logo.svg" alt="Shop2Bhutan Logo" width="120" height="40" loading="eager" decoding="async">
+        </div>
+
+        <h2>Admin Panel</h2>
+        <p class="subtitle">Sign in to manage your store</p>
+
+        <div class="input-group">
+            <label for="adminEmail">Email Address</label>
+            <input type="email" id="adminEmail" name="email" autocomplete="username" placeholder="admin@shop2bhutan.com" onkeydown="if(event.key==='Enter')doLogin()">
+        </div>
+
+        <div class="form-group">
+  <label for="adminPassword">Password</label>
+  <div class="password-field">
+    <input 
+      type="password" 
+      id="adminPassword" 
+      placeholder="Enter your password"
+      autocomplete="current-password"
+    >
+    <button 
+      type="button" 
+      id="previewBtn" 
+      class="password-toggle" 
+      onclick="togglePasswordPreview()"
+      title="Show password"
+    >
+      👁️
+    </button>
+  </div>
+</div>
+
+        <div class="remember-row">
+            <label class="remember-label">
+                <input type="checkbox" id="rememberMe">
+                <span>Remember me</span>
+            </label>
+            <a href="#" class="forgot-link" onclick="toast('Contact your administrator to reset your password.','info');return false">Forgot password?</a>
+        </div>
+
         <button onclick="doLogin()" id="loginBtn">Sign In</button>
         <div class="login-error" id="loginError"></div>
     </div>

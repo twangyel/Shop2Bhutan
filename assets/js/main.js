@@ -13,6 +13,20 @@ function esc(s) {
   }[c]));
 }
 
+// ===== PLATFORM PLACEHOLDERS =====
+const PLATFORM_COLORS = {
+  'Amazon': '#FF9900', 'Flipkart': '#047BD5', 'Myntra': '#FF3F6C',
+  'Snapdeal': '#E40046', 'Meesho': '#F43397', 'JioMart': '#0078AD',
+  'AJIO': '#2C4152', 'Tata CLiQ': '#4A4A4A', 'Nykaa': '#FC2779',
+  'Reliance Digital': '#D71A21', 'Croma': '#00A651', 'Store': '#888888'
+};
+function getPlatformPlaceholder(platform) {
+  const color = PLATFORM_COLORS[platform] || '#888888';
+  const initial = (platform || 'S').charAt(0).toUpperCase();
+  const svg = 'data:image/svg+xml,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64"><rect width="64" height="64" fill="' + color + '" rx="8"/><text x="32" y="38" font-size="28" font-weight="bold" fill="white" text-anchor="middle" font-family="Arial">' + initial + '</text></svg>');
+  return svg;
+}
+
 // Body-scroll lock with a counter so stacked overlays don't break each other.
 let _scrollLocks = 0;
 function lockScroll() {
@@ -62,6 +76,14 @@ function getCart() {
   try { return JSON.parse(localStorage.getItem(CART_KEY)) || []; } catch { return []; }
 }
 function saveCart(cart) { localStorage.setItem(CART_KEY, JSON.stringify(cart)); }
+function updateCartItemQuantity(url, quantity) {
+  const cart = getCart();
+  const item = cart.find(i => i.url === url);
+  if (item) {
+    item.quantity = quantity;
+    saveCart(cart);
+  }
+}
 function clearCart() { localStorage.removeItem(CART_KEY); updateCartCount(); }
 
 function addToCart(item) {
@@ -70,7 +92,7 @@ function addToCart(item) {
     showToast('This item is already in your cart');
     return;
   }
-  cart.push({ ...item, addedAt: Date.now() });
+  cart.push({ ...item, addedAt: Date.now(), quantity: 1 });
   saveCart(cart);
   updateCartCount();
   showToast('Added to cart', 'success');
@@ -114,18 +136,26 @@ function renderCartDrawer() {
   }
 
   if (checkoutBtn) checkoutBtn.hidden = false;
-  container.innerHTML = cart.map(item => `
+  container.innerHTML = cart.map(item => {
+    const hasScreenshot = !!item.screenshot;
+    const thumb = hasScreenshot ? item.screenshot : getPlatformPlaceholder(item.platform);
+    return `
     <div class="cart-item">
+      <img class="${hasScreenshot ? 'cart-item-screenshot' : 'cart-item-thumb placeholder'}" src="${esc(thumb)}" alt="${esc(item.name)}">
       <div class="cart-item-details">
         <span class="cart-item-platform">${esc(item.platform)}</span>
         <p class="cart-item-name" title="${esc(item.name)}">${esc(item.name)}</p>
+        <div class="cart-item-meta">
+          <span class="qty-label">Qty</span>
+          <input type="number" class="cart-qty" data-url="${esc(item.url)}" value="${item.quantity || 1}" min="1" max="99" aria-label="Quantity">
+        </div>
       </div>
       <div class="cart-item-actions">
         <button class="cart-item-order-btn"  data-url="${esc(item.url)}">Order</button>
         <button class="cart-item-remove-btn" data-url="${esc(item.url)}" aria-label="Remove">&times;</button>
       </div>
     </div>
-  `).join('');
+  `}).join('');
 
   container.querySelectorAll('.cart-item-remove-btn').forEach(btn => {
     btn.addEventListener('click', () => removeFromCart(btn.dataset.url));
@@ -134,6 +164,13 @@ function renderCartDrawer() {
     btn.addEventListener('click', () => {
       closeCartDrawer();
       openOrderModal(btn.dataset.url, 'single');
+    });
+  });
+  container.querySelectorAll('.cart-qty').forEach(input => {
+    input.addEventListener('change', (e) => {
+      const qty = Math.max(1, Math.min(99, parseInt(e.target.value, 10) || 1));
+      e.target.value = qty;
+      updateCartItemQuantity(input.dataset.url, qty);
     });
   });
 }
@@ -219,14 +256,27 @@ searchInput.addEventListener('input', (e) => {
     pendingProduct = { url: val, name: productName, platform };
     searchHelper.innerHTML = `
       <div class="detected-url-bar">
-        <div class="url-info">
-          <span class="url-badge">${esc(platform)}</span>
-          <span class="url-preview">${esc(productName)}</span>
+        <div class="detected-url-top">
+          <div class="url-info">
+            <span class="url-badge">${esc(platform)}</span>
+            <span class="url-preview">${esc(productName)}</span>
+          </div>
+          <button class="btn-detect-order" type="button">
+            <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M12 4.5v15m7.5-7.5h-15"/></svg>
+            Add to Cart
+          </button>
         </div>
-        <button class="btn-detect-order" type="button">
-          <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M12 4.5v15m7.5-7.5h-15"/></svg>
-          Add to Cart
-        </button>
+        <div class="url-image-input">
+          <label class="screenshot-label" for="pendingScreenshot">
+            <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>
+            <span>Attach product screenshot (optional)</span>
+          </label>
+          <input type="file" id="pendingScreenshot" accept="image/*" capture="environment" hidden>
+          <div class="screenshot-preview" id="screenshotPreview" hidden>
+            <img id="screenshotPreviewImg" src="" alt="Screenshot preview">
+            <button type="button" class="screenshot-remove" id="screenshotRemove" aria-label="Remove screenshot">&times;</button>
+          </div>
+        </div>
       </div>`;
     searchHelper.classList.add('active');
     searchBtn.innerHTML = `<svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"></circle><path d="m21 21-4.35-4.35"></path></svg><span class="btn-text">Add to Cart</span>`;
@@ -245,10 +295,41 @@ searchInput.addEventListener('input', (e) => {
 
 function commitPending() {
   if (!pendingProduct) return;
+  const screenshotInput = document.getElementById('pendingScreenshot');
+  const previewImg = document.getElementById('screenshotPreviewImg');
+  if (screenshotInput && screenshotInput.files[0]) {
+    pendingProduct.screenshot = previewImg.src;
+  }
   addToCart(pendingProduct);
   searchInput.value = '';
   searchInput.dispatchEvent(new Event('input'));
 }
+
+// ===== SCREENSHOT PREVIEW (event delegation) =====
+searchHelper.addEventListener('change', (e) => {
+  if (e.target.id !== 'pendingScreenshot') return;
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = (ev) => {
+    const previewImg = document.getElementById('screenshotPreviewImg');
+    const previewBox = document.getElementById('screenshotPreview');
+    if (previewImg) previewImg.src = ev.target.result;
+    if (previewBox) previewBox.hidden = false;
+  };
+  reader.readAsDataURL(file);
+});
+
+searchHelper.addEventListener('click', (e) => {
+  if (e.target.id !== 'screenshotRemove') return;
+  const input = document.getElementById('pendingScreenshot');
+  const previewImg = document.getElementById('screenshotPreviewImg');
+  const previewBox = document.getElementById('screenshotPreview');
+  if (input) input.value = '';
+  if (previewImg) previewImg.src = '';
+  if (previewBox) previewBox.hidden = true;
+});
+
 
 // Single bound listener instead of reassigning onclick on every input.
 searchBtn.addEventListener('click', (e) => {
@@ -289,6 +370,8 @@ window.openOrderModal = function (url, mode = 'single') {
   const productSummaryGroup = document.getElementById('productSummaryGroup');
   const productSummaryBadge = document.getElementById('productSummaryBadge');
   const productSummaryText  = document.getElementById('productSummaryText');
+  const productSummaryImage = document.getElementById('productSummaryImage');
+  const modalOrderQty       = document.getElementById('modalOrderQty');
   const orderProductUrl     = document.getElementById('orderProductUrl');
   const orderProductName    = document.getElementById('orderProductName');
   const checkoutSummary     = document.getElementById('checkoutSummary');
@@ -298,9 +381,21 @@ window.openOrderModal = function (url, mode = 'single') {
     if (checkoutSummary) {
       checkoutSummary.hidden = false;
       checkoutSummary.innerHTML = `<h4>Items in your cart (${cart.length})</h4>` +
-        cart.map(item =>
-          `<div class="checkout-item"><span class="badge">${esc(item.platform)}</span> <span>${esc(item.name)}</span></div>`
-        ).join('');
+        cart.map((item, idx) => {
+          const hasScreenshot = !!item.screenshot;
+          const thumb = hasScreenshot ? item.screenshot : getPlatformPlaceholder(item.platform);
+          return `<div class="checkout-item">
+            <img class="${hasScreenshot ? 'checkout-screenshot' : 'checkout-thumb placeholder'}" src="${esc(thumb)}" alt="${esc(item.name)}">
+            <div class="checkout-item-info">
+              <span class="badge">${esc(item.platform)}</span>
+              <span>${esc(item.name)}</span>
+            </div>
+            <div class="checkout-item-qty">
+              <label>Qty</label>
+              <input type="number" class="modal-cart-qty" data-idx="${idx}" value="${item.quantity || 1}" min="1" max="99" aria-label="Quantity for ${esc(item.name)}">
+            </div>
+          </div>`;
+        }).join('');
     }
   } else {
     if (checkoutSummary) checkoutSummary.hidden = true;
@@ -309,13 +404,26 @@ window.openOrderModal = function (url, mode = 'single') {
       if (url) {
         const platform = detectPlatform(url);
         const name     = extractProductName(url);
+        const cartItem = cart.find(i => i.url === url);
+        const hasScreenshot = !!cartItem?.screenshot;
+        const thumb = hasScreenshot ? cartItem.screenshot : getPlatformPlaceholder(platform);
         productSummaryBadge.textContent = platform;
         productSummaryText.textContent  = name;
+        const productSummaryScreenshot = document.getElementById('productSummaryScreenshot');
+        if (productSummaryScreenshot) {
+          productSummaryScreenshot.src = thumb;
+          productSummaryScreenshot.alt = name;
+          productSummaryScreenshot.hidden = false;
+          productSummaryScreenshot.className = hasScreenshot ? 'screenshot-thumb' : 'placeholder';
+        }
+        if (modalOrderQty) modalOrderQty.value = cartItem?.quantity || 1;
         if (orderProductUrl)  orderProductUrl.value  = url;
         if (orderProductName) orderProductName.value = name;
       } else {
         productSummaryBadge.textContent = 'Custom';
         productSummaryText.textContent  = 'Manual Order';
+        if (productSummaryImage) productSummaryImage.hidden = true;
+        if (modalOrderQty) modalOrderQty.value = 1;
         if (orderProductUrl)  orderProductUrl.value  = '';
         if (orderProductName) orderProductName.value = '';
       }
@@ -386,6 +494,7 @@ orderForm.addEventListener('submit', async (e) => {
 
   const cart   = getCart();
   const isBulk = document.getElementById('checkoutSummary')?.hidden === false && cart.length > 0;
+  console.log('[orderForm] isBulk:', isBulk, 'cart.length:', cart.length);
   const paymentMethod = document.querySelector('input[name="paymentMethod"]:checked')?.value || 'full';
 
   const formData = {
@@ -398,13 +507,30 @@ orderForm.addEventListener('submit', async (e) => {
     notes:            document.getElementById('orderNotes').value.trim() || null,
   };
 
-  const cartItems = isBulk ? cart : (currentProductUrl ? [{
-    url:      currentProductUrl,
-    name:     document.getElementById('orderProductName').value || extractProductName(currentProductUrl),
-    platform: detectPlatform(currentProductUrl),
-    quantity: parseInt(document.getElementById('orderQuantity').value, 10) || 1,
-    variant:  document.getElementById('orderVariant').value || null,
-  }] : []);
+  // Build cartItems with quantities from modal inputs
+  let cartItems = [];
+  if (isBulk) {
+    const updatedCart = getCart();
+    document.querySelectorAll('.modal-cart-qty').forEach(input => {
+      const idx = parseInt(input.dataset.idx, 10);
+      if (updatedCart[idx]) updatedCart[idx].quantity = Math.max(1, parseInt(input.value, 10) || 1);
+    });
+    saveCart(updatedCart);
+    cartItems = updatedCart;
+    console.log('[orderForm] Bulk mode — cartItems:', cartItems.length);
+  } else if (currentProductUrl) {
+    const modalQty = parseInt(document.getElementById('modalOrderQty')?.value, 10) || 1;
+    cartItems = [{
+      url:      currentProductUrl,
+      name:     document.getElementById('orderProductName').value || extractProductName(currentProductUrl),
+      platform: detectPlatform(currentProductUrl),
+      quantity: modalQty,
+      variant:  document.getElementById('orderVariant').value || null,
+    }];
+    console.log('[orderForm] Single mode — cartItems:', cartItems);
+  } else {
+    console.warn('[orderForm] No cart items and no currentProductUrl!');
+  }
 
   try {
     const result  = await submitOrder(formData, cartItems);
@@ -417,9 +543,9 @@ orderForm.addEventListener('submit', async (e) => {
 
     let waMessage = `Hi Shop2Bhutan! I just placed an order.\n\n`;
     if (isBulk) {
-      waMessage += cartItems.map((item, i) => `${i + 1}. ${item.name} (${item.platform})`).join('\n');
+      waMessage += cartItems.map((item, i) => `${i + 1}. ${item.name} (${item.platform}) — Qty: ${item.quantity || 1}${item.screenshot ? ' [screenshot attached]' : ''}`).join('\n');
     } else {
-      waMessage += `*Product:* ${cartItems[0]?.name}\n*Link:* ${cartItems[0]?.url}`;
+      waMessage += `*Product:* ${cartItems[0]?.name}\n*Link:* ${cartItems[0]?.url}\n*Qty:* ${cartItems[0]?.quantity || 1}${cartItems[0]?.screenshot ? '\n[Screenshot attached in app]' : ''}`;
     }
     waMessage +=
       `\n\n*Name:* ${formData.customer_name}` +
@@ -427,6 +553,7 @@ orderForm.addEventListener('submit', async (e) => {
       `\n*Dzongkhag:* ${formData.dzongkhag}` +
       `\n*Address:* ${formData.delivery_address}` +
       `\n*Payment:* ${formData.payment_method === 'full' ? 'Full Payment' : '50/50'}` +
+      `\n*Preferred Trip:* ${formData.trip_date}` +
       `\n*Trip Date:* ${formData.trip_date}` +
       `\n*Order Ref:* ${orderId}`;
 
@@ -438,7 +565,8 @@ orderForm.addEventListener('submit', async (e) => {
     clearCart();
   } catch (err) {
     console.error('Order error:', err);
-    showToast('Could not save your order — please try WhatsApp', 'error');
+    const msg = err?.message || 'Unknown error';
+    showToast('Order failed: ' + msg, 'error');
     submitBtn.disabled    = false;
     submitBtn.textContent = isBulk ? `Place Order (${cart.length} items)` : 'Place Order';
   }
@@ -447,34 +575,99 @@ orderForm.addEventListener('submit', async (e) => {
 async function submitOrder(formData, cartItems) {
   if (!cartItems.length) throw new Error('No items to order');
 
+  console.log('[submitOrder] Starting with cartItems:', cartItems.length);
+  console.log('[submitOrder] formData:', JSON.stringify(formData, null, 2));
+
   // 1. Upsert customer
+  const customerPayload = {
+    phone:     formData.customer_phone,
+    name:      formData.customer_name,
+    dzongkhag: formData.dzongkhag,
+    address:   formData.delivery_address,
+  };
+  console.log('[submitOrder] Upserting customer:', customerPayload);
+
   const { data: customer, error: custErr } = await supabase
     .from('customers')
-    .upsert({
-      phone:     formData.customer_phone,
-      name:      formData.customer_name,
-      dzongkhag: formData.dzongkhag,
-      address:   formData.delivery_address,
-    }, { onConflict: 'phone' })
+    .upsert(customerPayload, { onConflict: 'phone' })
     .select()
     .single();
-  if (custErr) throw new Error('Customer save failed: ' + custErr.message);
 
-  // 2. Create order
+  if (custErr) {
+    console.error('[submitOrder] Customer upsert error:', custErr);
+    throw new Error('Customer save failed: ' + (custErr.message || JSON.stringify(custErr)));
+  }
+  if (!customer || !customer.id) {
+    console.error('[submitOrder] Customer upsert returned no data:', customer);
+    throw new Error('Customer upsert succeeded but returned no data. Check RLS SELECT policy on customers table.');
+  }
+  console.log('[submitOrder] Customer saved:', customer.id);
+
+  // 2. Find or create trip for the preferred date
+  let tripId = null;
+  if (formData.trip_date) {
+    const { data: existingTrip, error: findTripErr } = await supabase
+      .from('trips')
+      .select('id')
+      .eq('trip_date', formData.trip_date)
+      .maybeSingle();
+
+    if (findTripErr) {
+      console.error('[submitOrder] Find trip error:', findTripErr);
+      throw new Error('Trip lookup failed: ' + findTripErr.message);
+    }
+
+    if (existingTrip) {
+      tripId = existingTrip.id;
+      console.log('[submitOrder] Found existing trip:', tripId);
+    } else {
+      const { data: newTrip, error: tripErr } = await supabase
+        .from('trips')
+        .insert({ trip_date: formData.trip_date, status: 'planned' })
+        .select()
+        .single();
+
+      if (tripErr) {
+        console.error('[submitOrder] Create trip error:', tripErr);
+        throw new Error('Trip creation failed: ' + tripErr.message);
+      }
+      tripId = newTrip.id;
+      console.log('[submitOrder] Created new trip:', tripId);
+    }
+  }
+
+  // 3. Create order (linked to trip)
+  const notes = [formData.notes, formData.trip_date ? `Preferred trip: ${formData.trip_date}` : null]
+    .filter(Boolean)
+    .join(' | ');
+
+  const orderPayload = {
+    customer_id:    customer.id,
+    status:         'submitted',
+    payment_method: formData.payment_method,
+    admin_notes:    notes || null,
+    trip_id:        tripId,          // <-- links to trips table
+  };
+  console.log('[submitOrder] Inserting order:', orderPayload);
+
   const { data: order, error: orderErr } = await supabase
     .from('orders')
-    .insert({
-      customer_id:    customer.id,
-      status:         'submitted',
-      payment_method: formData.payment_method,
-      trip_date:      formData.trip_date,
-      admin_notes:    formData.notes,
-    })
+    .insert(orderPayload)
     .select()
     .single();
-  if (orderErr) throw new Error('Order creation failed: ' + orderErr.message);
 
-  // 3. Order items
+  if (orderErr) {
+    console.error('[submitOrder] Order insert error:', orderErr);
+    throw new Error('Order creation failed: ' + (orderErr.message || JSON.stringify(orderErr)));
+  }
+  if (!order || !order.id) {
+    console.error('[submitOrder] Order insert returned no data. This usually means RLS is blocking SELECT after INSERT.');
+    console.error('[submitOrder] order object:', order);
+    throw new Error('Order was created but could not be retrieved. Check RLS SELECT policy on orders table.');
+  }
+  console.log('[submitOrder] Order saved:', order.id);
+
+  // 4. Order items
   const items = cartItems.map(item => ({
     order_id:     order.id,
     product_link: item.url,
@@ -483,10 +676,23 @@ async function submitOrder(formData, cartItems) {
     quantity:     item.quantity || 1,
     variant:      item.variant  || null,
   }));
-  const { error: itemsErr } = await supabase.from('order_items').insert(items);
-  if (itemsErr) throw new Error('Items save failed: ' + itemsErr.message);
+  console.log('[submitOrder] Inserting order_items:', items);
 
-  return { order, customer, items };
+  const { data: itemsData, error: itemsErr } = await supabase
+    .from('order_items')
+    .insert(items)
+    .select();
+
+  if (itemsErr) {
+    console.error('[submitOrder] Order items insert error:', itemsErr);
+    throw new Error('Items save failed: ' + (itemsErr.message || JSON.stringify(itemsErr)));
+  }
+  if (!itemsData || !itemsData.length) {
+    console.warn('[submitOrder] Order items insert succeeded but returned no data. Check RLS SELECT policy on order_items table.');
+  }
+  console.log('[submitOrder] Order items saved:', itemsData?.length || items.length);
+
+  return { order, customer, items: itemsData || items };
 }
 
 document.getElementById('placeAnotherBtn').addEventListener('click', () => {
