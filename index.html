@@ -1,100 +1,456 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="stylesheet" href="assets/css/style.css">
-    <title>Shop2Bhutan</title>
-    <base target="_blank">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+
+  <!-- Defense in depth: blocks inline scripts, restricts origins -->
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; connect-src 'self' https://*.supabase.co wss://*.supabase.co; script-src 'self' https://esm.sh; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' https: data: blob:;">
+
+  <title>Shop2Bhutan — Proxy Ordering from India to Bhutan</title>
+  <meta name="description" content="Order anything from Amazon, Flipkart & Indian stores. We deliver to every dzongkhag in Bhutan. Safe, reliable proxy shopping.">
+  <meta property="og:title" content="Shop2Bhutan — Proxy Ordering from India">
+  <meta property="og:description" content="Paste a link, we handle shipping & customs. Delivered to your door in Bhutan.">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://shop2bhutanv2.vercel.app/">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="canonical" href="https://shop2bhutanv2.vercel.app/">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="assets/css/style.css">
 </head>
 <body>
+  <a href="#main" class="skip-link">Skip to main content</a>
 
-    <!-- Navigation Bar -->
-    <nav>
-        <a href="#" class="logo">
-            <img src="/image/logo.png" alt="Shop2Bhutan Logo">
+  <header class="site-header">
+    <nav class="main-nav" aria-label="Main navigation">
+      <a href="/" class="logo" aria-label="Shop2Bhutan Home">
+        <img src="/image/logo.png" alt="Shop2Bhutan Logo" width="44" height="44" loading="eager" decoding="async">
+      </a>
+
+      <div class="nav-actions">
+        <button type="button" class="btn btn-cart" id="cartBtn" aria-label="Open shopping cart">
+          <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"/>
+          </svg>
+          <span class="btn-text">Cart</span>
+          <span class="cart-count" id="cartCount" aria-live="polite" aria-atomic="true" hidden>0</span>
+        </button>
+
+        <a href="/local-store" class="btn btn-local">
+          <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/>
+            <circle cx="12" cy="10" r="3"/>
+          </svg>
+          <span class="btn-text">Local Store</span>
         </a>
 
-        <div class="nav-actions">
-            <a href="#" class="btn btn-cart">
-                <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                    <path d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"/>
-                </svg>
-                <span>Cart</span>
-                <span class="cart-count">0</span>
-            </a>
-
-            <a href="#" class="btn btn-local">
-                <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">
-                    <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"></path>
-                    <circle cx="12" cy="10" r="3"></circle>
-                </svg>
-                <span>Local Store</span>
-            </a>
-
-            <a href="https://wa.me/975XXXXXXXX" target="_blank" class="btn btn-whatsapp">
-                <svg width="20" height="20" fill="currentColor" viewBox="0 0 24 24">
-                    <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"/>
-                </svg>
-                <span>WhatsApp</span>
-            </a>
-        </div>
+        <a href="https://wa.me/975XXXXXXXX" class="btn btn-whatsapp" target="_blank" rel="noopener noreferrer nofollow" aria-label="Contact us on WhatsApp">
+          <svg width="20" height="20" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"/>
+          </svg>
+          <span class="btn-text">WhatsApp</span>
+        </a>
+      </div>
     </nav>
+  </header>
 
-    <!-- Main Body (Empty for now) -->
-    <main>
-        <!-- Content will be added here later -->
-    </main>
+  <main id="main">
+    <section class="search-section" aria-label="Product search">
+      <div class="search-container">
+        <h1>Find Anything from India & Beyond</h1>
+        <p class="search-subtitle">Paste a product link, search by name, or browse categories</p>
 
-    <!-- Footer -->
-    <footer>
-        <div class="footer-container">
-            <!-- Social Media -->
-            <div class="footer-section">
-                <h3>Follow Us</h3>
-                <p>Stay connected with Shop2Bhutan</p>
-                <div class="social-links">
-                    <a href="#" aria-label="Facebook">
-                        <svg width="18" height="18" fill="currentColor" viewBox="0 0 24 24"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>
-                    </a>
-                    <a href="#" aria-label="Instagram">
-                        <svg width="18" height="18" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z"/></svg>
-                    </a>
-                    <a href="#" aria-label="Twitter">
-                        <svg width="18" height="18" fill="currentColor" viewBox="0 0 24 24"><path d="M23.953 4.57a10 10 0 01-2.825.775 4.958 4.958 0 002.163-2.723c-.951.555-2.005.959-3.127 1.184a4.92 4.92 0 00-8.384 4.482C7.69 8.095 4.067 6.13 1.64 3.162a4.822 4.822 0 00-.666 2.475c0 1.71.87 3.213 2.188 4.096a4.904 4.904 0 01-2.228-.616v.06a4.923 4.923 0 003.946 4.827 4.996 4.996 0 01-2.212.085 4.936 4.936 0 004.604 3.417 9.867 9.867 0 01-6.102 2.105c-.39 0-.779-.023-1.17-.067a13.995 13.995 0 007.557 2.209c9.053 0 13.998-7.496 13.998-13.985 0-.21 0-.42-.015-.63A9.935 9.935 0 0024 4.59z"/></svg>
-                    </a>
-                </div>
-            </div>
-
-            <!-- Quick Links -->
-            <div class="footer-section">
-                <h3>Quick Links</h3>
-                <a href="#">Home</a>
-                <a href="#">Shop</a>
-                <a href="#">About Us</a>
-                <a href="#">Contact</a>
-                <a href="#">FAQ</a>
-            </div>
-
-            <!-- Legal -->
-            <div class="footer-section">
-                <h3>Legal</h3>
-                <a href="#">Terms & Conditions</a>
-                <a href="#">Privacy Policy</a>
-                <a href="#">Return Policy</a>
-                <a href="#">Shipping Info</a>
-            </div>
+        <div class="search-box">
+          <input type="text" id="searchInput" placeholder="Paste Amazon/Flipkart link or type product name..." autocomplete="off" aria-label="Search products or paste link" aria-describedby="searchHint">
+          <button class="search-btn" type="button" id="searchBtn" aria-label="Search or add to cart">
+            <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true">
+              <circle cx="11" cy="11" r="8"/>
+              <path d="m21 21-4.35-4.35"/>
+            </svg>
+            <span class="btn-text">Search</span>
+          </button>
         </div>
 
-        <!-- Footer Bottom -->
-        <div class="footer-bottom">
-            <p>&copy; 2026 Shop2Bhutan. All rights reserved.</p>
-            <div>
-                <a href="#">Terms & Conditions</a>
-                <a href="#">Privacy Policy</a>
-            </div>
+        <div id="searchHelper" class="search-helper" aria-live="polite"></div>
+        <div id="searchSkeleton" class="search-skeleton" hidden>
+          <div class="skeleton-bar"></div>
         </div>
-    </footer>
 
+        <div class="discover-tags" id="discoverTags">
+          <span class="tag-label">Popular:</span>
+          <button class="tag" data-search="Electronics" type="button">Electronics</button>
+          <button class="tag" data-search="Fashion" type="button">Fashion</button>
+          <button class="tag" data-search="Home & Kitchen" type="button">Home & Kitchen</button>
+          <button class="tag" data-search="Beauty" type="button">Beauty</button>
+          <button class="tag" data-search="Sports" type="button">Sports</button>
+          <button class="tag" data-search="Toys" type="button">Toys</button>
+        </div>
+      </div>
+    </section>
+
+    <section class="steps-section" aria-labelledby="stepsHeading">
+      <div class="section-header">
+        <h2 id="stepsHeading">How It Works</h2>
+        <p>Get your favorite products delivered to Bhutan in 4 simple steps</p>
+      </div>
+      <div class="steps-grid">
+        <article class="step-card">
+          <div class="step-number" aria-hidden="true">01</div>
+          <div class="step-icon"><svg width="32" height="32" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg></div>
+          <h3>Search</h3>
+          <p>Find your product on Amazon, Flipkart, or any Indian store and copy the link.</p>
+        </article>
+        <div class="step-connector" aria-hidden="true"></div>
+        <article class="step-card">
+          <div class="step-number" aria-hidden="true">02</div>
+          <div class="step-icon"><svg width="32" height="32" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg></div>
+          <h3>Copy</h3>
+          <p>Copy the product URL from your browser or the share button on the app.</p>
+        </article>
+        <div class="step-connector" aria-hidden="true"></div>
+        <article class="step-card">
+          <div class="step-number" aria-hidden="true">03</div>
+          <div class="step-icon"><svg width="32" height="32" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24" aria-hidden="true"><path d="M16 4h2a2 2 0 012 2v14a2 2 0 01-2 2H6a2 2 0 01-2-2V6a2 2 0 012-2h2"/><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/></svg></div>
+          <h3>Paste</h3>
+          <p>Paste the link in our search box above or send it to us via WhatsApp.</p>
+        </article>
+        <div class="step-connector" aria-hidden="true"></div>
+        <article class="step-card">
+          <div class="step-number" aria-hidden="true">04</div>
+          <div class="step-icon"><svg width="32" height="32" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24" aria-hidden="true"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg></div>
+          <h3>Order</h3>
+          <p>We handle shipping, customs & delivery straight to your door in Bhutan.</p>
+        </article>
+      </div>
+    </section>
+
+    <section class="reviews-section" aria-labelledby="reviewsHeading">
+      <div class="section-header">
+        <h2 id="reviewsHeading">What Our Customers Say</h2>
+        <p>Trusted by hundreds of shoppers across Bhutan</p>
+      </div>
+      <div class="reviews-header-actions">
+        <button type="button" class="btn-submit-review" id="openReviewModal">
+          <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+          Submit a Review
+        </button>
+      </div>
+      <div class="reviews-track-wrapper" id="reviewsWrapper">
+        <div class="reviews-track" id="reviewsTrack">
+          <article class="review-card">
+            <div class="review-stars" aria-label="5 out of 5 stars">★★★★★</div>
+            <p class="review-text">"I ordered a Samsung phone from Amazon and it arrived in Thimphu within 10 days. Shop2Bhutan made the whole process so easy!"</p>
+            <div class="reviewer">
+              <div class="reviewer-avatar" aria-hidden="true">KD</div>
+              <div class="reviewer-info">
+                <h4>Karma Dorji <span class="verified-badge">Verified</span></h4>
+                <span>Thimphu</span>
+              </div>
+            </div>
+          </article>
+          <article class="review-card">
+            <div class="review-stars" aria-label="5 out of 5 stars">★★★★★</div>
+            <p class="review-text">"Best service for getting Indian products to Bhutan. Just paste the link and they handle everything. Highly recommend!"</p>
+            <div class="reviewer">
+              <div class="reviewer-avatar" aria-hidden="true">PT</div>
+              <div class="reviewer-info">
+                <h4>Pema Tshering <span class="verified-badge">Verified</span></h4>
+                <span>Paro</span>
+              </div>
+            </div>
+          </article>
+          <article class="review-card">
+            <div class="review-stars" aria-label="4 out of 5 stars">★★★★<<span class="star-empty">★</span></div>
+            <p class="review-text">"Great prices and reliable delivery. I use them every month for kitchen appliances and clothes from Flipkart."</p>
+            <div class="reviewer">
+              <div class="reviewer-avatar" aria-hidden="true">SR</div>
+              <div class="reviewer-info">
+                <h4>Sonam Rigzin</h4>
+                <span>Phuentsholing</span>
+              </div>
+            </div>
+          </article>
+          <article class="review-card">
+            <div class="review-stars" aria-label="5 out of 5 stars">★★★★★</div>
+            <p class="review-text">"The WhatsApp support is amazing. They reply instantly and keep me updated on my order status. 5 stars!"</p>
+            <div class="reviewer">
+              <div class="reviewer-avatar" aria-hidden="true">DC</div>
+              <div class="reviewer-info">
+                <h4>Dechen Choden <span class="verified-badge">Verified</span></h4>
+                <span>Wangdue</span>
+              </div>
+            </div>
+          </article>
+          <article class="review-card">
+            <div class="review-stars" aria-label="5 out of 5 stars">★★★★★</div>
+            <p class="review-text">"Ordered baby products and cosmetics. Everything was packed perfectly and delivered safely. Will shop again!"</p>
+            <div class="reviewer">
+              <div class="reviewer-avatar" aria-hidden="true">NT</div>
+              <div class="reviewer-info">
+                <h4>Norbu Tashi <span class="verified-badge">Verified</span></h4>
+                <span>Punakha</span>
+              </div>
+            </div>
+          </article>
+          <article class="review-card">
+            <div class="review-stars" aria-label="4 out of 5 stars">★★★★<<span class="star-empty">★</span></div>
+            <p class="review-text">"Super convenient for gadgets and electronics. The search-paste-order system is brilliant. Saved me so much time."</p>
+            <div class="reviewer">
+              <div class="reviewer-avatar" aria-hidden="true">TU</div>
+              <div class="reviewer-info">
+                <h4>Tashi Ugyen</h4>
+                <span>Gelephu</span>
+              </div>
+            </div>
+          </article>
+        </div>
+      </div>
+      <div class="reviews-dots" id="reviewsDots" role="tablist" aria-label="Review pages"></div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="footer-container">
+      <div class="footer-section">
+        <h3>Follow Us</h3>
+        <p>Stay connected with Shop2Bhutan</p>
+        <div class="social-links">
+          <a href="#" aria-label="Facebook" rel="noopener noreferrer"><svg width="18" height="18" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg></a>
+          <a href="#" aria-label="Instagram" rel="noopener noreferrer"><svg width="18" height="18" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z"/></svg></a>
+          <a href="#" aria-label="Twitter" rel="noopener noreferrer"><svg width="18" height="18" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path d="M23.953 4.57a10 10 0 01-2.825.775 4.958 4.958 0 002.163-2.723c-.951.555-2.005.959-3.127 1.184a4.92 4.92 0 00-8.384 4.482C7.69 8.095 4.067 6.13 1.64 3.162a4.822 4.822 0 00-.666 2.475c0 1.71.87 3.213 2.188 4.096a4.904 4.904 0 01-2.228-.616v.06a4.923 4.923 0 003.946 4.827 4.996 4.996 0 01-2.212.085 4.936 4.936 0 004.604 3.417 9.867 9.867 0 01-6.102 2.105c-.39 0-.779-.023-1.17-.067a13.995 13.995 0 007.557 2.209c9.053 0 13.998-7.496 13.998-13.985 0-.21 0-.42-.015-.63A9.935 9.935 0 0024 4.59z"/></svg></a>
+        </div>
+      </div>
+      <div class="footer-section">
+        <h3>Quick Links</h3>
+        <a href="/">Home</a>
+        <a href="/shop">Shop</a>
+        <a href="/about">About Us</a>
+        <a href="/contact">Contact</a>
+        <a href="/faq">FAQ</a>
+      </div>
+      <div class="footer-section">
+        <h3>Legal</h3>
+        <a href="/terms">Terms & Conditions</a>
+        <a href="/privacy">Privacy Policy</a>
+        <a href="/returns">Return Policy</a>
+        <a href="/shipping">Shipping Info</a>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <p>© 2026 Shop2Bhutan. All rights reserved.</p>
+      <div>
+        <a href="/terms">Terms & Conditions</a>
+        <a href="/privacy">Privacy Policy</a>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Toast -->
+  <div id="s2bToast" class="toast" role="status" aria-live="polite" aria-atomic="true" hidden></div>
+
+  <!-- Cart Drawer -->
+  <div id="cartDrawer" class="cart-drawer" role="dialog" aria-modal="true" aria-label="Shopping cart" hidden>
+    <div class="cart-drawer-overlay" id="cartDrawerOverlay"></div>
+    <div class="cart-drawer-panel">
+      <div class="cart-drawer-header">
+        <h3>Your Cart</h3>
+        <button type="button" class="cart-drawer-close" id="cartDrawerClose" aria-label="Close cart">&times;</button>
+      </div>
+      <div class="cart-drawer-items" id="cartDrawerItems">
+        <div class="cart-empty-state">
+          <svg width="48" height="48" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 10.5V6a3.75 3.75 0 10-7.5 0v4.5m11.356-1.993l1.263 12c.07.665-.45 1.243-1.119 1.243H4.25a1.125 1.125 0 01-1.12-1.243l1.264-12A1.125 1.125 0 015.513 7.5h12.974c.576 0 1.059.435 1.119 1.007z"/></svg>
+          <p>Your cart is empty</p>
+          <span>Paste product links to get started</span>
+        </div>
+      </div>
+      <div class="cart-drawer-footer">
+        <button type="button" class="btn-continue" id="cartContinueBtn">Continue Shopping</button>
+        <button type="button" class="btn-checkout" id="cartCheckoutBtn" hidden>Proceed to Checkout</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Order Modal -->
+  <div id="orderModal" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="orderModalTitle" hidden>
+    <div class="modal modal--wide">
+      <div class="modal-header">
+        <h3 id="orderModalTitle">Place Your Order</h3>
+        <button type="button" class="modal-close" id="closeOrderModal" aria-label="Close order form">&times;</button>
+      </div>
+      <form class="review-form order-form" id="orderForm" novalidate>
+        <div class="form-group" id="productSummaryGroup">
+          <label>Product</label>
+          <div class="product-summary-box" id="productSummaryBox">
+            <span class="badge" id="productSummaryBadge">Amazon</span>
+            <span id="productSummaryText">Product Name</span>
+          </div>
+          <input type="hidden" id="orderProductUrl">
+          <input type="hidden" id="orderProductName">
+        </div>
+
+        <div class="checkout-summary" id="checkoutSummary" hidden>
+          <h4>Items in your cart</h4>
+        </div>
+
+        <div class="form-group">
+          <label for="orderPhone">Phone Number *</label>
+          <input type="tel" id="orderPhone" placeholder="e.g. 17XXXXXX or 77XXXXXX" required pattern="(17|77)\d{6}" inputmode="tel" autocomplete="tel">
+          <small class="hint">Bhutan number starting with 17 or 77</small>
+          <small class="hint hint-success" id="phoneHint" hidden></small>
+        </div>
+
+        <div class="form-group">
+          <label for="orderName">Your Name *</label>
+          <input type="text" id="orderName" placeholder="e.g. Karma Dorji" required autocomplete="name">
+        </div>
+
+        <div class="form-group">
+          <label for="orderDzongkhag">Dzongkhag / Location *</label>
+          <select id="orderDzongkhag" required>
+            <option value="" disabled selected>Select your dzongkhag</option>
+            <option value="Bumthang">Bumthang</option>
+            <option value="Chukha">Chukha</option>
+            <option value="Dagana">Dagana</option>
+            <option value="Gasa">Gasa</option>
+            <option value="Haa">Haa</option>
+            <option value="Lhuntse">Lhuntse</option>
+            <option value="Mongar">Mongar</option>
+            <option value="Paro">Paro</option>
+            <option value="Pemagatshel">Pemagatshel</option>
+            <option value="Punakha">Punakha</option>
+            <option value="Samdrup Jongkhar">Samdrup Jongkhar</option>
+            <option value="Samtse">Samtse</option>
+            <option value="Sarpang">Sarpang</option>
+            <option value="Thimphu">Thimphu</option>
+            <option value="Trashigang">Trashigang</option>
+            <option value="Trashiyangtse">Trashiyangtse</option>
+            <option value="Trongsa">Trongsa</option>
+            <option value="Tsirang">Tsirang</option>
+            <option value="Wangdue Phodrang">Wangdue Phodrang</option>
+            <option value="Zhemgang">Zhemgang</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="orderAddress">Delivery Address *</label>
+          <textarea id="orderAddress" rows="2" placeholder="e.g. Changangkha, Thimphu. Near clock tower..." required autocomplete="street-address"></textarea>
+        </div>
+
+        <div class="form-group">
+          <label>Payment Method *</label>
+          <div class="payment-options" id="paymentOptions">
+            <label class="payment-option">
+              <input type="radio" name="paymentMethod" value="full" checked required>
+              <span class="payment-card">
+                <strong>Full Payment</strong>
+                <small>Pay 100% upfront via bank transfer</small>
+              </span>
+            </label>
+            <label class="payment-option">
+              <input type="radio" name="paymentMethod" value="50_50" required>
+              <span class="payment-card">
+                <strong>50 / 50</strong>
+                <small>50% now to confirm, 50% on delivery</small>
+              </span>
+            </label>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="orderQuantity">Quantity</label>
+            <input type="number" id="orderQuantity" value="1" min="1" max="10">
+          </div>
+          <div class="form-group">
+            <label for="orderVariant">Variant / Size <span class="optional">(optional)</span></label>
+            <input type="text" id="orderVariant" placeholder="e.g. 128GB, Blue, Size M">
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="orderTripDate">Preferred Trip Date *</label>
+          <input type="date" id="orderTripDate" required>
+          <small class="hint">Next Saturday is our regular trip</small>
+        </div>
+
+        <div class="form-group">
+          <label for="orderNotes">Notes <span class="optional">(optional)</span></label>
+          <textarea id="orderNotes" rows="2" placeholder="Any special instructions..."></textarea>
+        </div>
+
+        <button type="submit" class="btn-submit btn-submit-order" id="orderSubmitBtn">Place Order</button>
+      </form>
+
+      <div class="success-view" id="orderSuccess" hidden>
+        <div class="success-icon">
+          <svg width="64" height="64" fill="none" stroke="#25d366" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+        </div>
+        <h3>Order Placed!</h3>
+        <p class="success-product" id="successProduct"></p>
+        <div class="success-order-id">
+          <span>Order ID</span>
+          <strong id="successOrderId"></strong>
+        </div>
+        <p class="success-message">We'll check availability in Phuntsholing, confirm the price, and notify you via WhatsApp.</p>
+        <div class="success-actions">
+          <a href="#" class="btn-whatsapp-lg" id="waConfirmBtn" target="_blank" rel="noopener noreferrer nofollow">
+            <svg width="20" height="20" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"/></svg>
+            Confirm on WhatsApp
+          </a>
+          <button type="button" class="btn-outline" id="placeAnotherBtn">Place Another Order</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Review Modal -->
+  <div id="reviewModal" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="reviewModalTitle" hidden>
+    <div class="modal">
+      <div class="modal-header">
+        <h3 id="reviewModalTitle">Submit Your Review</h3>
+        <button type="button" class="modal-close" id="closeReviewModal" aria-label="Close review form">&times;</button>
+      </div>
+      <form class="review-form" id="reviewForm" novalidate>
+        <div class="form-group">
+          <label for="reviewOrderId">Order ID <span class="optional">(for Verified badge)</span></label>
+          <input type="text" id="reviewOrderId" placeholder="e.g. S2B-2026-001234">
+          <small class="hint">Enter your order ID to get a Verified Purchase badge</small>
+        </div>
+        <div class="form-group">
+          <label for="reviewerName">Your Name *</label>
+          <input type="text" id="reviewerName" placeholder="e.g. Karma Dorji" required autocomplete="name">
+        </div>
+        <div class="form-group">
+          <label for="reviewerAddress">Address / Place *</label>
+          <input type="text" id="reviewerAddress" placeholder="e.g. Thimphu" required>
+        </div>
+        <div class="form-group">
+          <label>Your Rating *</label>
+          <div class="star-rating" id="starRating" role="radiogroup" aria-label="Star rating">
+            <button type="button" data-value="1" class="star" aria-label="1 star">★</button>
+            <button type="button" data-value="2" class="star" aria-label="2 stars">★</button>
+            <button type="button" data-value="3" class="star" aria-label="3 stars">★</button>
+            <button type="button" data-value="4" class="star" aria-label="4 stars">★</button>
+            <button type="button" data-value="5" class="star" aria-label="5 stars">★</button>
+          </div>
+          <input type="hidden" id="ratingValue" required>
+          <small class="rating-text" id="ratingText">Click a star to rate</small>
+        </div>
+        <div class="form-group">
+          <label for="reviewText">Your Review *</label>
+          <textarea id="reviewText" rows="4" placeholder="Tell us about your experience..." required></textarea>
+        </div>
+        <button type="submit" class="btn-submit">Submit Review</button>
+      </form>
+    </div>
+  </div>
+
+ <script type="module" src="assets/js/main.js"></script>
 </body>
 </html>

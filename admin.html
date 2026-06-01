@@ -1,42 +1,297 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Admin — BorderShop</title>
-  <link rel="stylesheet" href="css/style.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Shop2Bhutan — Admin</title>
+    <style>
+        :root{--sidebar:#1a1a2e;--accent:#e94560;--success:#25d366;--warning:#ff9f43;--info:#2980b9;}
+        *{margin:0;padding:0;box-sizing:border-box;font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif}
+        body{background:#f4f6f8;color:#1a1a2e;min-height:100vh}
+
+        /* Login */
+        .login-screen{position:fixed;inset:0;background:linear-gradient(135deg,#1a1a2e,#16213e);display:flex;align-items:center;justify-content:center;z-index:9999}
+        .login-box{background:#fff;padding:2.5rem;border-radius:16px;width:100%;max-width:380px;box-shadow:0 20px 60px rgba(0,0,0,.3)}
+        .login-box h2{margin-bottom:0.5rem;color:#1a1a2e}
+        .login-box p{color:#888;margin-bottom:1.5rem;font-size:0.9rem}
+        .login-box input{width:100%;padding:0.85rem 1rem;border:2px solid #e8e8e8;border-radius:10px;margin-bottom:1rem;font-size:1rem;outline:none}
+        .login-box input:focus{border-color:var(--accent)}
+        .login-box button{width:100%;padding:1rem;background:var(--accent);color:#fff;border:none;border-radius:10px;font-weight:700;cursor:pointer;font-size:1rem}
+        .login-box button:hover{opacity:.9}
+        .login-box button:disabled{opacity:.5;cursor:not-allowed}
+        .login-error{color:#e94560;font-size:0.85rem;margin-top:0.5rem;display:none}
+
+        /* Layout */
+        .admin-layout{display:none;grid-template-columns:260px 1fr;min-height:100vh}
+        aside{background:var(--sidebar);color:#fff;padding:1.5rem;position:sticky;top:0;height:100vh;overflow-y:auto;display:flex;flex-direction:column}
+        aside .logo{font-size:1.25rem;font-weight:700;margin-bottom:2rem;display:flex;align-items:center;gap:0.5rem}
+        aside nav{display:flex;flex-direction:column;gap:0.5rem}
+        aside nav a{color:#b8b8b8;text-decoration:none;padding:0.75rem 1rem;border-radius:8px;font-size:0.95rem;transition:all .2s;display:flex;align-items:center;gap:0.75rem}
+        aside nav a:hover,aside nav a.active{background:rgba(255,255,255,.1);color:#fff}
+        .admin-main{padding:2rem;overflow-x:auto}
+        .admin-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:1.5rem;flex-wrap:wrap;gap:1rem}
+        .admin-profile{display:flex;align-items:center;gap:0.75rem;font-size:0.9rem;color:#666}
+        .admin-profile .badge-role{background:var(--accent);color:#fff;padding:0.25rem 0.6rem;border-radius:20px;font-size:0.75rem;font-weight:700;text-transform:uppercase}
+
+        /* Stats */
+        .stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:1.25rem;margin-bottom:2rem}
+        .stat-card{background:#fff;padding:1.5rem;border-radius:12px;box-shadow:0 2px 8px rgba(0,0,0,.06)}
+        .stat-card h4{font-size:0.85rem;color:#888;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:0.5rem}
+        .stat-card .value{font-size:1.75rem;font-weight:700;color:#1a1a2e}
+        .stat-card.submitted{border-left:4px solid var(--accent)}
+        .stat-card.confirmed{border-left:4px solid var(--success)}
+        .stat-card.pending{border-left:4px solid var(--warning)}
+
+        /* Filters */
+        .filters{background:#fff;padding:1.25rem;border-radius:12px;margin-bottom:1.5rem;display:flex;gap:1rem;flex-wrap:wrap;align-items:end;box-shadow:0 2px 8px rgba(0,0,0,.06)}
+        .filters input,.filters select{padding:0.6rem 0.9rem;border:2px solid #e8e8e8;border-radius:8px;font-size:0.9rem;outline:none;min-width:160px}
+        .filters input:focus,.filters select:focus{border-color:var(--accent)}
+        .filters button{background:#1a1a2e;color:#fff;border:none;padding:0.6rem 1.25rem;border-radius:8px;font-weight:600;cursor:pointer}
+        .filters button:hover{background:var(--accent)}
+        .filters button:disabled{opacity:.5;cursor:not-allowed}
+
+        /* Table */
+        .table-wrap{background:#fff;border-radius:12px;box-shadow:0 2px 8px rgba(0,0,0,.06);overflow:hidden}
+        table{width:100%;border-collapse:collapse;font-size:0.9rem;min-width:900px}
+        thead{background:#f8f9fc}
+        th{padding:1rem;text-align:left;font-weight:600;color:#666;font-size:0.8rem;text-transform:uppercase;letter-spacing:0.5px;border-bottom:2px solid #e8e8e8;white-space:nowrap}
+        td{padding:1rem;border-bottom:1px solid #f0f0f0;vertical-align:top}
+        tr:hover{background:#fafafa}
+        .badge{display:inline-block;padding:4px 10px;border-radius:20px;font-size:0.75rem;font-weight:700;text-transform:uppercase}
+        .badge-submitted{background:#ffe0e5;color:#c0392b}
+        .badge-price_sent{background:#fff3cd;color:#856404}
+        .badge-confirmed{background:#d4edda;color:#155724}
+        .badge-purchased{background:#d1ecf1;color:#0c5460}
+        .badge-in_transit{background:#cce5ff;color:#004085}
+        .badge-delivered{background:#d4edda;color:#155724}
+        .badge-cancelled{background:#f8d7da;color:#721c24}
+        .product-name{font-weight:600;color:#1a1a2e;max-width:240px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+        .customer-info{line-height:1.5}
+        .customer-info small{display:block;color:#888;font-size:0.8rem}
+        .token{font-family:'Courier New',monospace;font-size:0.8rem;background:#f4f4f4;padding:2px 6px;border-radius:4px}
+        .actions{display:flex;gap:0.5rem}
+        .btn-icon{width:32px;height:32px;border:none;border-radius:6px;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;transition:all .2s}
+        .btn-edit{background:#e8f4fd;color:#2980b9}
+        .btn-edit:hover{background:#2980b9;color:#fff}
+        .btn-wa{background:#dcf8e6;color:#128c7e}
+        .btn-wa:hover{background:#25d366;color:#fff}
+        .btn-link{background:#f0f0f0;color:#666}
+        .btn-link:hover{background:#666;color:#fff}
+
+        /* Skeleton loaders */
+        .skeleton{background:linear-gradient(90deg,#f0f0f0 25%,#e0e0e0 50%,#f0f0f0 75%);background-size:200% 100%;animation:skeleton 1.5s infinite;border-radius:4px}
+        @keyframes skeleton{0%{background-position:200% 0}100%{background-position:-200% 0}}
+        .skeleton-text{height:12px;margin-bottom:8px}
+        .skeleton-title{height:20px;width:60%;margin-bottom:12px}
+        .skeleton-badge{height:24px;width:80px;display:inline-block}
+
+        /* Checkbox for bulk */
+        .select-all{cursor:pointer;width:18px;height:18px}
+
+        /* Pagination */
+        .pagination{display:flex;justify-content:space-between;align-items:center;margin-top:1.5rem;padding:0 0.5rem}
+        .page-info{font-size:0.9rem;color:#666}
+        .page-buttons{display:flex;gap:0.5rem}
+        .page-btn{padding:0.5rem 1rem;border:1px solid #e8e8e8;background:#fff;border-radius:6px;cursor:pointer;font-weight:600}
+        .page-btn:hover{background:#f8f9fc}
+        .page-btn:disabled{opacity:.5;cursor:not-allowed}
+        .page-btn.active{background:var(--accent);color:#fff;border-color:var(--accent)}
+
+        /* Toast */
+        .toast{position:fixed;top:1.5rem;right:1.5rem;background:#1a1a2e;color:#fff;padding:1rem 1.5rem;border-radius:10px;box-shadow:0 10px 30px rgba(0,0,0,.2);transform:translateX(150%);transition:transform .3s;z-index:3000;font-weight:500}
+        .toast.show{transform:translateX(0)}
+        .toast-success{background:var(--success)}
+        .toast-error{background:#c0392b}
+
+        /* Order Detail Modal */
+        .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);backdrop-filter:blur(4px);z-index:2000;display:none;align-items:center;justify-content:center;padding:1rem}
+        .modal-overlay.active{display:flex}
+        .modal-panel{background:#fff;border-radius:16px;width:100%;max-width:640px;max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.3)}
+        .modal-header{padding:1.5rem;border-bottom:1px solid #f0f0f0;display:flex;justify-content:space-between;align-items:center}
+        .modal-header h3{margin:0;font-size:1.25rem}
+        .modal-body{padding:1.5rem}
+        .detail-grid{display:grid;grid-template-columns:1fr 1fr;gap:1.25rem;margin-bottom:1.5rem}
+        .detail-group{display:flex;flex-direction:column;gap:0.35rem}
+        .detail-group label{font-size:0.8rem;color:#888;text-transform:uppercase;letter-spacing:0.5px;font-weight:600}
+        .detail-group span{font-size:0.95rem;color:#1a1a2e;font-weight:500}
+        .detail-group a{color:var(--accent);text-decoration:none;word-break:break-all}
+        .detail-group a:hover{text-decoration:underline}
+        .admin-form{display:grid;gap:1rem;margin-top:1rem;padding-top:1.5rem;border-top:2px solid #f0f0f0}
+        .admin-form label{font-weight:600;font-size:0.85rem}
+        .admin-form input,.admin-form select,.admin-form textarea{width:100%;padding:0.75rem;border:2px solid #e8e8e8;border-radius:8px;font-family:inherit;font-size:0.9rem;outline:none}
+        .admin-form input:focus,.admin-form select:focus,.admin-form textarea:focus{border-color:var(--accent)}
+        .admin-form textarea{resize:vertical;min-height:80px}
+        .form-row{display:grid;grid-template-columns:1fr 1fr;gap:1rem}
+        .modal-footer{padding:1rem 1.5rem 1.5rem;display:flex;gap:0.75rem;justify-content:flex-end}
+        .btn-primary{background:var(--accent);color:#fff;border:none;padding:0.75rem 1.5rem;border-radius:8px;font-weight:700;cursor:pointer}
+        .btn-secondary{background:#f0f0f0;color:#1a1a2e;border:none;padding:0.75rem 1.5rem;border-radius:8px;font-weight:600;cursor:pointer}
+        .btn-danger{background:#c0392b;color:#fff;border:none;padding:0.75rem 1.5rem;border-radius:8px;font-weight:600;cursor:pointer}
+        .btn-primary:hover,.btn-danger:hover{opacity:.9}
+        .btn-secondary:hover{background:#e0e0e0}
+
+        /* Confirmation modal */
+        .confirm-modal .modal-panel{max-width:420px;text-align:center}
+        .confirm-modal .modal-body{padding:2rem}
+        .confirm-modal h4{margin-bottom:0.5rem;font-size:1.1rem}
+        .confirm-modal p{color:#666;margin-bottom:1.5rem;font-size:0.95rem}
+
+        @media(max-width:768px){
+            .admin-layout{grid-template-columns:1fr}
+            aside{height:auto;position:relative}
+            .detail-grid{grid-template-columns:1fr}
+            .form-row{grid-template-columns:1fr}
+            .filters{flex-direction:column;align-items:stretch}
+        }
+    </style>
 </head>
-<body class="admin-body">
-  <header class="admin-header">
-    <h1>🇧🇹 BorderShop</h1>
-    <p id="nextTrip">Next trip: loading...</p>
-  </header>
+<body>
 
-  <div class="admin-stats" id="adminStats">
-    <div class="stat-card">
-      <span class="stat-number" id="statNew">0</span>
-      <span class="stat-label">New</span>
+<!-- LOGIN -->
+<div class="login-screen" id="loginScreen">
+    <div class="login-box">
+        <h2>Admin Login</h2>
+        <p>Sign in with your admin credentials</p>
+        <input type="email" id="adminEmail" placeholder="Admin email" onkeydown="if(event.key==='Enter')doLogin()">
+        <input type="password" id="adminPassword" placeholder="Password" onkeydown="if(event.key==='Enter')doLogin()">
+        <button onclick="doLogin()" id="loginBtn">Sign In</button>
+        <div class="login-error" id="loginError"></div>
     </div>
-    <div class="stat-card">
-      <span class="stat-number" id="statThisWeek">0</span>
-      <span class="stat-label">This Week</span>
+</div>
+
+<!-- ADMIN DASHBOARD -->
+<div class="admin-layout" id="adminLayout">
+    <aside>
+        <div class="logo">📦 Shop2Bhutan</div>
+        <nav>
+            <a href="#" class="active" onclick="showSection('orders');return false">📋 Orders</a>
+            <a href="#" onclick="alert('Coming soon');return false">📊 Analytics</a>
+            <a href="#" onclick="alert('Coming soon');return false">⚙️ Settings</a>
+            <a href="index.html">🏠 Back to Site</a>
+            <a href="#" onclick="logout();return false" style="margin-top:auto;color:#e94560">🚪 Logout</a>
+        </nav>
+    </aside>
+
+    <main class="admin-main">
+        <div class="admin-header">
+            <h1>Orders Dashboard</h1>
+            <div class="admin-profile">
+                <span id="adminName">Admin</span>
+                <span class="badge-role" id="adminRole">ADMIN</span>
+            </div>
+        </div>
+
+        <!-- Stats -->
+        <div class="stats-grid" id="statsGrid">
+            <div class="stat-card submitted"><h4>New Orders</h4><div class="value" id="statSubmitted"><div class="skeleton skeleton-title"></div></div></div>
+            <div class="stat-card confirmed"><h4>Confirmed</h4><div class="value" id="statConfirmed"><div class="skeleton skeleton-title"></div></div></div>
+            <div class="stat-card pending"><h4>This Week</h4><div class="value" id="statWeek"><div class="skeleton skeleton-title"></div></div></div>
+            <div class="stat-card"><h4>Total Revenue</h4><div class="value" id="statRevenue"><div class="skeleton skeleton-title"></div></div></div>
+        </div>
+
+        <!-- Filters -->
+        <div class="filters">
+            <div>
+                <label style="display:block;font-size:0.8rem;color:#888;margin-bottom:0.35rem">Search</label>
+                <input type="text" id="filterSearch" placeholder="Name, phone, order ID…">
+            </div>
+            <div>
+                <label style="display:block;font-size:0.8rem;color:#888;margin-bottom:0.35rem">Status</label>
+                <select id="filterStatus">
+                    <option value="">All Status</option>
+                    <option value="submitted">Submitted</option>
+                    <option value="price_sent">Price Sent</option>
+                    <option value="confirmed">Confirmed</option>
+                    <option value="purchased">Purchased</option>
+                    <option value="in_transit">In Transit</option>
+                    <option value="delivered">Delivered</option>
+                    <option value="cancelled">Cancelled</option>
+                </select>
+            </div>
+            <div>
+                <label style="display:block;font-size:0.8rem;color:#888;margin-bottom:0.35rem">Dzongkhag</label>
+                <select id="filterDzongkhag"><option value="">All</option></select>
+            </div>
+            <div>
+                <label style="display:block;font-size:0.8rem;color:#888;margin-bottom:0.35rem">Trip Date</label>
+                <input type="date" id="filterDate">
+            </div>
+            <div style="margin-left:auto;display:flex;gap:0.5rem">
+                <button onclick="exportCSV()" id="exportBtn">⬇️ Export CSV</button>
+            </div>
+        </div>
+
+        <!-- Bulk Actions Bar -->
+        <div id="bulkBar" style="display:none;background:#1a1a2e;color:#fff;padding:0.75rem 1rem;border-radius:8px;margin-bottom:1rem;align-items:center;justify-content:space-between;">
+            <span id="bulkCount">0 selected</span>
+            <div style="display:flex;gap:0.5rem">
+                <button onclick="bulkUpdateStatus('confirmed')" style="background:#25d366;color:#fff;border:none;padding:0.4rem 0.8rem;border-radius:6px;cursor:pointer;font-weight:600;font-size:0.85rem">Mark Confirmed</button>
+                <button onclick="bulkUpdateStatus('purchased')" style="background:#2980b9;color:#fff;border:none;padding:0.4rem 0.8rem;border-radius:6px;cursor:pointer;font-weight:600;font-size:0.85rem">Mark Purchased</button>
+                <button onclick="clearSelection()" style="background:rgba(255,255,255,.15);color:#fff;border:none;padding:0.4rem 0.8rem;border-radius:6px;cursor:pointer;font-weight:600;font-size:0.85rem">Clear</button>
+            </div>
+        </div>
+
+        <!-- Table -->
+        <div class="table-wrap">
+            <table>
+                <thead>
+                    <tr>
+                        <th><input type="checkbox" class="select-all" id="selectAll" onchange="toggleSelectAll()"></th>
+                        <th>Order ID</th>
+                        <th>Product</th>
+                        <th>Customer</th>
+                        <th>Trip</th>
+                        <th>Status</th>
+                        <th>Price</th>
+                        <th>Payment</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="ordersTableBody">
+                    <tr><td colspan="9" style="text-align:center;padding:2rem;color:#888">Loading orders…</td></tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Pagination -->
+        <div class="pagination" id="pagination">
+            <div class="page-info" id="pageInfo">Loading…</div>
+            <div class="page-buttons" id="pageButtons"></div>
+        </div>
+    </main>
+</div>
+
+<!-- ORDER DETAIL MODAL -->
+<div class="modal-overlay" id="orderModal">
+    <div class="modal-panel">
+        <div class="modal-header">
+            <h3>Order Details</h3>
+            <button onclick="closeOrderModal()" style="background:none;border:none;font-size:1.5rem;cursor:pointer;color:#888">&times;</button>
+        </div>
+        <div class="modal-body" id="modalBody"></div>
+        <div class="modal-footer">
+            <button class="btn-secondary" onclick="closeOrderModal()">Close</button>
+            <button class="btn-primary" onclick="confirmSaveOrder()">Save Changes</button>
+        </div>
     </div>
-    <div class="stat-card">
-      <span class="stat-number" id="statRevenue">0</span>
-      <span class="stat-label">Est. Revenue</span>
+</div>
+
+<!-- CONFIRMATION MODAL -->
+<div class="modal-overlay confirm-modal" id="confirmModal">
+    <div class="modal-panel">
+        <div class="modal-body">
+            <h4 id="confirmTitle">Are you sure?</h4>
+            <p id="confirmMessage">This action cannot be undone.</p>
+            <div style="display:flex;gap:0.75rem;justify-content:center">
+                <button class="btn-secondary" onclick="closeConfirmModal()">Cancel</button>
+                <button class="btn-danger" id="confirmActionBtn" onclick="">Confirm</button>
+            </div>
+        </div>
     </div>
-  </div>
+</div>
 
-  <nav class="admin-tabs">
-    <button class="active" data-tab="new">📝 New Orders</button>
-    <button data-tab="week">📅 This Week</button>
-    <button data-tab="all">📋 All Orders</button>
-  </nav>
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
 
-  <main class="admin-content" id="adminContent">
-    <!-- Filled by JS -->
-  </main>
-
-  <script type="module" src="js/admin.js"></script>
+<script type="module" src="assets/js/admin.js"></script>
 </body>
 </html>
