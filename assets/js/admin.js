@@ -348,15 +348,22 @@ window.renderReviews = function() {
 
 window.verifyReview = async function(id) {
     const { data: { session } } = await supabase.auth.getSession();
-    const moderator = session?.user?.email || 'admin';
+    const moderatorId = session?.user?.id || null;
 
-    const { error } = await supabase
+    const { data, error } = await supabase
         .from('reviews')
-        .update({ status: 'verified', moderated_by: moderator })
-        .eq('id', id);
+        .update({ status: 'verified', moderated_by: moderatorId })
+        .eq('id', id)
+        .select();
 
     if (error) {
         toast('Error verifying review: ' + error.message, 'error');
+        return;
+    }
+
+    if (!data || data.length === 0) {
+        toast('Update blocked — check Supabase RLS policies on the reviews table. The UPDATE policy may be missing or too restrictive.', 'error');
+        console.error('RLS silent failure: verifyReview got 0 rows back. Review ID:', id, '— Make sure your RLS policy allows authenticated users to update the reviews table.');
         return;
     }
 
@@ -366,15 +373,22 @@ window.verifyReview = async function(id) {
 
 window.rejectReview = async function(id) {
     const { data: { session } } = await supabase.auth.getSession();
-    const moderator = session?.user?.email || 'admin';
+    const moderatorId = session?.user?.id || null;
 
-    const { error } = await supabase
+    const { data, error } = await supabase
         .from('reviews')
-        .update({ status: 'rejected', moderated_by: moderator })
-        .eq('id', id);
+        .update({ status: 'rejected', moderated_by: moderatorId })
+        .eq('id', id)
+        .select();
 
     if (error) {
         toast('Error rejecting review: ' + error.message, 'error');
+        return;
+    }
+
+    if (!data || data.length === 0) {
+        toast('Update blocked — check Supabase RLS policies on the reviews table.', 'error');
+        console.error('RLS silent failure: rejectReview got 0 rows back. Review ID:', id);
         return;
     }
 
@@ -394,9 +408,14 @@ window.confirmDeleteReview = function(id) {
 };
 
 window.deleteReview = async function(id) {
-    const { error } = await supabase.from('reviews').delete().eq('id', id);
+    const { data, error } = await supabase.from('reviews').delete().eq('id', id).select();
     if (error) {
         toast('Error deleting review: ' + error.message, 'error');
+        return;
+    }
+    if (!data || data.length === 0) {
+        toast('Delete blocked — check Supabase RLS policies on the reviews table.', 'error');
+        console.error('RLS silent failure: deleteReview got 0 rows back. Review ID:', id);
         return;
     }
     toast('Review deleted', 'success');
@@ -446,7 +465,7 @@ window.openReviewDetail = function(id) {
             </div>
             <div class="detail-group">
                 <label>Moderated By</label>
-                <span>${review.moderated_by || 'Not yet moderated'}</span>
+                <span>${review.moderated_by ? 'Admin' : 'Not yet moderated'}</span>
             </div>
         </div>
 

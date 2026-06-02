@@ -950,6 +950,7 @@ async function loadReviews() {
     const location = c.dzongkhag || 'Bhutan';
     const stars = '★'.repeat(r.rating || 0) + '<span class="star-empty">★</span>'.repeat(5 - (r.rating || 0));
     const initials = name.split(' ').map(w => w[0]).join('').slice(0,2).toUpperCase();
+    const verifiedBadge = r.order_id ? ' <span class="verified-badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></svg>Verified</span>' : '';
     return `
       <article class="review-card">
         <div class="review-stars" aria-label="${r.rating} out of 5 stars">${stars}</div>
@@ -957,7 +958,7 @@ async function loadReviews() {
         <div class="reviewer">
           <div class="reviewer-avatar" aria-hidden="true">${escapeHtml(initials)}</div>
           <div class="reviewer-info">
-            <h4>${escapeHtml(name)} <span class="verified-badge">Verified</span></h4>
+            <h4>${escapeHtml(name)}${verifiedBadge}</h4>
             <span>${escapeHtml(location)}</span>
           </div>
         </div>
@@ -1009,6 +1010,17 @@ function initReviewCarousel() {
     if (wrapper.scrollLeft <= 10) scrollDir = 1;
     wrapper.scrollBy({ left: wrapper.clientWidth * 0.5 * scrollDir, behavior: 'smooth' });
   }, 5000);
+}
+
+/* ============ REALTIME REVIEWS ============ */
+function setupReviewsRealtime() {
+  if (!supabase) return;
+  supabase
+    .channel('public-reviews')
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'reviews' }, () => {
+      loadReviews();
+    })
+    .subscribe();
 }
 
 async function submitReview(e) {
@@ -1209,7 +1221,10 @@ document.addEventListener('DOMContentLoaded', () => {
   initPhoneHint();
   initCustomerAutoFill(); // NOW DEFINED ABOVE, so it works correctly
 
-  supabaseReady.then(() => loadReviews());
+  supabaseReady.then(() => {
+    loadReviews();
+    setupReviewsRealtime();
+  });
 
   const searchInput = document.getElementById('searchInput');
   const searchBtn = document.getElementById('searchBtn');
