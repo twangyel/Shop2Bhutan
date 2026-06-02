@@ -437,25 +437,24 @@ window.renderOrders = function() {
 
     tbody.innerHTML = filtered.map(o => {
         const c = o.customer || {};
-        const items = o.items || [];
-        const firstItem = items[0] || {};
-        const itemCount = items.length;
-        const displayName = itemCount > 1 
-            ? `${firstItem.product_name || 'N/A'} +${itemCount - 1} more`
-            : (firstItem.product_name || 'N/A');
-
-        const paid = (o.payments || []).filter(p => p.status === 'completed').reduce((s, p) => s + (parseFloat(p.amount) || 0), 0);
+        const payments = o.payments || [];
+        const paid = payments.filter(p => p.status === 'completed').reduce((s, p) => s + (parseFloat(p.amount) || 0), 0);
         const paymentBadge = o.payment_method === '50_50' 
             ? (paid > 0 ? '<span class="badge badge-50_50">50/50 (Deposited)</span>' : '<span class="badge badge-50_50">50/50</span>')
             : 'Full';
+
+        // Format submitted date
+        const submittedDate = o.created_at ? new Date(o.created_at) : null;
+        const dateStr = submittedDate ? submittedDate.toLocaleDateString() : '-';
+        const timeStr = submittedDate ? submittedDate.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : '';
 
         return `
         <tr>
             <td><input type="checkbox" class="row-select" value="${o.id}" onchange="updateBulkBar()"></td>
             <td><span class="token">${o.id.slice(0, 8).toUpperCase()}</span></td>
             <td>
-                <div class="product-name" title="${firstItem.product_name || ''}">${displayName}</div>
-                <small style="color:#888">${firstItem.platform || ''}${itemCount > 1 ? ` · ${itemCount} items` : ''}</small>
+                <div style="font-size:0.9rem;color:#1a1a2e;font-weight:500;">${dateStr}</div>
+                <small style="color:#888">${timeStr}</small>
             </td>
             <td>
                 <div class="customer-info">
@@ -472,13 +471,11 @@ window.renderOrders = function() {
                 <div class="actions">
                     <button class="btn-icon btn-edit" onclick="openOrderDetail('${o.id}')" title="Edit"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>
                     <a class="btn-icon btn-wa" href="https://wa.me/975${c.phone}?text=Hi%20${encodeURIComponent(c.name || '')},%20regarding%20your%20order%20${encodeURIComponent(o.id.slice(0,8).toUpperCase())}" target="_blank" title="WhatsApp"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg></a>
-                    ${firstItem.product_link ? `<a class="btn-icon btn-link" href="${firstItem.product_link}" target="_blank" title="Open Link"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg></a>` : ''}
                 </div>
             </td>
         </tr>
     `}).join('');
 };
-
 // ===== MODAL =====
 window.openOrderDetail = function(id) {
     const order = allOrders.find(o => o.id === id);
