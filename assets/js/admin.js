@@ -76,6 +76,114 @@ let currentReviewId = null;
 let currentSection = 'orders';
 window.__currentSection = currentSection;   // expose to global scope
 
+// ===== NOTIFICATION STATE =====
+let unreadNotifications = [];
+let notificationSoundEnabled = true;
+
+function playChime() {
+    if (!notificationSoundEnabled) return;
+    try {
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        const ctx = new AudioContext();
+        const now = ctx.currentTime;
+
+        const osc1 = ctx.createOscillator();
+        const gain1 = ctx.createGain();
+        osc1.type = 'sine';
+        osc1.frequency.setValueAtTime(523.25, now);
+        osc1.frequency.exponentialRampToValueAtTime(659.25, now + 0.1);
+        gain1.gain.setValueAtTime(0.15, now);
+        gain1.gain.exponentialRampToValueAtTime(0.001, now + 0.6);
+        osc1.connect(gain1);
+        gain1.connect(ctx.destination);
+        osc1.start(now);
+        osc1.stop(now + 0.6);
+
+        const osc2 = ctx.createOscillator();
+        const gain2 = ctx.createGain();
+        osc2.type = 'sine';
+        osc2.frequency.setValueAtTime(659.25, now + 0.08);
+        osc2.frequency.exponentialRampToValueAtTime(783.99, now + 0.18);
+        gain2.gain.setValueAtTime(0.12, now + 0.08);
+        gain2.gain.exponentialRampToValueAtTime(0.001, now + 0.7);
+        osc2.connect(gain2);
+        gain2.connect(ctx.destination);
+        osc2.start(now + 0.08);
+        osc2.stop(now + 0.7);
+    } catch (e) {
+        console.warn('Audio chime failed:', e);
+    }
+}
+
+function addNotification(title, message, type = 'info', linkAction = null) {
+    const notif = {
+        id: Date.now() + Math.random(),
+        title,
+        message,
+        type,
+        time: new Date(),
+        seen: false,
+        linkAction
+    };
+    unreadNotifications.unshift(notif);
+    updateNotificationBadge();
+    renderNotifications();
+    return notif;
+}
+
+function updateNotificationBadge() {
+    const badge = document.getElementById('notifBadge');
+    const unseen = unreadNotifications.filter(n => !n.seen).length;
+    if (badge) {
+        if (unseen > 0) {
+            badge.textContent = unseen > 99 ? '99+' : unseen;
+            badge.style.display = 'flex';
+        } else {
+            badge.style.display = 'none';
+        }
+    }
+}
+
+function renderNotifications() {
+    const list = document.getElementById('notifList');
+    if (!list) return;
+
+    if (unreadNotifications.length === 0) {
+        list.innerHTML = '<div class="notif-empty">No new notifications</div>';
+        return;
+    }
+
+    list.innerHTML = unreadNotifications.map(n => {
+        const timeStr = n.time.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        const dotColor = n.type === 'review' ? '#e94560' : (n.type === 'order' ? '#2980b9' : '#888');
+        return `
+        <div class="notif-item" onclick="handleNotificationClick('${n.id}')" style="${n.seen ? 'opacity:0.7;' : ''}">
+            <div style="display:flex;align-items:center;gap:0.5rem;margin-bottom:0.15rem">
+                <span class="notif-dot" style="width:8px;height:8px;background:${dotColor};border-radius:50%;display:inline-block;flex-shrink:0;${n.seen ? 'opacity:0.4;' : ''}"></span>
+                <div class="notif-title">${escapeHtml(n.title)}</div>
+            </div>
+            <div class="notif-time">${escapeHtml(n.message)} · ${timeStr}</div>
+        </div>
+        `;
+    }).join('');
+}
+
+window.handleNotificationClick = function(id) {
+    const notif = unreadNotifications.find(n => String(n.id) === String(id));
+    if (notif) {
+        notif.seen = true;
+        updateNotificationBadge();
+        renderNotifications();
+        if (notif.linkAction) notif.linkAction();
+    }
+};
+
+window.clearNotifications = function() {
+    unreadNotifications = [];
+    updateNotificationBadge();
+    renderNotifications();
+};
+
 window.onSectionChange = function(section) {
     currentSection = section;
     window.__currentSection = section;
@@ -377,12 +485,37 @@ window.openReviewDetail = function(id) {
 function setupRealtime() {
     supabase
         .channel('orders-channel')
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, () => fetchOrders())
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, (payload) => {
+            fetchOrders();
+            if (payload.eventType === 'INSERT') {
+                playChime();
+                addNotification(
+                    'New Order Received',
+                    `Order ${payload.new.id?.slice(0, 8).toUpperCase() || ''}`,
+                    'order',
+                    () => { showSection('orders'); }
+                );
+                toast('New order received!', 'info');
+            }
+        })
         .on('postgres_changes', { event: '*', schema: 'public', table: 'order_items' }, () => fetchOrders())
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'reviews' }, () => fetchReviews())
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'reviews' }, (payload) => {
+            fetchReviews();
+            if (payload.eventType === 'INSERT') {
+                playChime();
+                const review = payload.new;
+                const stars = '★'.repeat(review.rating || 0);
+                addNotification(
+                    'New Review Submitted',
+                    `${stars} ${review.comment ? review.comment.slice(0, 40) + (review.comment.length > 40 ? '…' : '') : 'No comment'}`,
+                    'review',
+                    () => { showSection('reviews'); }
+                );
+                toast('New review received!', 'info');
+            }
+        })
         .subscribe();
 }
-
 function updateStats() {
     const submitted = allOrders.filter(o => o.status === 'submitted').length;
     const confirmed = allOrders.filter(o => ['confirmed','purchased'].includes(o.status)).length;
