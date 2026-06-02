@@ -915,33 +915,41 @@ async function submitOrder(e) {
 /* ============ REVIEWS ============ */
 async function loadReviews() {
   const track = document.getElementById('reviewsTrack');
+  const emptyState = document.getElementById('reviewsEmptyState');
   if (!track) return;
 
   if (!supabase) {
-    // Supabase unavailable — restore hardcoded fallback
-    if (fallbackReviewsHTML) track.innerHTML = fallbackReviewsHTML;
-    initReviewCarousel();
+    // Supabase unavailable — show empty state
+    track.innerHTML = '';
+    if (emptyState) emptyState.hidden = false;
     return;
   }
 
   const { data, error } = await supabase
     .from('reviews')
-    .select('*')
+    .select('*, customer:customers(name, dzongkhag)')
+    .eq('status', 'verified')
     .order('created_at', { ascending: false })
     .limit(20);
 
   if (error || !data || !data.length) {
     if (error) console.warn('Failed to load reviews:', error.message);
-    // No DB reviews — restore hardcoded fallback
-    if (fallbackReviewsHTML) track.innerHTML = fallbackReviewsHTML;
+    // No verified reviews — show empty state
+    track.innerHTML = '';
+    if (emptyState) emptyState.hidden = false;
     initReviewCarousel();
     return;
   }
 
+  // Hide empty state since we have reviews
+  if (emptyState) emptyState.hidden = true;
+
   track.innerHTML = data.map(r => {
+    const c = r.customer || {};
+    const name = c.name || 'Anonymous';
+    const location = c.dzongkhag || 'Bhutan';
     const stars = '★'.repeat(r.rating || 0) + '<span class="star-empty">★</span>'.repeat(5 - (r.rating || 0));
-    const verified = r.verified ? '<span class="verified-badge">Verified</span>' : '';
-    const initials = r.name ? r.name.split(' ').map(w => w[0]).join('').slice(0,2).toUpperCase() : '??';
+    const initials = name.split(' ').map(w => w[0]).join('').slice(0,2).toUpperCase();
     return `
       <article class="review-card">
         <div class="review-stars" aria-label="${r.rating} out of 5 stars">${stars}</div>
@@ -949,8 +957,8 @@ async function loadReviews() {
         <div class="reviewer">
           <div class="reviewer-avatar" aria-hidden="true">${escapeHtml(initials)}</div>
           <div class="reviewer-info">
-            <h4>${escapeHtml(r.name || 'Anonymous')} ${verified}</h4>
-            <span>${escapeHtml(r.address || 'Bhutan')}</span>
+            <h4>${escapeHtml(name)} <span class="verified-badge">Verified</span></h4>
+            <span>${escapeHtml(location)}</span>
           </div>
         </div>
       </article>
@@ -965,9 +973,6 @@ function initReviewCarousel() {
   const dots = document.getElementById('reviewsDots');
   const wrapper = document.getElementById('reviewsWrapper');
   if (!track || !wrapper) return;
-
-  // Reveal track now that content is ready
-  track.style.visibility = 'visible';
 
   const cards = track.querySelectorAll('.review-card');
   if (!cards.length) return;
@@ -1197,20 +1202,12 @@ function closeReviewModalFn() {
 }
 
 /* ============ INIT ============ */
-let fallbackReviewsHTML = '';
 
 document.addEventListener('DOMContentLoaded', () => {
   loadCart();
   initStarRating();
   initPhoneHint();
   initCustomerAutoFill(); // NOW DEFINED ABOVE, so it works correctly
-
-  // Save hardcoded reviews as fallback, then clear so they don't flash on reload
-  const track = document.getElementById('reviewsTrack');
-  if (track) {
-    fallbackReviewsHTML = track.innerHTML;
-    track.innerHTML = '';
-  }
 
   supabaseReady.then(() => loadReviews());
 

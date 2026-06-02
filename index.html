@@ -222,91 +222,20 @@
   /* --- Field-level validation errors --- */
   .input-error { border-color: #e94560 !important; box-shadow: 0 0 0 2px rgba(233,69,96,0.15) !important; }
 
-  /* --- Enhanced Toast Notification --- */
-  .toast-enhanced {
-    position: fixed;
-    top: 24px;
-    right: 24px;
-    max-width: 380px;
-    min-width: 280px;
-    border-radius: 14px;
-    overflow: hidden;
-    box-shadow: 0 12px 40px rgba(0,0,0,0.18);
-    display: flex;
-    align-items: stretch;
-    z-index: 10000;
-    transform: translateX(calc(100% + 2rem));
-    opacity: 0;
-    transition: transform 0.4s cubic-bezier(.22,.68,0,1.1), opacity 0.3s;
-    pointer-events: none;
+  /* --- Reviews empty state --- */
+  .reviews-empty-state {
+    text-align: center;
+    padding: 3rem 1.5rem;
+    color: #999;
   }
-  .toast-enhanced.show {
-    transform: translateX(0);
-    opacity: 1;
-    pointer-events: auto;
+  .reviews-empty-state svg {
+    margin-bottom: 1rem;
+    opacity: 0.5;
   }
-  .toast-enhanced .te-icon {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 0 14px;
-    flex-shrink: 0;
-  }
-  .toast-enhanced .te-icon svg {
-    width: 22px;
-    height: 22px;
-    stroke: currentColor;
-    fill: none;
-    stroke-width: 2;
-    stroke-linecap: round;
-    stroke-linejoin: round;
-  }
-  .toast-enhanced .te-body {
-    padding: 14px 16px 14px 0;
-    flex: 1;
-    color: #fff;
-  }
-  .toast-enhanced .te-title {
-    font-size: 0.72rem;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.4px;
-    opacity: 0.85;
-    margin-bottom: 2px;
-  }
-  .toast-enhanced .te-msg {
-    font-size: 0.92rem;
-    font-weight: 500;
-    line-height: 1.35;
-  }
-  .toast-enhanced .te-close {
-    background: none;
-    border: none;
-    color: rgba(255,255,255,0.55);
-    cursor: pointer;
-    padding: 8px 12px;
-    font-size: 1.2rem;
-    align-self: flex-start;
-    line-height: 1;
-    transition: color 0.2s;
-  }
-  .toast-enhanced .te-close:hover { color: #fff; }
-  .toast-enhanced .te-progress {
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    height: 3px;
-    background: rgba(255,255,255,0.35);
-    border-radius: 0 0 14px 14px;
-    animation: teProgress 3.5s linear forwards;
-  }
-  @keyframes teProgress { from { width: 100%; } to { width: 0; } }
-  .toast-enhanced.te-success { background: linear-gradient(135deg, #1db954, #25d366); color: #fff; }
-  .toast-enhanced.te-error   { background: linear-gradient(135deg, #c0392b, #e74c3c); color: #fff; }
-  .toast-enhanced.te-info    { background: linear-gradient(135deg, #2471a3, #3498db); color: #fff; }
-  .toast-enhanced.te-warning { background: linear-gradient(135deg, #d4830a, #f39c12); color: #fff; }
-  @media (max-width: 480px) {
-    .toast-enhanced { right: 12px; left: 12px; max-width: none; min-width: 0; top: 12px; }
+  .reviews-empty-state p {
+    font-size: 1rem;
+    color: #888;
+    margin: 0;
   }
 </style>
 </head>
@@ -428,73 +357,14 @@
         </button>
       </div>
       <div class="reviews-track-wrapper" id="reviewsWrapper">
-        <div class="reviews-track" id="reviewsTrack" style="visibility:hidden">
-          <article class="review-card">
-            <div class="review-stars" aria-label="5 out of 5 stars">★★★★★</div>
-            <p class="review-text">"I ordered a Samsung phone from Amazon and it arrived in Thimphu within 10 days. Shop2Bhutan made the whole process so easy!"</p>
-            <div class="reviewer">
-              <div class="reviewer-avatar" aria-hidden="true">KD</div>
-              <div class="reviewer-info">
-                <h4>Karma Dorji <span class="verified-badge">Verified</span></h4>
-                <span>Thimphu</span>
-              </div>
-            </div>
-          </article>
-          <article class="review-card">
-            <div class="review-stars" aria-label="5 out of 5 stars">★★★★★</div>
-            <p class="review-text">"Best service for getting Indian products to Bhutan. Just paste the link and they handle everything. Highly recommend!"</p>
-            <div class="reviewer">
-              <div class="reviewer-avatar" aria-hidden="true">PT</div>
-              <div class="reviewer-info">
-                <h4>Pema Tshering <span class="verified-badge">Verified</span></h4>
-                <span>Paro</span>
-              </div>
-            </div>
-          </article>
-          <article class="review-card">
-            <div class="review-stars" aria-label="4 out of 5 stars">★★★★<span class="star-empty">★</span></div>
-            <p class="review-text">"Great prices and reliable delivery. I use them every month for kitchen appliances and clothes from Flipkart."</p>
-            <div class="reviewer">
-              <div class="reviewer-avatar" aria-hidden="true">SR</div>
-              <div class="reviewer-info">
-                <h4>Sonam Rigzin</h4>
-                <span>Phuentsholing</span>
-              </div>
-            </div>
-          </article>
-          <article class="review-card">
-            <div class="review-stars" aria-label="5 out of 5 stars">★★★★★</div>
-            <p class="review-text">"The WhatsApp support is amazing. They reply instantly and keep me updated on my order status. 5 stars!"</p>
-            <div class="reviewer">
-              <div class="reviewer-avatar" aria-hidden="true">DC</div>
-              <div class="reviewer-info">
-                <h4>Dechen Choden <span class="verified-badge">Verified</span></h4>
-                <span>Wangdue</span>
-              </div>
-            </div>
-          </article>
-          <article class="review-card">
-            <div class="review-stars" aria-label="5 out of 5 stars">★★★★★</div>
-            <p class="review-text">"Ordered baby products and cosmetics. Everything was packed perfectly and delivered safely. Will shop again!"</p>
-            <div class="reviewer">
-              <div class="reviewer-avatar" aria-hidden="true">NT</div>
-              <div class="reviewer-info">
-                <h4>Norbu Tashi <span class="verified-badge">Verified</span></h4>
-                <span>Punakha</span>
-              </div>
-            </div>
-          </article>
-          <article class="review-card">
-            <div class="review-stars" aria-label="4 out of 5 stars">★★★★<span class="star-empty">★</span></div>
-            <p class="review-text">"Super convenient for gadgets and electronics. The search-paste-order system is brilliant. Saved me so much time."</p>
-            <div class="reviewer">
-              <div class="reviewer-avatar" aria-hidden="true">TU</div>
-              <div class="reviewer-info">
-                <h4>Tashi Ugyen</h4>
-                <span>Gelephu</span>
-              </div>
-            </div>
-          </article>
+        <div class="reviews-track" id="reviewsTrack">
+          <!-- Reviews are loaded dynamically from verified reviews only -->
+        </div>
+        <div class="reviews-empty-state" id="reviewsEmptyState" hidden>
+          <svg width="48" height="48" fill="none" stroke="#ccc" stroke-width="1.5" viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/>
+          </svg>
+          <p>No reviews yet. Be the first to share your experience!</p>
         </div>
       </div>
       <div class="reviews-dots" id="reviewsDots" role="tablist" aria-label="Review pages"></div>
@@ -537,51 +407,8 @@
     </div>
   </footer>
 
-  <!-- Enhanced Toast -->
-  <div id="s2bToast" class="toast-enhanced" role="status" aria-live="polite" aria-atomic="true"></div>
-
-  <script>
-  /* Global enhanced toast helper — available to main.js via window.showToast */
-  (function() {
-    let _timer = null;
-    const icons = {
-      success: '<svg viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>',
-      error:   '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>',
-      info:    '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>',
-      warning: '<svg viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>'
-    };
-    const titles = { success: 'Success', error: 'Error', info: 'Info', warning: 'Warning' };
-
-    function dismiss() {
-      var el = document.getElementById('s2bToast');
-      if (el) el.classList.remove('show');
-      if (_timer) { clearTimeout(_timer); _timer = null; }
-    }
-
-    window.showToast = function(msg, type) {
-      var el = document.getElementById('s2bToast');
-      if (!el) return;
-      var t = type || 'info';
-      var icon = icons[t] || icons.info;
-      var title = titles[t] || '';
-
-      el.innerHTML =
-        '<div class="te-icon">' + icon + '</div>' +
-        '<div class="te-body">' +
-          (title ? '<div class="te-title">' + title + '</div>' : '') +
-          '<div class="te-msg">' + msg + '</div>' +
-        '</div>' +
-        '<button class="te-close" aria-label="Dismiss" onclick="window._dismissToast()">&times;</button>' +
-        '<div class="te-progress"></div>';
-
-      el.className = 'toast-enhanced te-' + t;
-      if (_timer) clearTimeout(_timer);
-      requestAnimationFrame(function() { el.classList.add('show'); });
-      _timer = setTimeout(dismiss, 4000);
-    };
-    window._dismissToast = dismiss;
-  })();
-  </script>
+  <!-- Toast -->
+  <div id="s2bToast" class="toast" role="status" aria-live="polite" aria-atomic="true" hidden></div>
 
   <!-- Cart Drawer -->
   <div id="cartDrawer" class="cart-drawer" role="dialog" aria-modal="true" aria-label="Shopping cart" hidden>
