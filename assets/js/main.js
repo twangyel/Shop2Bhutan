@@ -1046,6 +1046,7 @@ async function submitReview(e) {
 
     // If no customer found via order, create a minimal customer record
     // This ensures customer_id is never null
+      // If no customer found via order, create a minimal customer record
     if (!customerId) {
       // Try to find existing customer by name + address combo
       const { data: existingCustomer } = await supabase
@@ -1060,12 +1061,14 @@ async function submitReview(e) {
         customerId = existingCustomer.id;
       } else {
         // Create new customer for this review
+        // NOTE: phone cannot be NULL in your Supabase schema, so we use a placeholder.
+        // Ideally, make the 'phone' column nullable in Supabase for review-only customers.
         const { data: newCustomer, error: custErr } = await supabase
           .from('customers')
           .insert({
             name: name,
             dzongkhag: address,
-            phone: null,  // optional for reviews
+            phone: '00000000',   // <-- was null; now a placeholder
             address: address
           })
           .select('id')
