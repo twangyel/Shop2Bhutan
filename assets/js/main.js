@@ -918,6 +918,8 @@ async function loadReviews() {
   if (!track) return;
 
   if (!supabase) {
+    // Supabase unavailable — restore hardcoded fallback
+    if (fallbackReviewsHTML) track.innerHTML = fallbackReviewsHTML;
     initReviewCarousel();
     return;
   }
@@ -930,6 +932,8 @@ async function loadReviews() {
 
   if (error || !data || !data.length) {
     if (error) console.warn('Failed to load reviews:', error.message);
+    // No DB reviews — restore hardcoded fallback
+    if (fallbackReviewsHTML) track.innerHTML = fallbackReviewsHTML;
     initReviewCarousel();
     return;
   }
@@ -961,6 +965,9 @@ function initReviewCarousel() {
   const dots = document.getElementById('reviewsDots');
   const wrapper = document.getElementById('reviewsWrapper');
   if (!track || !wrapper) return;
+
+  // Reveal track now that content is ready
+  track.style.visibility = 'visible';
 
   const cards = track.querySelectorAll('.review-card');
   if (!cards.length) return;
@@ -1190,12 +1197,20 @@ function closeReviewModalFn() {
 }
 
 /* ============ INIT ============ */
+let fallbackReviewsHTML = '';
+
 document.addEventListener('DOMContentLoaded', () => {
   loadCart();
   initStarRating();
   initPhoneHint();
   initCustomerAutoFill(); // NOW DEFINED ABOVE, so it works correctly
-  initReviewCarousel();
+
+  // Save hardcoded reviews as fallback, then clear so they don't flash on reload
+  const track = document.getElementById('reviewsTrack');
+  if (track) {
+    fallbackReviewsHTML = track.innerHTML;
+    track.innerHTML = '';
+  }
 
   supabaseReady.then(() => loadReviews());
 
