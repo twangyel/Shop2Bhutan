@@ -813,9 +813,23 @@ async function submitOrder(e) {
         .single();
       if (custErr) throw custErr;
       customerId = newCustomer.id;
-    } else {
-      await supabase.from('customers').update({ name }).eq('id', customerId);
-    }
+         } else {
+        // Create new customer with a UNIQUE placeholder phone
+        // NOTE: Ideally make the 'phone' column nullable in Supabase instead.
+        const uniquePlaceholder = `99${Date.now().toString().slice(-6)}`;
+
+        const { data: newCustomer, error: custErr } = await supabase
+          .from('customers')
+          .insert({
+            name: name,
+            dzongkhag: address,
+            phone: uniquePlaceholder,
+            address: address
+          })
+          .select('id')
+          .single();
+
+        }
 
     let items = [];
     const isSingle = !document.getElementById('productSummaryBox').hidden;
@@ -1059,16 +1073,17 @@ async function submitReview(e) {
 
       if (existingCustomer && existingCustomer.id) {
         customerId = existingCustomer.id;
-      } else {
-        // Create new customer for this review
-        // NOTE: phone cannot be NULL in your Supabase schema, so we use a placeholder.
-        // Ideally, make the 'phone' column nullable in Supabase for review-only customers.
+           } else {
+        // Create new customer with a UNIQUE placeholder phone
+        // NOTE: Ideally make the 'phone' column nullable in Supabase instead.
+        const uniquePlaceholder = `99${Date.now().toString().slice(-6)}${Math.floor(Math.random() * 10)}`;
+
         const { data: newCustomer, error: custErr } = await supabase
           .from('customers')
           .insert({
             name: name,
             dzongkhag: address,
-            phone: '00000000',   // <-- was null; now a placeholder
+            phone: uniquePlaceholder,
             address: address
           })
           .select('id')
