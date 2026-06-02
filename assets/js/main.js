@@ -1,871 +1,50 @@
-import { supabase } from './supabase.js';
+/* ============================================================
+   SHOP2BHUTAN — CUSTOMER MAIN.JS
+   Cart · Search · Checkout · Reviews
+   ============================================================ */
 
-/* ============ CONFIG ============ */
-const CONFIG = {
-  ORDERS_PER_PAGE: 50,
-  AUTO_REFRESH_MS: 30000,
-  WHATSAPP_NUMBER: '975XXXXXXXX'
-};
+/* ============ SUPABASE (loaded async — UI works even if this fails) ============ */
+let supabase = null;
+const supabaseReady = import('./supabase.js')
+  .then(mod => { supabase = mod.supabase; })
+  .catch(err => console.warn('Supabase failed to load — orders & reviews will be unavailable:', err));
 
 /* ============ STATE ============ */
-let currentUser = null;
-let adminProfile = null;
-let orders = [];
-let totalCount = 0;
-let currentPage = 1;
-let currentEditOrder = null;
-let selectedIds = new Set();
-let refreshTimer = null;
-let searchDebounce = null;
-let notifications = [];
-let currentSection = 'orders';
-
-/* ============ AUTH ============ */
-function setLoginError(msg) {
-  const el = document.getElementById('loginError');
-  if (!el) return;
-  if (!msg) { el.style.display = 'none'; el.textContent = ''; return; }
-  el.textContent = msg;
-  el.style.display = 'flex';
-}
-
-async function doLogin() {
-  const email = document.getElementById('adminEmail').value.trim();
-  const password = document.getElementById('adminPassword').value;
-  const remember = document.getElementById('rememberMe').checked;
-  const btn = document.getElementById('loginBtn');
-
-  setLoginError('');
-
-  if (!email || !password) {
-    setLoginError('Please enter both email and password.');
-    return;
-  }
-
-  btn.disabled = true;
-  btn.textContent = 'Signing in…';
-
-  const { data: authData, error: authErr } = await supabase.auth.signInWithPassword({ email, password });
-
-  if (authErr) {
-    const msg = /invalid login credentials/i.test(authErr.message)
-      ? 'Incorrect email or password. Please try again.'
-      : /email not confirmed/i.test(authErr.message)
-        ? 'Email not confirmed. Check your inbox for the confirmation link.'
-        : authErr.message || 'Sign-in failed. Please try again.';
-    setLoginError(msg);
-    btn.disabled = false;
-    btn.textContent = 'Sign In';
-    return;
-  }
-
-  const userId = authData?.user?.id;
-  let adminQuery = supabase.from('admin_users').select('*');
-  adminQuery = userId ? adminQuery.or(`id.eq.${userId},email.eq.${email}`) : adminQuery.eq('email', email);
-  const { data: adminRows, error: adminErr } = await adminQuery.limit(1);
-
-  if (adminErr) {
-    await supabase.auth.signOut();
-    setLoginError('Could not verify admin access: ' + adminErr.message);
-    btn.disabled = false;
-    btn.textContent = 'Sign In';
-    return;
-  }
-
-  const adminData = (adminRows || [])[0];
-  if (!adminData) {
-    await supabase.auth.signOut();
-    setLoginError('This account is signed in but has no admin record. Contact your administrator.');
-    btn.disabled = false;
-    btn.textContent = 'Sign In';
-    return;
-  }
-  if (adminData.is_active === false) {
-    await supabase.auth.signOut();
-    setLoginError('Your admin access has been deactivated. Contact your administrator.');
-    btn.disabled = false;
-    btn.textContent = 'Sign In';
-    return;
-  }
-
-  if (remember) {
-    localStorage.setItem('s2b_admin_remember', JSON.stringify({ email }));
-  } else {
-    localStorage.removeItem('s2b_admin_remember');
-  }
-
-  currentUser = authData.user;
-  adminProfile = adminData;
-  showAdmin();
-}
-window.doLogin = doLogin;
-
-async function logout() {
-  try { await supabase.auth.signOut(); } catch (e) { /* ignore */ }
-  currentUser = null;
-  adminProfile = null;
-  localStorage.removeItem('s2b_admin_remember');
-  location.reload();
-}
-window.logout = logout;
-
-async function checkSession() {
-  const remembered = localStorage.getItem('s2b_admin_remember');
-  if (remembered) {
-    try {
-      const { email } = JSON.parse(remembered);
-      if (email) {
-        document.getElementById('adminEmail').value = email;
-        document.getElementById('rememberMe').checked = true;
-      }
-    } catch (e) { /* ignore corrupt storage */ }
-  }
-
-  const { data: { session } } = await supabase.auth.getSession();
-  if (!session) return;
-
-  const { data: adminRows, error: adminErr } = await supabase
-    .from('admin_users')
-    .select('*')
-    .eq('email', session.user.email)
-    .limit(1);
-
-  const adminData = (adminRows || [])[0];
-
-  if (adminErr || !adminData || adminData.is_active === false) {
-    await supabase.auth.signOut();
-    return;
-  }
-
-  currentUser = session.user;
-  adminProfile = adminData;
-  showAdmin();
-}
-
-function showAdmin() {
-  document.getElementById('loginScreen').style.display = 'none';
-  document.getElementById('adminLayout').style.display = 'grid';
-  document.getElementById('adminName').textContent = adminProfile?.name || currentUser?.email;
-  document.getElementById('adminRole').textContent = (adminProfile?.role || 'ADMIN').toUpperCase();
-  
-  // Set avatar initial
-  const name = adminProfile?.name || currentUser?.email || 'A';
-  document.getElementById('adminAvatar').textContent = name.charAt(0).toUpperCase();
-  
-  initAdmin();
-}
-
-/* ============ SECTION NAVIGATION ============ */
-window.showSection = function(section) {
-  currentSection = section;
-  
-  // Update sidebar active state
-  document.querySelectorAll('aside nav a[data-section]').forEach(link => {
-    link.classList.toggle('active', link.dataset.section === section);
-  });
-  
-  // Show/hide sections
-  document.querySelectorAll('.section-content').forEach(sec => {
-    sec.classList.toggle('active', sec.id === `section-${section}`);
-  });
-  
-  // Update page title
-  const titles = {
-    orders: 'Orders Dashboard',
-    reviews: 'Customer Reviews',
-    payments: 'Payment Management'
-  };
-  document.getElementById('pageTitle').textContent = titles[section] || 'Dashboard';
-  
-  // Load section-specific data
-  if (section === 'orders') {
-    loadOrders();
-  } else if (section === 'reviews') {
-    // loadReviews(); // placeholder for future
-  } else if (section === 'payments') {
-    // loadPayments(); // placeholder for future
-  }
-};
-
-/* ============ NOTIFICATIONS ============ */
-function toggleNotifications() {
-  document.getElementById('notifDropdown').classList.toggle('active');
-}
-
-function clearNotifications() {
-  notifications = [];
-  renderNotifications();
-}
-
-function renderNotifications() {
-  const badge = document.getElementById('notifBadge');
-  const list = document.getElementById('notifList');
-  
-  if (notifications.length === 0) {
-    badge.style.display = 'none';
-    list.innerHTML = '<div class="notif-empty">No new notifications</div>';
-    return;
-  }
-  
-  badge.style.display = 'flex';
-  badge.textContent = notifications.length > 9 ? '9+' : notifications.length;
-  
-  list.innerHTML = notifications.map(n => `
-    <div class="notif-item" onclick="toast('${escapeHtml(n.message)}', '${n.type || 'info'}')">
-      <div class="notif-title"><span class="notif-dot"></span>${escapeHtml(n.title)}</div>
-      <div class="notif-time">${escapeHtml(n.time)}</div>
-    </div>
-  `).join('');
-}
-
-function addNotification(title, message, type = 'info') {
-  notifications.unshift({
-    title,
-    message,
-    type,
-    time: new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })
-  });
-  // Keep max 20
-  if (notifications.length > 20) notifications.pop();
-  renderNotifications();
-}
-
-window.toggleNotifications = toggleNotifications;
-window.clearNotifications = clearNotifications;
-
-/* ============ PASSWORD PREVIEW ============ */
-function togglePasswordPreview() {
-  const input = document.getElementById('adminPassword');
-  const btn = document.getElementById('previewBtn');
-  if (input.type === 'password') {
-    input.type = 'text';
-    btn.textContent = '🙈';
-    btn.title = 'Hide password';
-  } else {
-    input.type = 'password';
-    btn.textContent = '👁️';
-    btn.title = 'Show password';
-  }
-}
-window.togglePasswordPreview = togglePasswordPreview;
-
-/* ============ TOAST HELPERS ============ */
-function toastError(msg) {
-  toast(msg, 'error');
-}
-window.toastError = toastError;
-
-function toastSuccess(msg) {
-  toast(msg, 'success');
-}
-window.toastSuccess = toastSuccess;
-
-function toastInfo(msg) {
-  toast(msg, 'info');
-}
-window.toastInfo = toastInfo;
-
-/* ============ INIT ============ */
-function initAdmin() {
-  loadOrders();
-  populateDzongkhagFilter();
-  renderNotifications();
-
-  // Search debounce
-  document.getElementById('filterSearch').addEventListener('input', () => {
-    clearTimeout(searchDebounce);
-    searchDebounce = setTimeout(() => { currentPage = 1; loadOrders(); }, 300);
-  });
-  document.getElementById('filterStatus').addEventListener('change', () => { currentPage = 1; loadOrders(); });
-  document.getElementById('filterDzongkhag').addEventListener('change', () => { currentPage = 1; loadOrders(); });
-  document.getElementById('filterDate').addEventListener('change', () => { currentPage = 1; loadOrders(); });
-
-  // Delegated handlers for the orders table
-  const tbody = document.getElementById('ordersTableBody');
-  tbody.addEventListener('click', (e) => {
-    const btn = e.target.closest('button[data-action]');
-    if (!btn) return;
-    const { action, id, phone, url } = btn.dataset;
-    if (action === 'edit')      window.openOrderModal(id);
-    else if (action === 'whatsapp') window.sendWhatsApp(phone, id);
-    else if (action === 'view') window.viewProduct(url, id);
-  });
-  tbody.addEventListener('change', (e) => {
-    const cb = e.target.closest('input.row-select');
-    if (!cb) return;
-    window.toggleSelect(cb.dataset.id);
-  });
-
-  // Auto refresh
-  refreshTimer = setInterval(() => {
-    if (currentSection === 'orders') loadOrders(true);
-  }, CONFIG.AUTO_REFRESH_MS);
-
-  // Keyboard
-  document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape') {
-      closeOrderModal();
-      closeConfirmModal();
-      document.getElementById('notifDropdown').classList.remove('active');
-    }
-  });
-  
-  // Click outside to close notifications
-  document.addEventListener('click', (e) => {
-    if (!e.target.closest('.notification-btn') && !e.target.closest('.notification-dropdown')) {
-      document.getElementById('notifDropdown').classList.remove('active');
-    }
-  });
-}
-
-/* ============ DATA ============ */
-let loadOrdersToken = 0;
-async function loadOrders(silent = false) {
-  if (!silent) renderSkeletons();
-
-  const myToken = ++loadOrdersToken;
-
-  const search = document.getElementById('filterSearch').value.trim();
-  const status = document.getElementById('filterStatus').value;
-  const dzong  = document.getElementById('filterDzongkhag').value;
-  const trip   = document.getElementById('filterDate').value;
-
-  let query = supabase
-    .from('orders')
-    .select('*, customers(*), order_items(*)', { count: 'exact' });
-
-  if (status) query = query.eq('status', status);
-  if (trip)   query = query.eq('trip_date', trip);
-
-  const from = (currentPage - 1) * CONFIG.ORDERS_PER_PAGE;
-  const to = from + CONFIG.ORDERS_PER_PAGE - 1;
-  query = query.order('created_at', { ascending: false }).range(from, to);
-
-  const { data, error, count } = await query;
-
-  if (myToken !== loadOrdersToken) return;
-
-  if (error) {
-    console.error(error);
-    toastError('Failed to load orders');
-    return;
-  }
-
-  orders = data || [];
-  totalCount = count || 0;
-
-  if (search) {
-    const s = search.toLowerCase();
-    orders = orders.filter(o => {
-      const c = o.customers || {};
-      const items = o.order_items || [];
-      return (c.name || '').toLowerCase().includes(s) ||
-             (c.phone || '').includes(s) ||
-             (o.id || '').toLowerCase().includes(s) ||
-             items.some(i => (i.product_name || '').toLowerCase().includes(s));
-    });
-  }
-
-  if (dzong) {
-    orders = orders.filter(o => (o.customers?.dzongkhag || '') === dzong);
-  }
-
-  renderOrders();
-  updateStats();
-  renderPagination();
-}
-
-/* ============ STATS ============ */
-async function updateStats() {
-  const { data: counts, error: rpcErr } = await supabase.rpc('get_order_stats');
-  if (!rpcErr && counts) {
-    document.getElementById('statSubmitted').textContent = Number(counts.submitted || 0).toLocaleString();
-    document.getElementById('statConfirmed').textContent = Number(counts.confirmed || 0).toLocaleString();
-    document.getElementById('statWeek').textContent = Number(counts.this_week || 0).toLocaleString();
-    document.getElementById('statRevenue').textContent = 'Nu. ' + Number(counts.revenue || 0).toLocaleString();
-    return;
-  }
-
-  console.warn('get_order_stats RPC unavailable, using client-side fallback', rpcErr);
-  const submitted = orders.filter(o => o.status === 'submitted').length;
-  const confirmed = orders.filter(o => ['confirmed','purchased','in_transit'].includes(o.status)).length;
-  const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
-  const thisWeek = orders.filter(o => o.created_at && new Date(o.created_at) >= weekAgo).length;
-  const revenue = orders.reduce((sum, o) => sum + (parseFloat(o.total_price) || 0), 0);
-  document.getElementById('statSubmitted').textContent = submitted.toLocaleString();
-  document.getElementById('statConfirmed').textContent = confirmed.toLocaleString();
-  document.getElementById('statWeek').textContent = thisWeek.toLocaleString();
-  document.getElementById('statRevenue').textContent = 'Nu. ' + revenue.toLocaleString();
-}
-
-/* ============ RENDER ============ */
-function renderSkeletons() {
-  const tbody = document.getElementById('ordersTableBody');
-  tbody.innerHTML = Array(5).fill(0).map(() => `
-    <tr>
-      <td><div class="skeleton" style="width:18px;height:18px;"></div></td>
-      <td><div class="skeleton skeleton-text" style="width:80px;"></div></td>
-      <td><div class="skeleton skeleton-text" style="width:140px;"></div></td>
-      <td><div class="skeleton skeleton-text" style="width:120px;"></div></td>
-      <td><div class="skeleton skeleton-text" style="width:90px;"></div></td>
-      <td><div class="skeleton skeleton-badge"></div></td>
-      <td><div class="skeleton skeleton-text" style="width:70px;"></div></td>
-      <td><div class="skeleton skeleton-text" style="width:60px;"></div></td>
-      <td><div class="skeleton" style="width:100px;height:28px;"></div></td>
-    </tr>
-  `).join('');
-}
-
-function renderOrders() {
-  const tbody = document.getElementById('ordersTableBody');
-  if (!orders.length) {
-    tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;padding:2rem;color:#888">No orders found.</td></tr>';
-    syncSelectAllCheckbox();
-    updateBulkBar();
-    return;
-  }
-
-  tbody.innerHTML = '';
-  const frag = document.createDocumentFragment();
-
-  orders.forEach(order => {
-    const c = order.customers || {};
-    const items = order.order_items || [];
-    const firstItem = items[0] || {};
-    const itemCount = items.length;
-
-    const productDisplay = itemCount > 1
-      ? `${escapeHtml(firstItem.product_name || 'Multiple items')} <small style="color:#888">(+${itemCount - 1} more)</small>`
-      : escapeHtml(firstItem.product_name || '—');
-
-    const statusClass = 'badge-' + (order.status || 'submitted');
-    const statusLabel = (order.status || 'submitted').replace(/_/g, ' ');
-
-    const price = order.total_price ? `Nu. ${Number(order.total_price).toLocaleString()}` : '—';
-    const payment = order.payment_method === 'full' ? 'Full' : '50/50';
-
-    const isSelected = selectedIds.has(order.id);
-
-    const tr = document.createElement('tr');
-    tr.innerHTML = `
-      <td><input type="checkbox" class="row-select" data-id="${escapeHtml(order.id)}" ${isSelected ? 'checked' : ''}></td>
-      <td><span class="token">${escapeHtml(order.id?.slice(0, 8).toUpperCase() || '—')}</span></td>
-      <td><div class="product-name" title="${escapeHtml(firstItem.product_name || '')}">${productDisplay}</div></td>
-      <td>
-        <div class="customer-info">
-          <strong>${escapeHtml(c.name || '—')}</strong>
-          <small>${escapeHtml(c.phone || '—')}</small>
-        </div>
-      </td>
-      <td>${escapeHtml(order.trip_date || '—')}</td>
-      <td><span class="badge ${statusClass}">${escapeHtml(statusLabel)}</span></td>
-      <td>${price}</td>
-      <td>${escapeHtml(payment)}</td>
-      <td>
-        <div class="actions">
-          <button class="btn-icon btn-edit" title="Edit Order" data-action="edit" data-id="${escapeHtml(order.id)}">✎</button>
-          <button class="btn-icon btn-wa" title="WhatsApp Customer" data-action="whatsapp" data-phone="${escapeHtml(c.phone || '')}" data-id="${escapeHtml(order.id)}">📱</button>
-          <button class="btn-icon btn-view" title="View Product Details" data-action="view" data-url="${escapeHtml(firstItem.product_link || '')}" data-id="${escapeHtml(order.id)}">👁️</button>
-        </div>
-      </td>
-    `;
-    frag.appendChild(tr);
-  });
-
-  tbody.appendChild(frag);
-  syncSelectAllCheckbox();
-  updateBulkBar();
-}
-
-function syncSelectAllCheckbox() {
-  const cb = document.getElementById('selectAll');
-  if (!cb) return;
-  if (!orders.length) { cb.checked = false; cb.indeterminate = false; return; }
-  const selectedHere = orders.filter(o => selectedIds.has(o.id)).length;
-  cb.checked = selectedHere === orders.length;
-  cb.indeterminate = selectedHere > 0 && selectedHere < orders.length;
-}
-
-function renderPagination() {
-  const totalPages = Math.ceil(totalCount / CONFIG.ORDERS_PER_PAGE) || 1;
-  document.getElementById('pageInfo').textContent = `Page ${currentPage} of ${totalPages} · ${totalCount} orders`;
-
-  const container = document.getElementById('pageButtons');
-  container.innerHTML = '';
-
-  const makeBtn = (label, page, disabled, active) => {
-    const b = document.createElement('button');
-    b.className = 'page-btn' + (active ? ' active' : '');
-    b.textContent = label;
-    b.disabled = disabled;
-    if (!disabled && !active) b.onclick = () => { currentPage = page; loadOrders(); };
-    return b;
-  };
-
-  container.appendChild(makeBtn('← Prev', currentPage - 1, currentPage === 1, false));
-
-  let start = Math.max(1, currentPage - 2);
-  let end = Math.min(totalPages, start + 4);
-  if (end - start < 4) start = Math.max(1, end - 4);
-
-  for (let i = start; i <= end; i++) {
-    container.appendChild(makeBtn(String(i), i, false, i === currentPage));
-  }
-
-  container.appendChild(makeBtn('Next →', currentPage + 1, currentPage === totalPages, false));
-}
-
-/* ============ BULK ACTIONS ============ */
-window.toggleSelect = function(id) {
-  if (selectedIds.has(id)) selectedIds.delete(id);
-  else selectedIds.add(id);
-  updateBulkBar();
-};
-
-window.toggleSelectAll = function() {
-  const checked = document.getElementById('selectAll').checked;
-  if (checked) orders.forEach(o => selectedIds.add(o.id));
-  else orders.forEach(o => selectedIds.delete(o.id));
-  renderOrders();
-};
-
-function updateBulkBar() {
-  const bar = document.getElementById('bulkBar');
-  const count = selectedIds.size;
-  if (count > 0) {
-    bar.style.display = 'flex';
-    document.getElementById('bulkCount').textContent = `${count} order${count !== 1 ? 's' : ''} selected`;
-  } else {
-    bar.style.display = 'none';
-  }
-}
-
-window.clearSelection = function() {
-  selectedIds.clear();
-  document.getElementById('selectAll').checked = false;
-  renderOrders();
-};
-
-window.bulkUpdateStatus = function(status) {
-  if (selectedIds.size === 0) return;
-  showConfirm(
-    `Mark ${selectedIds.size} orders as "${status}"?`,
-    'This will update the status for all selected orders.',
-    async () => {
-      const ids = Array.from(selectedIds);
-      const updates = ids.map(id => ({ id, status, updated_at: new Date().toISOString() }));
-
-      const { error } = await supabase.from('orders').upsert(updates);
-      if (error) {
-        toastError('Bulk update failed: ' + error.message);
-        return;
-      }
-
-      await logAudit(null, 'bulk_status_update', { ids, new_status: status });
-
-      toastSuccess(`Updated ${ids.length} orders`);
-      selectedIds.clear();
-      document.getElementById('selectAll').checked = false;
-      loadOrders();
-    }
-  );
-};
-
-/* ============ MODAL ============ */
-window.openOrderModal = function(orderId) {
-  const order = orders.find(o => o.id === orderId);
-  if (!order) return;
-  currentEditOrder = order;
-
-  const c = order.customers || {};
-  const items = order.order_items || [];
-
-  let itemsHtml = '';
-  if (items.length) {
-    itemsHtml = `<div style="margin-bottom:1.5rem;">
-      <label style="font-size:0.8rem;color:#888;text-transform:uppercase;letter-spacing:0.5px;font-weight:600;display:block;margin-bottom:0.5rem;">Order Items</label>
-      <div style="display:flex;flex-direction:column;gap:0.75rem;">
-        ${items.map(it => `
-          <div style="background:#f8f9fc;padding:0.75rem 1rem;border-radius:8px;">
-            <div style="font-weight:600;font-size:0.95rem;">${escapeHtml(it.product_name || '—')}</div>
-            <div style="font-size:0.85rem;color:#666;margin-top:0.25rem;">
-              <span class="badge" style="background:#e8f4fd;color:#2980b9;">${escapeHtml(it.platform || '—')}</span>
-              ${it.quantity ? ` · Qty: ${it.quantity}` : ''}
-              ${it.variant ? ` · Variant: ${escapeHtml(it.variant)}` : ''}
-            </div>
-            ${it.product_link ? `<div style="margin-top:0.5rem;"><a href="${escapeHtml(it.product_link)}" target="_blank" rel="noopener" style="font-size:0.85rem;">${escapeHtml(it.product_link)}</a></div>` : ''}
-          </div>
-        `).join('')}
-      </div>
-    </div>`;
-  }
-
-  document.getElementById('modalBody').innerHTML = `
-    ${itemsHtml}
-    <div class="detail-grid">
-      <div class="detail-group"><label>Order ID</label><span class="token">${escapeHtml(order.id?.toUpperCase() || '—')}</span></div>
-      <div class="detail-group"><label>Order Date</label><span>${formatDate(order.created_at)}</span></div>
-      <div class="detail-group"><label>Customer</label><span>${escapeHtml(c.name || '—')}</span></div>
-      <div class="detail-group"><label>Phone</label><span><a href="tel:${escapeHtml(c.phone || '')}">${escapeHtml(c.phone || '—')}</a></span></div>
-      <div class="detail-group"><label>Dzongkhag</label><span>${escapeHtml(c.dzongkhag || '—')}</span></div>
-      <div class="detail-group"><label>Address</label><span>${escapeHtml(c.address || '—')}</span></div>
-      <div class="detail-group"><label>Trip Date</label><span>${escapeHtml(order.trip_date || '—')}</span></div>
-      <div class="detail-group"><label>Payment Method</label><span>${order.payment_method === 'full' ? 'Full Payment' : '50 / 50'}</span></div>
-    </div>
-    <div class="admin-form">
-      <div class="form-row">
-        <div>
-          <label>Status</label>
-          <select id="editStatus">
-            <option value="submitted" ${order.status==='submitted'?'selected':''}>Submitted</option>
-            <option value="price_sent" ${order.status==='price_sent'?'selected':''}>Price Sent</option>
-            <option value="confirmed" ${order.status==='confirmed'?'selected':''}>Confirmed</option>
-            <option value="purchased" ${order.status==='purchased'?'selected':''}>Purchased</option>
-            <option value="in_transit" ${order.status==='in_transit'?'selected':''}>In Transit</option>
-            <option value="delivered" ${order.status==='delivered'?'selected':''}>Delivered</option>
-            <option value="cancelled" ${order.status==='cancelled'?'selected':''}>Cancelled</option>
-          </select>
-        </div>
-        <div>
-          <label>Total Price (Nu.)</label>
-          <input type="number" id="editPrice" value="${order.total_price || ''}" placeholder="e.g. 4500">
-        </div>
-      </div>
-      <div class="form-row">
-        <div>
-          <label>Payment Status</label>
-          <select id="editPaymentStatus">
-            <option value="pending" ${order.payment_status==='pending'?'selected':''}>Pending</option>
-            <option value="partial" ${order.payment_status==='partial'?'selected':''}>Partial (50%)</option>
-            <option value="paid" ${order.payment_status==='paid'?'selected':''}>Fully Paid</option>
-            <option value="refunded" ${order.payment_status==='refunded'?'selected':''}>Refunded</option>
-          </select>
-        </div>
-        <div>
-          <label>Trip Date</label>
-          <input type="date" id="editTripDate" value="${order.trip_date || ''}">
-        </div>
-      </div>
-      <div>
-        <label>Admin Notes</label>
-        <textarea id="editNotes" placeholder="Internal notes…">${escapeHtml(order.admin_notes || '')}</textarea>
-      </div>
-    </div>
-  `;
-
-  document.getElementById('orderModal').classList.add('active');
-  document.body.style.overflow = 'hidden';
-};
-
-window.closeOrderModal = function() {
-  document.getElementById('orderModal').classList.remove('active');
-  document.body.style.overflow = '';
-  currentEditOrder = null;
-};
-
-window.confirmSaveOrder = function() {
-  if (!currentEditOrder) return;
-  const newStatus = document.getElementById('editStatus').value;
-  const isCritical = ['delivered', 'cancelled'].includes(newStatus) && newStatus !== currentEditOrder.status;
-
-  if (isCritical) {
-    showConfirm(
-      `Change status to "${newStatus}"?`,
-      'This is a final status change. Are you sure?',
-      () => saveOrderChanges()
-    );
-  } else {
-    saveOrderChanges();
-  }
-};
-
-async function saveOrderChanges() {
-  if (!currentEditOrder) return;
-
-  const oldValues = {
-    status: currentEditOrder.status,
-    total_price: currentEditOrder.total_price,
-    payment_status: currentEditOrder.payment_status,
-    trip_date: currentEditOrder.trip_date,
-    admin_notes: currentEditOrder.admin_notes
-  };
-
-  const updates = {
-    id: currentEditOrder.id,
-    status: document.getElementById('editStatus').value,
-    total_price: document.getElementById('editPrice').value ? parseFloat(document.getElementById('editPrice').value) : null,
-    payment_status: document.getElementById('editPaymentStatus').value,
-    trip_date: document.getElementById('editTripDate').value || null,
-    admin_notes: document.getElementById('editNotes').value.trim() || null,
-    updated_at: new Date().toISOString()
-  };
-
-  const btn = document.querySelector('#orderModal .btn-primary');
-  btn.textContent = 'Saving…';
-  btn.disabled = true;
-
-  const { error } = await supabase.from('orders').update(updates).eq('id', currentEditOrder.id);
-
-  btn.textContent = 'Save Changes';
-  btn.disabled = false;
-
-  if (error) {
-    toastError('Failed to save: ' + error.message);
-    return;
-  }
-
-  await logAudit(currentEditOrder.id, 'order_update', { old: oldValues, new: updates });
-
-  const idx = orders.findIndex(o => o.id === currentEditOrder.id);
-  if (idx !== -1) orders[idx] = { ...orders[idx], ...updates };
-
-  renderOrders();
-  updateStats();
-  closeOrderModal();
-  toastSuccess('Order updated successfully');
-  
-  // Add notification
-  addNotification('Order Updated', `Order ${currentEditOrder.id?.slice(0,8).toUpperCase()} status changed to ${updates.status}`, 'success');
-}
-
-/* ============ CONFIRMATION MODAL ============ */
-function showConfirm(title, message, onConfirm) {
-  document.getElementById('confirmTitle').textContent = title;
-  document.getElementById('confirmMessage').textContent = message;
-  const btn = document.getElementById('confirmActionBtn');
-  btn.onclick = () => { closeConfirmModal(); onConfirm(); };
-  document.getElementById('confirmModal').classList.add('active');
-}
-
-window.closeConfirmModal = function() {
-  document.getElementById('confirmModal').classList.remove('active');
-};
-
-/* ============ AUDIT LOG ============ */
-async function logAudit(orderId, action, details) {
-  const payload = {
-    order_id: orderId,
-    admin_id: currentUser?.id,
-    admin_email: currentUser?.email,
-    action,
-    old_values: details?.old || null,
-    new_values: details?.new || null
-  };
-  await supabase.from('audit_logs').insert(payload).catch(() => {});
-}
-
-/* ============ ACTIONS ============ */
-window.sendWhatsApp = function(phone, orderId) {
-  if (!phone) { toastError('No phone number on file'); return; }
-  const clean = phone.replace(/\D/g, '').replace(/^0+/, '');
-  const msg = `Hi! This is Shop2Bhutan regarding your order (${orderId?.slice(0,8).toUpperCase() || ''}). How can we help you?`;
-  window.open(`https://wa.me/${clean}?text=${encodeURIComponent(msg)}`, '_blank');
-};
-
-window.viewProduct = function(url, orderId) {
-  if (!url) { 
-    toastError('No product link available'); 
-    return; 
-  }
-  // Open product link in new tab
-  window.open(url, '_blank', 'noopener,noreferrer');
-};
-
-window.copyLink = function(url) {
-  if (!url) { toastError('No link available'); return; }
-  const done = () => toastSuccess('Link copied');
-  const fail = () => toastError('Could not copy link');
-  if (navigator.clipboard && window.isSecureContext) {
-    navigator.clipboard.writeText(url).then(done, () => fallback(url, done, fail));
-  } else {
-    fallback(url, done, fail);
-  }
-  function fallback(text, ok, ko) {
-    try {
-      const ta = document.createElement('textarea');
-      ta.value = text;
-      ta.setAttribute('readonly', '');
-      ta.style.position = 'fixed';
-      ta.style.opacity = '0';
-      document.body.appendChild(ta);
-      ta.select();
-      const success = document.execCommand('copy');
-      document.body.removeChild(ta);
-      success ? ok() : ko();
-    } catch (e) { ko(); }
-  }
-};
-
-/* ============ EXPORT ============ */
-window.exportCSV = async function() {
-  const btn = document.getElementById('exportBtn');
-  btn.disabled = true;
-  btn.textContent = 'Exporting…';
-
-  const search = document.getElementById('filterSearch').value.trim();
-  const status = document.getElementById('filterStatus').value;
-  const dzong  = document.getElementById('filterDzongkhag').value;
-  const trip   = document.getElementById('filterDate').value;
-
-  let query = supabase.from('orders').select('*, customers(*), order_items(*)');
-  if (status) query = query.eq('status', status);
-  if (trip)   query = query.eq('trip_date', trip);
-  query = query.order('created_at', { ascending: false });
-
-  const { data, error } = await query;
-
-  btn.disabled = false;
-  btn.textContent = '⬇️ Export CSV';
-
-  if (error || !data) {
-    toastError('Export failed');
-    return;
-  }
-
-  let rowsData = data;
-  if (search) {
-    const s = search.toLowerCase();
-    rowsData = rowsData.filter(o => {
-      const c = o.customers || {};
-      const items = o.order_items || [];
-      return (c.name || '').toLowerCase().includes(s) ||
-             (c.phone || '').includes(s) ||
-             (o.id || '').toLowerCase().includes(s) ||
-             items.some(i => (i.product_name || '').toLowerCase().includes(s));
-    });
-  }
-  if (dzong) {
-    rowsData = rowsData.filter(o => (o.customers?.dzongkhag || '') === dzong);
-  }
-
-  const csvEscape = (v) => {
-    let s = String(v == null ? '' : v);
-    if (/^[=+\-@]/.test(s)) s = "'" + s;
-    return '"' + s.replace(/"/g, '""') + '"';
-  };
-
-  const headers = ['Order ID','Date','Customer','Phone','Dzongkhag','Address','Product','Platform','Status','Price','Payment','Trip Date','Notes'];
-  const rows = rowsData.map(o => {
-    const c = o.customers || {};
-    const it = (o.order_items || [])[0] || {};
-    return [
-      o.id, o.created_at, c.name, c.phone, c.dzongkhag, c.address,
-      it.product_name, it.platform, o.status, o.total_price,
-      o.payment_method, o.trip_date, o.admin_notes
-    ].map(csvEscape);
-  });
-
-  const csv = [headers.map(csvEscape).join(','), ...rows.map(r => r.join(','))].join('\r\n');
-  const blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8;' });
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
-  a.download = `shop2bhutan_orders_${new Date().toISOString().slice(0,10)}.csv`;
-  a.click();
-  URL.revokeObjectURL(a.href);
-  toastSuccess(`Exported ${rowsData.length} order${rowsData.length === 1 ? '' : 's'}`);
+let cart = [];
+let currentSearchUrl = null;
+let currentSearchPlatform = null;
+let currentSearchName = null;
+let currentSearchScreenshot = null;
+let reviewRating = 0;
+let orderFromCart = false;
+let carouselIntervalId = null;
+
+/* ============ CONFIG ============ */
+const CART_KEY = 's2b_cart_v1';
+const WHATSAPP_NUMBER = '975XXXXXXXX';
+const PLATFORMS = {
+  'amazon.in': 'Amazon',
+  'amazon.com': 'Amazon',
+  'flipkart.com': 'Flipkart',
+  'myntra.com': 'Myntra',
+  'nykaa.com': 'Nykaa',
+  'meesho.com': 'Meesho',
+  'snapdeal.com': 'Snapdeal',
+  'ajio.com': 'AJIO',
+  'tatacliq.com': 'Tata CLiQ',
+  'reliancedigital.in': 'Reliance Digital',
+  'croma.com': 'Croma',
 };
 
 /* ============ UTILS ============ */
+function debounce(fn, ms) {
+  let t;
+  return (...args) => {
+    clearTimeout(t);
+    t = setTimeout(() => fn(...args), ms);
+  };
+}
+
 function escapeHtml(str) {
   if (str == null) return '';
   return String(str)
@@ -876,33 +55,1194 @@ function escapeHtml(str) {
     .replace(/'/g, '&#039;');
 }
 
-function formatDate(iso) {
-  if (!iso) return '—';
-  return new Date(iso).toLocaleDateString('en-GB', { day:'2-digit', month:'short', year:'numeric' });
+/* ============ CART ============ */
+function loadCart() {
+  try {
+    const raw = localStorage.getItem(CART_KEY);
+    const parsed = raw ? JSON.parse(raw) : [];
+    cart = Array.isArray(parsed) ? parsed.map(item => ({
+      url: typeof item.url === 'string' ? item.url : '',
+      platform: typeof item.platform === 'string' ? item.platform : 'Product',
+      name: typeof item.name === 'string' ? item.name : 'Untitled',
+      qty: (Number.isInteger(item.qty) && item.qty > 0) ? Math.min(item.qty, 99) : 1,
+      screenshot: (typeof item.screenshot === 'string' && item.screenshot.startsWith('data:image/')) ? item.screenshot : null
+    })) : [];
+  } catch { cart = []; }
+  updateCartBadge();
 }
 
-function toast(msg, type = 'info') {
-  const el = document.getElementById('toast');
-  el.textContent = msg;
-  el.className = 'toast' + (type ? ` toast-${type}` : '');
-  requestAnimationFrame(() => el.classList.add('show'));
-  setTimeout(() => el.classList.remove('show'), 3000);
+function saveCart() {
+  localStorage.setItem(CART_KEY, JSON.stringify(cart));
+  updateCartBadge();
 }
 
-async function populateDzongkhagFilter() {
-  const { data } = await supabase.from('customers').select('dzongkhag').not('dzongkhag', 'is', null);
-  const dzongs = [...new Set((data || []).map(d => d.dzongkhag))].sort();
-  const select = document.getElementById('filterDzongkhag');
-  select.innerHTML = '<option value="">All</option>';
-  dzongs.forEach(d => {
-    const opt = document.createElement('option');
-    opt.value = d;
-    opt.textContent = d;
-    select.appendChild(opt);
+function updateCartBadge() {
+  const count = cart.reduce((sum, item) => sum + (item.qty || 1), 0);
+  const badge = document.getElementById('cartCount');
+  if (!badge) return;
+  badge.textContent = count;
+  badge.hidden = count === 0;
+}
+
+function addToCart(item) {
+  const existing = cart.find(c => c.url === item.url);
+  if (existing) {
+    existing.qty = (existing.qty || 1) + (item.qty || 1);
+  } else {
+    cart.push({ ...item, qty: item.qty || 1 });
+  }
+  saveCart();
+  renderCart();
+  toast('Added to cart', 'success');
+}
+
+function removeFromCart(index) {
+  cart.splice(index, 1);
+  saveCart();
+  renderCart();
+}
+
+function updateCartQty(index, qty) {
+  qty = parseInt(qty, 10);
+  if (!qty || qty < 1) {
+    removeFromCart(index);
+    return;
+  }
+  cart[index].qty = qty;
+  saveCart();
+  renderCart();
+}
+
+function clearCart() {
+  cart = [];
+  saveCart();
+  renderCart();
+}
+
+/* ============ RENDER CART DRAWER ============ */
+function renderCart() {
+  const container = document.getElementById('cartDrawerItems');
+  const checkoutBtn = document.getElementById('cartCheckoutBtn');
+  if (!container) return;
+
+  if (!cart.length) {
+    container.innerHTML = `
+      <div class="cart-empty-state">
+        <svg width="48" height="48" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 10.5V6a3.75 3.75 0 10-7.5 0v4.5m11.356-1.993l1.263 12c.07.665-.45 1.243-1.119 1.243H4.25a1.125 1.125 0 01-1.12-1.243l1.264-12A1.125 1.125 0 015.513 7.5h12.974c.576 0 1.059.435 1.119 1.007z"/></svg>
+        <p>Your cart is empty</p>
+        <span>Paste product links to get started</span>
+      </div>`;
+    if (checkoutBtn) checkoutBtn.hidden = true;
+    return;
+  }
+
+  if (checkoutBtn) checkoutBtn.hidden = false;
+
+  const html = cart.map((item, i) => {
+    const initials = item.name ? item.name.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase() : '??';
+    const thumbPlaceholder = `<div class="cart-item-thumb placeholder" style="background:linear-gradient(135deg,#e94560,#ff6b81)" data-initials="${escapeHtml(initials)}">${escapeHtml(initials)}</div>`;
+
+    return `
+      <div class="cart-item" data-index="${i}">
+        <span class="cart-thumb-slot">${item.screenshot ? '<img class="cart-item-screenshot" alt="">' : thumbPlaceholder}</span>
+        <div class="cart-item-details">
+          <div style="font-size:12px;color:#888;font-weight:600;text-transform:uppercase;">${escapeHtml(item.platform || 'Product')}</div>
+          <div class="cart-item-name">${escapeHtml(item.name || 'Untitled Product')}</div>
+          <div class="cart-item-meta">
+            <span class="qty-label">Qty</span>
+            <input type="number" class="cart-qty" value="${item.qty}" min="1" max="99" data-index="${i}" aria-label="Quantity">
+          </div>
+        </div>
+        <button type="button" class="btn-icon cart-remove-btn" style="width:28px;height:28px;border-radius:6px;border:none;background:#ffe0e5;color:#c0392b;cursor:pointer;font-size:16px;" data-index="${i}" aria-label="Remove">×</button>
+      </div>
+    `;
+  }).join('');
+
+  container.innerHTML = html;
+
+  cart.forEach((item, i) => {
+    if (item.screenshot) {
+      const img = container.querySelector(`.cart-item[data-index="${i}"] .cart-item-screenshot`);
+      if (img) img.src = item.screenshot;
+    }
+  });
+
+  container.querySelectorAll('.cart-remove-btn').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      const idx = parseInt(e.currentTarget.dataset.index, 10);
+      removeFromCart(idx);
+    });
+  });
+
+  container.querySelectorAll('.cart-qty').forEach(input => {
+    input.addEventListener('change', (e) => {
+      const idx = parseInt(e.target.dataset.index, 10);
+      updateCartQty(idx, e.target.value);
+    });
   });
 }
 
-/* ============ BOOT ============ */
+/* ============ SEARCH / URL DETECTION ============ */
+function detectPlatform(url) {
+  try {
+    const hostname = new URL(url).hostname.toLowerCase();
+    for (const [domain, name] of Object.entries(PLATFORMS)) {
+      if (hostname.includes(domain)) return name;
+    }
+    return 'Other Store';
+  } catch { return null; }
+}
+
+function isUrl(str) {
+  const s = str.trim();
+  if (/^https?:\/\//i.test(s)) return true;
+  if (/^www\./i.test(s)) return true;
+  return /[a-z0-9-]+\.[a-z]{2,6}/i.test(s);
+}
+
+function extractProductNameFromUrl(url, platform) {
+  try {
+    const urlObj = new URL(url);
+    const path = urlObj.pathname.replace(/\/$/, '');
+    const segments = path.split('/').filter(Boolean);
+
+    const isIdSegment = (seg) => {
+      if (/^itm[a-z0-9]{8,}$/i.test(seg)) return true;
+      if (/^[A-Z0-9]{10}$/i.test(seg)) return true;
+      if (/^\d+$/.test(seg)) return true;
+      if (/^[a-f0-9]{16,}$/i.test(seg)) return true;
+      if (/^(p|dp|gp|buy|item|product|offer|listing)$/i.test(seg)) return true;
+      return false;
+    };
+
+    const candidates = segments
+      .filter(seg => !isIdSegment(seg) && seg.length > 3 && /[a-z]/i.test(seg))
+      .sort((a, b) => b.length - a.length);
+
+    const nameSegment = candidates[0] || segments.find(seg => !isIdSegment(seg) && seg.length > 3);
+
+    if (nameSegment) {
+      let name = decodeURIComponent(nameSegment)
+        .replace(/[-_]+/g, ' ')
+        .replace(/\b\w/g, c => c.toUpperCase());
+      if (name.length > 70) name = name.slice(0, 67) + '...';
+      return name;
+    }
+  } catch {}
+  return platform + ' Product';
+}
+
+function handleSearch() {
+  try {
+    const input = document.getElementById('searchInput');
+    const helper = document.getElementById('searchHelper');
+    const val = input.value.trim();
+    if (!val) { hideDetectedUrl(); return; }
+
+    if (isUrl(val)) {
+      const platform = detectPlatform(val) || 'Link';
+      currentSearchUrl = val;
+      currentSearchPlatform = platform;
+      currentSearchName = extractProductNameFromUrl(val, platform);
+      showDetectedUrl(val, platform);
+    } else {
+      hideDetectedUrl();
+      currentSearchUrl = 'search://' + val.toLowerCase().replace(/\s+/g, '-');
+      currentSearchPlatform = 'Search';
+      currentSearchName = val;
+      showSearchCard(val);
+    }
+  } catch (err) {
+    console.error('Search error:', err);
+  }
+}
+
+function showDetectedUrl(url, platform) {
+  const helper = document.getElementById('searchHelper');
+  const productName = currentSearchName || platform + ' Product';
+  const existing = cart.find(c => c.url === url);
+  const existingQty = existing ? existing.qty : 1;
+
+  helper.innerHTML = `
+    <div class="detected-card">
+      <div class="detected-card-header">
+        <div class="detected-card-info">
+          <span class="detected-badge">${escapeHtml(platform)}</span>
+          <span class="detected-url" title="${escapeHtml(url)}" style="white-space:normal;overflow:visible;text-overflow:clip;font-weight:500;color:#222;font-size:14px;">${escapeHtml(productName)}</span>
+          <span class="detected-url" style="font-size:11px;color:#999;margin-top:2px;">${escapeHtml(url)}</span>
+        </div>
+        <div style="display:flex;flex-direction:column;align-items:center;gap:6px;">
+          <div class="product-summary-qty" style="flex-direction:row;gap:4px;">
+            <label for="detectedQty" style="font-size:11px;color:#888;font-weight:600;text-transform:uppercase;">Qty</label>
+            <input type="number" id="detectedQty" value="${existingQty}" min="1" max="99" style="width:56px;padding:6px;font-size:14px;text-align:center;border:1px solid #ddd;border-radius:6px;">
+          </div>
+          <button type="button" id="addDetectedBtn" class="btn-detected-add">Add to Cart</button>
+        </div>
+      </div>
+
+      <div class="detected-screenshot-row">
+        <label class="detected-upload-btn" id="screenshotLabel">
+          <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909m-18 3.75h16.5a2.25 2.25 0 002.25-2.25V6a2.25 2.25 0 00-2.25-2.25H3.75A2.25 2.25 0 001.5 6v12a2.25 2.25 0 002.25 2.25z"/></svg>
+          <span>Attach product screenshot (optional)</span>
+          <input type="file" id="screenshotInput" accept="image/*" hidden>
+        </label>
+        <div class="detected-preview-wrap" id="screenshotPreview" hidden>
+          <img id="screenshotPreviewImg" src="" alt="Screenshot preview">
+          <button type="button" id="screenshotRemove" class="detected-preview-remove" aria-label="Remove screenshot">×</button>
+        </div>
+      </div>
+    </div>
+  `;
+
+  document.getElementById('addDetectedBtn').addEventListener('click', () => {
+    const qty = parseInt(document.getElementById('detectedQty').value, 10) || 1;
+    addToCart({
+      url: currentSearchUrl,
+      platform: currentSearchPlatform,
+      name: currentSearchName || currentSearchPlatform + ' Product',
+      screenshot: currentSearchScreenshot,
+      qty: qty
+    });
+    hideDetectedUrl();
+    const searchInput = document.getElementById('searchInput');
+    if (searchInput) searchInput.value = '';
+  });
+
+  const fileInput = document.getElementById('screenshotInput');
+  const previewWrap = document.getElementById('screenshotPreview');
+  const previewImg = document.getElementById('screenshotPreviewImg');
+  const removeBtn = document.getElementById('screenshotRemove');
+  const label = document.getElementById('screenshotLabel');
+
+  fileInput.addEventListener('change', (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      currentSearchScreenshot = ev.target.result;
+      previewImg.src = ev.target.result;
+      previewWrap.hidden = false;
+      label.classList.add('has-image');
+    };
+    reader.readAsDataURL(file);
+  });
+
+  removeBtn.addEventListener('click', () => {
+    currentSearchScreenshot = null;
+    previewWrap.hidden = true;
+    previewImg.src = '';
+    fileInput.value = '';
+    label.classList.remove('has-image');
+  });
+}
+
+function showSearchCard(searchText) {
+  const helper = document.getElementById('searchHelper');
+  const existing = cart.find(c => c.url === currentSearchUrl);
+  const existingQty = existing ? existing.qty : 1;
+
+  helper.innerHTML = `
+    <div class="detected-card">
+      <div class="detected-card-header">
+        <div class="detected-card-info">
+          <span class="detected-badge">Product Search</span>
+          <span class="detected-url" style="white-space:normal;overflow:visible;text-overflow:clip;font-weight:500;color:#222;">${escapeHtml(searchText)}</span>
+        </div>
+        <div style="display:flex;flex-direction:column;align-items:center;gap:6px;">
+          <div class="product-summary-qty" style="flex-direction:row;gap:4px;">
+            <label for="detectedQty" style="font-size:11px;color:#888;font-weight:600;text-transform:uppercase;">Qty</label>
+            <input type="number" id="detectedQty" value="${existingQty}" min="1" max="99" style="width:56px;padding:6px;font-size:14px;text-align:center;border:1px solid #ddd;border-radius:6px;">
+          </div>
+          <button type="button" id="addDetectedBtn" class="btn-detected-add">Add to Cart</button>
+        </div>
+      </div>
+
+      <div class="detected-screenshot-row">
+        <label class="detected-upload-btn" id="screenshotLabel">
+          <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909m-18 3.75h16.5a2.25 2.25 0 002.25-2.25V6a2.25 2.25 0 00-2.25-2.25H3.75A2.25 2.25 0 001.5 6v12a2.25 2.25 0 002.25 2.25z"/></svg>
+          <span>Attach product screenshot (optional)</span>
+          <input type="file" id="screenshotInput" accept="image/*" hidden>
+        </label>
+        <div class="detected-preview-wrap" id="screenshotPreview" hidden>
+          <img id="screenshotPreviewImg" src="" alt="Screenshot preview">
+          <button type="button" id="screenshotRemove" class="detected-preview-remove" aria-label="Remove screenshot">×</button>
+        </div>
+      </div>
+    </div>
+  `;
+
+  document.getElementById('addDetectedBtn').addEventListener('click', () => {
+    const qty = parseInt(document.getElementById('detectedQty').value, 10) || 1;
+    addToCart({
+      url: currentSearchUrl,
+      platform: currentSearchPlatform,
+      name: currentSearchName || 'Product',
+      screenshot: currentSearchScreenshot,
+      qty: qty
+    });
+    hideDetectedUrl();
+    const searchInput = document.getElementById('searchInput');
+    if (searchInput) searchInput.value = '';
+  });
+
+  const fileInput = document.getElementById('screenshotInput');
+  const previewWrap = document.getElementById('screenshotPreview');
+  const previewImg = document.getElementById('screenshotPreviewImg');
+  const removeBtn = document.getElementById('screenshotRemove');
+  const label = document.getElementById('screenshotLabel');
+
+  fileInput.addEventListener('change', (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      currentSearchScreenshot = ev.target.result;
+      previewImg.src = ev.target.result;
+      previewWrap.hidden = false;
+      label.classList.add('has-image');
+    };
+    reader.readAsDataURL(file);
+  });
+
+  removeBtn.addEventListener('click', () => {
+    currentSearchScreenshot = null;
+    previewWrap.hidden = true;
+    previewImg.src = '';
+    fileInput.value = '';
+    label.classList.remove('has-image');
+  });
+}
+
+function hideDetectedUrl() {
+  const helper = document.getElementById('searchHelper');
+  if (helper) helper.innerHTML = '';
+  currentSearchUrl = null;
+  currentSearchPlatform = null;
+  currentSearchName = null;
+  currentSearchScreenshot = null;
+}
+
+/* ============ CART DRAWER ============ */
+function openCart() {
+  const drawer = document.getElementById('cartDrawer');
+  if (drawer) {
+    drawer.hidden = false;
+    drawer.classList.add('active');
+    document.body.style.overflow = 'hidden';
+    renderCart();
+  }
+}
+
+function closeCartDrawer() {
+  const drawer = document.getElementById('cartDrawer');
+  if (drawer) {
+    drawer.classList.remove('active');
+    drawer.hidden = true;
+    document.body.style.overflow = '';
+  }
+}
+
+/* ============ ORDER MODAL ============ */
+function getNextSaturday() {
+  const today = new Date();
+  const day = today.getDay();
+  const daysUntilSat = (6 - day + 7) % 7 || 7;
+  const next = new Date(today);
+  next.setDate(today.getDate() + daysUntilSat);
+  return next.toISOString().split('T')[0];
+}
+
+function openOrderModal(fromCart = false) {
+  const modal = document.getElementById('orderModal');
+  const form = document.getElementById('orderForm');
+  const success = document.getElementById('orderSuccess');
+  const summaryBox = document.getElementById('productSummaryBox');
+  const summaryGroup = document.getElementById('productSummaryGroup');
+  const checkoutSummary = document.getElementById('checkoutSummary');
+  const variantGroup = document.getElementById('variantGroup');
+
+  if (!modal) return;
+
+  if (fromCart && cart.length === 0) {
+    toast('Your cart is empty. Add products before ordering.', 'error');
+    return;
+  }
+  if (!fromCart && !currentSearchUrl) {
+    toast('Please paste a product link first.', 'error');
+    return;
+  }
+
+  orderFromCart = fromCart;
+
+  form.hidden = false;
+  success.hidden = true;
+  form.reset();
+  clearFormErrors(form);
+
+  const today = new Date().toISOString().split('T')[0];
+  const tripInput = document.getElementById('orderTripDate');
+  if (tripInput) {
+    tripInput.min = today;
+    tripInput.value = getNextSaturday();
+  }
+
+  const isSingleItem = !fromCart || cart.length === 1;
+
+  if (isSingleItem) {
+    const item = fromCart ? cart[0] : {
+      url: currentSearchUrl,
+      platform: currentSearchPlatform,
+      name: currentSearchName || currentSearchPlatform + ' Product',
+      screenshot: currentSearchScreenshot,
+      qty: 1
+    };
+
+    if (summaryGroup) summaryGroup.hidden = false;
+    if (summaryBox) summaryBox.hidden = false;
+    if (checkoutSummary) checkoutSummary.hidden = true;
+    if (variantGroup) variantGroup.hidden = false;
+
+    const badge = document.getElementById('productSummaryBadge');
+    const text = document.getElementById('productSummaryText');
+    const img = document.getElementById('productSummaryScreenshot');
+    const qtyInput = document.getElementById('modalOrderQty');
+    const urlInput = document.getElementById('orderProductUrl');
+    const nameInput = document.getElementById('orderProductName');
+
+    if (badge) badge.textContent = item.platform || 'Product';
+    if (text) text.textContent = item.name || 'Product';
+    if (qtyInput) qtyInput.value = item.qty || 1;
+    if (urlInput) urlInput.value = item.url || '';
+    if (nameInput) nameInput.value = item.name || '';
+
+    if (img) {
+      if (item.screenshot) {
+        img.src = item.screenshot;
+        img.hidden = false;
+      } else {
+        img.hidden = true;
+      }
+    }
+  } else {
+    if (summaryGroup) summaryGroup.hidden = true;
+    if (summaryBox) summaryBox.hidden = true;
+    if (variantGroup) variantGroup.hidden = true;
+    if (checkoutSummary) {
+      checkoutSummary.hidden = false;
+      renderCheckoutSummary(checkoutSummary);
+    }
+  }
+
+  modal.hidden = false;
+  modal.classList.add('active');
+  document.body.style.overflow = 'hidden';
+}
+
+function renderCheckoutSummary(container) {
+  const h4 = container.querySelector('h4') || document.createElement('h4');
+  h4.textContent = `Items in your cart (${cart.length})`;
+  if (!container.contains(h4)) container.insertBefore(h4, container.firstChild);
+
+  container.querySelectorAll('.checkout-item').forEach(el => el.remove());
+
+  cart.forEach((item, i) => {
+    const initials = item.name ? item.name.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase() : '??';
+
+    const div = document.createElement('div');
+    div.className = 'checkout-item';
+    div.innerHTML = `
+      <span class="checkout-thumb-slot">${item.screenshot ? '<img class="checkout-screenshot" alt="">' : `<div class="checkout-thumb" style="width:44px;height:44px;border-radius:8px;background:linear-gradient(135deg,#e94560,#ff6b81);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:12px;">${escapeHtml(initials)}</div>`}</span>
+      <div class="checkout-item-info">
+        <span class="badge">${escapeHtml(item.platform || 'Product')}</span>
+        <span>${escapeHtml(item.name || 'Untitled')}</span>
+      </div>
+      <div class="checkout-item-qty">
+        <label>Qty</label>
+        <input type="number" value="${item.qty}" min="1" max="99" data-index="${i}" class="checkout-qty-input">
+      </div>
+    `;
+
+    if (item.screenshot) {
+      const img = div.querySelector('.checkout-screenshot');
+      if (img) img.src = item.screenshot;
+    }
+
+    container.appendChild(div);
+  });
+
+  container.querySelectorAll('.checkout-qty-input').forEach(input => {
+    input.addEventListener('change', (e) => {
+      const idx = parseInt(e.target.dataset.index, 10);
+      updateCartQty(idx, e.target.value);
+      renderCheckoutSummary(container);
+    });
+  });
+}
+
+function closeOrderModalFn() {
+  const modal = document.getElementById('orderModal');
+  if (modal) {
+    modal.classList.remove('active');
+    modal.hidden = true;
+    document.body.style.overflow = '';
+    const form = document.getElementById('orderForm');
+    clearFormErrors(form);
+  }
+}
+
+/* ============ FORM VALIDATION HELPERS ============ */
+function setFieldError(fieldId, message) {
+  const field = document.getElementById(fieldId);
+  if (!field) return;
+  field.classList.add('input-error');
+  const group = field.closest('.form-group');
+  if (group) {
+    const existing = group.querySelector('.field-error');
+    if (existing) existing.remove();
+    const errEl = document.createElement('small');
+    errEl.className = 'field-error';
+    errEl.textContent = message;
+    errEl.style.cssText = 'color:#e94560;font-size:12px;margin-top:4px;display:block;';
+    field.insertAdjacentElement('afterend', errEl);
+  }
+}
+
+function clearFormErrors(form) {
+  if (!form) return;
+  form.querySelectorAll('.input-error').forEach(el => el.classList.remove('input-error'));
+  form.querySelectorAll('.field-error').forEach(el => el.remove());
+}
+
+/* ============ PHONE HINT & AUTO-FILL ============ */
+function initPhoneHint() {
+  const phoneInput = document.getElementById('orderPhone');
+  const phoneHint = document.getElementById('phoneHint');
+  if (!phoneInput || !phoneHint) return;
+
+  phoneInput.addEventListener('input', () => {
+    const val = phoneInput.value.replace(/\s/g, '');
+    if (/^(17|77)\d{6}$/.test(val)) {
+      phoneHint.textContent = '✓ Valid Bhutan number';
+      phoneHint.hidden = false;
+      phoneInput.classList.remove('input-error');
+      const group = phoneInput.closest('.form-group');
+      if (group) {
+        const err = group.querySelector('.field-error');
+        if (err) err.remove();
+      }
+    } else {
+      phoneHint.hidden = true;
+    }
+  });
+}
+
+function initCustomerAutoFill() {
+  const phoneInput = document.getElementById('orderPhone');
+  const nameInput = document.getElementById('orderName');
+  const dzongkhagInput = document.getElementById('orderDzongkhag');
+  const addressInput = document.getElementById('orderAddress');
+
+  if (!phoneInput) return;
+
+  let lastCheckedPhone = '';
+
+  const doAutoFill = debounce(async () => {
+    const cleanPhone = phoneInput.value.replace(/\s/g, '');
+
+    // Only check if it's a valid Bhutan number and different from last check
+    if (!/^(17|77)\d{6}$/.test(cleanPhone) || cleanPhone === lastCheckedPhone) return;
+    lastCheckedPhone = cleanPhone;
+
+    // Wait for supabase to be ready
+    if (!supabase) {
+      console.log('Supabase not ready yet, waiting...');
+      try {
+        await supabaseReady;
+      } catch (e) {
+        console.warn('Supabase failed to load, cannot auto-fill');
+        return;
+      }
+    }
+
+    if (!supabase) {
+      console.warn('Supabase is null after waiting');
+      return;
+    }
+
+    try {
+      console.log('Fetching customer for phone:', cleanPhone);
+
+      // Fetch customer by phone
+      const { data: customer, error } = await supabase
+        .from('customers')
+        .select('name, dzongkhag, address')
+        .eq('phone', cleanPhone)
+        .limit(1)
+        .maybeSingle();
+
+      if (error) {
+        console.error('Supabase error fetching customer:', error);
+        return;
+      }
+
+      console.log('Customer lookup result:', customer);
+
+      if (customer) {
+        let filledAny = false;
+
+        // Only fill fields that are empty (don't overwrite user-typed data)
+        if (nameInput && !nameInput.value.trim()) {
+          nameInput.value = customer.name || '';
+          nameInput.classList.add('auto-filled');
+          setTimeout(() => nameInput.classList.remove('auto-filled'), 1000);
+          filledAny = true;
+        }
+        if (dzongkhagInput && !dzongkhagInput.value) {
+          dzongkhagInput.value = customer.dzongkhag || '';
+          dzongkhagInput.classList.add('auto-filled');
+          setTimeout(() => dzongkhagInput.classList.remove('auto-filled'), 1000);
+          filledAny = true;
+        }
+        if (addressInput && !addressInput.value.trim()) {
+          addressInput.value = customer.address || '';
+          addressInput.classList.add('auto-filled');
+          setTimeout(() => addressInput.classList.remove('auto-filled'), 1000);
+          filledAny = true;
+        }
+
+        // Show subtle hint only if we actually filled something
+        if (filledAny) {
+          const phoneHint = document.getElementById('phoneHint');
+          if (phoneHint) {
+            phoneHint.textContent = '✓ Found your details — auto-filled!';
+            phoneHint.hidden = false;
+            setTimeout(() => {
+              if (phoneHint.textContent.includes('auto-filled')) {
+                phoneHint.textContent = '✓ Valid Bhutan number';
+              }
+            }, 3000);
+          }
+          toast('Your details have been auto-filled!', 'success');
+        }
+      } else {
+        console.log('No customer found for phone:', cleanPhone);
+      }
+    } catch (err) {
+      console.warn('Customer auto-fill failed:', err);
+    }
+  }, 600);
+
+  phoneInput.addEventListener('input', doAutoFill);
+}
+
+/* ============ ORDER SUBMISSION ============ */
+async function submitOrder(e) {
+  e.preventDefault();
+  const btn = document.getElementById('orderSubmitBtn');
+  const form = document.getElementById('orderForm');
+
+  if (!supabase) {
+    toast('Service temporarily unavailable. Please try again later or contact us on WhatsApp.', 'error');
+    return;
+  }
+
+  clearFormErrors(form);
+
+  const phone = document.getElementById('orderPhone').value.trim();
+  const name = document.getElementById('orderName').value.trim();
+  const dzongkhag = document.getElementById('orderDzongkhag').value;
+  const address = document.getElementById('orderAddress').value.trim();
+  const tripDate = document.getElementById('orderTripDate').value;
+  const paymentMethod = form.querySelector('input[name="paymentMethod"]:checked')?.value;
+
+  let hasError = false;
+
+  const cleanPhone = phone.replace(/\s/g, '');
+  if (!cleanPhone || !/^((17|77)\d{6})$/.test(cleanPhone)) {
+    setFieldError('orderPhone', 'Enter a valid Bhutan number (17XXXXXX or 77XXXXXX)');
+    hasError = true;
+  }
+  if (!name) {
+    setFieldError('orderName', 'Name is required');
+    hasError = true;
+  }
+  if (!dzongkhag) {
+    setFieldError('orderDzongkhag', 'Please select your dzongkhag');
+    hasError = true;
+  }
+  if (!address) {
+    setFieldError('orderAddress', 'Delivery address is required');
+    hasError = true;
+  }
+  if (!tripDate) {
+    setFieldError('orderTripDate', 'Please select a trip date');
+    hasError = true;
+  }
+  if (!paymentMethod) {
+    toast('Please select a payment method', 'error');
+    hasError = true;
+  }
+
+  if (hasError) {
+    const firstError = form.querySelector('.field-error');
+    if (firstError) {
+      const input = firstError.closest('.form-group')?.querySelector('input, select, textarea');
+      if (input) input.focus();
+    }
+    return;
+  }
+
+  btn.disabled = true;
+  btn.textContent = 'Placing order…';
+
+  try {
+    const { data: existingCustomer } = await supabase
+      .from('customers')
+      .select('id')
+      .eq('phone', cleanPhone)
+      .limit(1)
+      .maybeSingle();
+
+    let customerId = existingCustomer?.id;
+
+    if (!customerId) {
+      const { data: newCustomer, error: custErr } = await supabase
+        .from('customers')
+        .insert({ name, phone: cleanPhone, dzongkhag, address })
+        .select('id')
+        .single();
+      if (custErr) throw custErr;
+      customerId = newCustomer.id;
+    } else {
+      await supabase.from('customers').update({ name }).eq('id', customerId);
+    }
+
+    let items = [];
+    const isSingle = !document.getElementById('productSummaryBox').hidden;
+    if (isSingle) {
+      const url = document.getElementById('orderProductUrl').value;
+      const productName = document.getElementById('orderProductName').value;
+      const qty = parseInt(document.getElementById('modalOrderQty').value, 10) || 1;
+      const variant = document.getElementById('orderVariant').value.trim();
+      const platform = detectPlatform(url) || 'Other';
+      items.push({ url, name: productName || platform + ' Product', qty, variant, platform });
+    } else {
+      items = cart.map(c => ({
+        url: c.url,
+        name: c.name || 'Product',
+        qty: c.qty || 1,
+        variant: '',
+        platform: c.platform || 'Other'
+      }));
+    }
+
+    const { data: orderData, error: orderErr } = await supabase
+      .from('orders')
+      .insert({
+        customer_id: customerId,
+        status: 'submitted',
+        payment_method: paymentMethod,
+        trip_date: tripDate,
+        delivery_dzongkhag: dzongkhag,
+        delivery_address: address,
+        admin_notes: document.getElementById('orderNotes').value.trim() || null,
+        payment_status: 'pending'
+      })
+      .select('id')
+      .single();
+
+    if (orderErr) throw orderErr;
+    const orderId = orderData.id;
+
+    const orderItems = items.map(it => ({
+      order_id: orderId,
+      product_name: it.name,
+      platform: it.platform,
+      product_link: it.url,
+      quantity: it.qty,
+      variant: it.variant || null
+    }));
+
+    const { error: itemsErr } = await supabase.from('order_items').insert(orderItems);
+    if (itemsErr) throw itemsErr;
+
+    const formEl = document.getElementById('orderForm');
+    const successEl = document.getElementById('orderSuccess');
+    const successProduct = document.getElementById('successProduct');
+    const successOrderId = document.getElementById('successOrderId');
+    const waBtn = document.getElementById('waConfirmBtn');
+
+    formEl.hidden = true;
+    successEl.hidden = false;
+
+    const productText = items.length > 1
+      ? `${items.length} items ordered`
+      : (items[0]?.name || 'Your product');
+    if (successProduct) successProduct.textContent = productText;
+    if (successOrderId) successOrderId.textContent = String(orderId).toUpperCase();
+
+    const orderIdStr = String(orderId);
+    const waMsg = `Hi Shop2Bhutan! I just placed an order (${orderIdStr.slice(0,8).toUpperCase()}). Please confirm my order.`;
+    if (waBtn) waBtn.href = `https://wa.me/${WHATSAPP_NUMBER.replace(/\D/g,'')}?text=${encodeURIComponent(waMsg)}`;
+
+    if (orderFromCart) clearCart();
+
+    toast('Order placed successfully!', 'success');
+
+  } catch (err) {
+    console.error(err);
+    toast('Failed to place order: ' + (err.message || 'Unknown error'), 'error');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Place Order';
+  }
+}
+
+/* ============ REVIEWS ============ */
+async function loadReviews() {
+  const track = document.getElementById('reviewsTrack');
+  if (!track) return;
+
+  if (!supabase) {
+    initReviewCarousel();
+    return;
+  }
+
+  const { data, error } = await supabase
+    .from('reviews')
+    .select('*')
+    .order('created_at', { ascending: false })
+    .limit(20);
+
+  if (error || !data || !data.length) {
+    if (error) console.warn('Failed to load reviews:', error.message);
+    initReviewCarousel();
+    return;
+  }
+
+  track.innerHTML = data.map(r => {
+    const stars = '★'.repeat(r.rating || 0) + '<span class="star-empty">★</span>'.repeat(5 - (r.rating || 0));
+    const verified = r.verified ? '<span class="verified-badge">Verified</span>' : '';
+    const initials = r.name ? r.name.split(' ').map(w => w[0]).join('').slice(0,2).toUpperCase() : '??';
+    return `
+      <article class="review-card">
+        <div class="review-stars" aria-label="${r.rating} out of 5 stars">${stars}</div>
+        <p class="review-text">"${escapeHtml(r.comment || '')}"</p>
+        <div class="reviewer">
+          <div class="reviewer-avatar" aria-hidden="true">${escapeHtml(initials)}</div>
+          <div class="reviewer-info">
+            <h4>${escapeHtml(r.name || 'Anonymous')} ${verified}</h4>
+            <span>${escapeHtml(r.address || 'Bhutan')}</span>
+          </div>
+        </div>
+      </article>
+    `;
+  }).join('');
+
+  initReviewCarousel();
+}
+
+function initReviewCarousel() {
+  const track = document.getElementById('reviewsTrack');
+  const dots = document.getElementById('reviewsDots');
+  const wrapper = document.getElementById('reviewsWrapper');
+  if (!track || !wrapper) return;
+
+  const cards = track.querySelectorAll('.review-card');
+  if (!cards.length) return;
+
+  if (dots) {
+    dots.innerHTML = '';
+    const pages = Math.max(1, Math.ceil(cards.length / 2));
+    for (let i = 0; i < Math.min(pages, 6); i++) {
+      const btn = document.createElement('button');
+      btn.className = 'review-dot' + (i === 0 ? ' active' : '');
+      btn.setAttribute('aria-label', `Review page ${i + 1}`);
+      btn.addEventListener('click', () => {
+        const scrollLeft = wrapper.clientWidth * i;
+        wrapper.scrollTo({ left: scrollLeft, behavior: 'smooth' });
+        dots.querySelectorAll('.review-dot').forEach((d, idx) => d.classList.toggle('active', idx === i));
+      });
+      dots.appendChild(btn);
+    }
+  }
+
+  if (carouselIntervalId) {
+    clearInterval(carouselIntervalId);
+    carouselIntervalId = null;
+  }
+
+  let scrollDir = 1;
+  carouselIntervalId = setInterval(() => {
+    if (!wrapper || !document.contains(wrapper)) {
+      clearInterval(carouselIntervalId);
+      carouselIntervalId = null;
+      return;
+    }
+    if (wrapper.scrollLeft + wrapper.clientWidth >= wrapper.scrollWidth - 10) scrollDir = -1;
+    if (wrapper.scrollLeft <= 10) scrollDir = 1;
+    wrapper.scrollBy({ left: wrapper.clientWidth * 0.5 * scrollDir, behavior: 'smooth' });
+  }, 5000);
+}
+
+async function submitReview(e) {
+  e.preventDefault();
+
+  const submitBtn = e.target.querySelector('button[type="submit"]');
+
+  if (!supabase) {
+    toast('Service temporarily unavailable. Please try again later.', 'error');
+    return;
+  }
+
+  const orderId = document.getElementById('reviewOrderId').value.trim() || null;
+  const name = document.getElementById('reviewerName').value.trim();
+  const address = document.getElementById('reviewerAddress').value.trim();
+  const rating = parseInt(document.getElementById('ratingValue').value, 10);
+  const text = document.getElementById('reviewText').value.trim();
+
+  if (!name || !address || !rating || !text) {
+    toast('Please fill in all required fields and select a rating', 'error');
+    return;
+  }
+  if (name.length > 100 || address.length > 100) {
+    toast('Name and address must be under 100 characters', 'error');
+    return;
+  }
+  if (text.length < 10 || text.length > 1000) {
+    toast('Review must be between 10 and 1000 characters', 'error');
+    return;
+  }
+  if (rating < 1 || rating > 5) {
+    toast('Please select a valid rating (1-5)', 'error');
+    return;
+  }
+
+  if (submitBtn) {
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Submitting…';
+  }
+
+  try {
+    let customerId = null;
+    let verified = false;
+
+    // If order ID provided, look up the customer from that order
+    if (orderId) {
+      const { data: orderData, error: orderErr } = await supabase
+        .from('orders')
+        .select('customer_id')
+        .eq('id', orderId)
+        .limit(1)
+        .maybeSingle();
+
+      if (orderErr) {
+        console.warn('Order lookup error:', orderErr);
+      } else if (orderData && orderData.customer_id) {
+        customerId = orderData.customer_id;
+        verified = true;
+      }
+    }
+
+    // If no customer found via order, create a minimal customer record
+    // This ensures customer_id is never null
+    if (!customerId) {
+      // Try to find existing customer by name + address combo
+      const { data: existingCustomer } = await supabase
+        .from('customers')
+        .select('id')
+        .eq('name', name)
+        .eq('dzongkhag', address)
+        .limit(1)
+        .maybeSingle();
+
+      if (existingCustomer && existingCustomer.id) {
+        customerId = existingCustomer.id;
+      } else {
+        // Create new customer for this review
+        const { data: newCustomer, error: custErr } = await supabase
+          .from('customers')
+          .insert({
+            name: name,
+            dzongkhag: address,
+            phone: null,  // optional for reviews
+            address: address
+          })
+          .select('id')
+          .single();
+
+        if (custErr) {
+          console.error('Failed to create customer for review:', custErr);
+          toast('Failed to submit review. Please try again.', 'error');
+          return;
+        }
+        customerId = newCustomer.id;
+      }
+    }
+
+    // Insert review with proper schema
+    const { error } = await supabase.from('reviews').insert({
+      order_id: orderId,
+      customer_id: customerId,
+      rating: rating,
+      comment: text,
+      status: 'pending',
+      moderated_by: null
+    });
+
+    if (error) {
+      toast('Failed to submit review: ' + error.message, 'error');
+      return;
+    }
+
+    toast('Review submitted! It will appear after admin verification.', 'success');
+    closeReviewModalFn();
+    loadReviews();
+  } catch (err) {
+    console.error(err);
+    toast('Failed to submit review. Please try again.', 'error');
+  } finally {
+    if (submitBtn) {
+      submitBtn.disabled = false;
+      submitBtn.textContent = 'Submit Review';
+    }
+  }
+}
+
+/* ============ STAR RATING ============ */
+function initStarRating() {
+  const container = document.getElementById('starRating');
+  const hidden = document.getElementById('ratingValue');
+  const text = document.getElementById('ratingText');
+  if (!container) return;
+
+  const labels = ['Click a star to rate', 'Poor', 'Fair', 'Good', 'Very Good', 'Excellent'];
+
+  container.querySelectorAll('.star').forEach(star => {
+    star.addEventListener('click', () => {
+      const val = parseInt(star.dataset.value, 10);
+      reviewRating = val;
+      if (hidden) hidden.value = val;
+      if (text) text.textContent = labels[val] || '';
+      container.querySelectorAll('.star').forEach(s => {
+        s.classList.toggle('active', parseInt(s.dataset.value, 10) <= val);
+      });
+    });
+  });
+}
+
+/* ============ TOAST ============ */
+function toast(msg, type = 'info') {
+  const el = document.getElementById('s2bToast');
+  if (!el) return;
+  el.textContent = msg;
+  el.className = 'toast' + (type ? ` toast-${type}` : '');
+  el.hidden = false;
+  requestAnimationFrame(() => el.classList.add('show'));
+  setTimeout(() => {
+    el.classList.remove('show');
+    setTimeout(() => { el.hidden = true; }, 300);
+  }, 3000);
+}
+
+/* ============ MODALS ============ */
+function openReviewModalFn() {
+  const modal = document.getElementById('reviewModal');
+  if (modal) {
+    modal.hidden = false;
+    modal.classList.add('active');
+    document.body.style.overflow = 'hidden';
+    document.getElementById('reviewForm')?.reset();
+    reviewRating = 0;
+    document.querySelectorAll('#starRating .star').forEach(s => s.classList.remove('active'));
+    const hidden = document.getElementById('ratingValue');
+    if (hidden) hidden.value = '';
+    const text = document.getElementById('ratingText');
+    if (text) text.textContent = 'Click a star to rate';
+  }
+}
+
+function closeReviewModalFn() {
+  const modal = document.getElementById('reviewModal');
+  if (modal) {
+    modal.classList.remove('active');
+    modal.hidden = true;
+    document.body.style.overflow = '';
+  }
+}
+
+/* ============ INIT ============ */
 document.addEventListener('DOMContentLoaded', () => {
-  checkSession();
+  loadCart();
+  initStarRating();
+  initPhoneHint();
+  initCustomerAutoFill(); // NOW DEFINED ABOVE, so it works correctly
+  initReviewCarousel();
+
+  supabaseReady.then(() => loadReviews());
+
+  const searchInput = document.getElementById('searchInput');
+  const searchBtn = document.getElementById('searchBtn');
+  if (searchInput) {
+    searchInput.addEventListener('input', debounce(handleSearch, 400));
+    searchInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') handleSearch();
+    });
+  }
+  if (searchBtn) searchBtn.addEventListener('click', handleSearch);
+
+  document.querySelectorAll('#discoverTags .tag').forEach(tag => {
+    tag.addEventListener('click', () => {
+      if (searchInput) {
+        searchInput.value = tag.dataset.search;
+        handleSearch();
+      }
+    });
+  });
+
+  document.getElementById('cartBtn')?.addEventListener('click', openCart);
+  document.getElementById('cartDrawerOverlay')?.addEventListener('click', closeCartDrawer);
+  document.getElementById('cartDrawerClose')?.addEventListener('click', closeCartDrawer);
+  document.getElementById('cartContinueBtn')?.addEventListener('click', closeCartDrawer);
+  document.getElementById('cartCheckoutBtn')?.addEventListener('click', () => {
+    closeCartDrawer();
+    openOrderModal(true);
+  });
+
+  document.getElementById('closeOrderModal')?.addEventListener('click', closeOrderModalFn);
+  document.getElementById('placeAnotherBtn')?.addEventListener('click', () => {
+    closeOrderModalFn();
+    const summaryBadge = document.getElementById('productSummaryBadge');
+    const summaryText = document.getElementById('productSummaryText');
+    const summaryImg = document.getElementById('productSummaryScreenshot');
+    if (summaryBadge) summaryBadge.textContent = '';
+    if (summaryText) summaryText.textContent = '';
+    if (summaryImg) { summaryImg.src = ''; summaryImg.hidden = true; }
+    hideDetectedUrl();
+    if (searchInput) {
+      searchInput.value = '';
+      searchInput.focus();
+      searchInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+  });
+  document.getElementById('orderForm')?.addEventListener('submit', submitOrder);
+
+  document.getElementById('openReviewModal')?.addEventListener('click', openReviewModalFn);
+  document.getElementById('closeReviewModal')?.addEventListener('click', closeReviewModalFn);
+  document.getElementById('reviewForm')?.addEventListener('submit', submitReview);
+
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+      closeCartDrawer();
+      closeOrderModalFn();
+      closeReviewModalFn();
+    }
+  });
+
+  document.getElementById('orderModal')?.addEventListener('click', (e) => {
+    if (e.target.id === 'orderModal') closeOrderModalFn();
+  });
+  document.getElementById('reviewModal')?.addEventListener('click', (e) => {
+    if (e.target.id === 'reviewModal') closeReviewModalFn();
+  });
 });

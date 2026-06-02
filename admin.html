@@ -11,16 +11,19 @@
             --success:#25d366;
             --warning:#ff9f43;
             --info:#2980b9;
+            --danger:#c0392b;
             --surface:#ffffff;
             --text:#1a1a2e;
             --muted:#888;
             --border:#e8e8e8;
+            --sidebar-width:260px;
+            --sidebar-collapsed:64px;
         }
         *{margin:0;padding:0;box-sizing:border-box;font-family:'Segoe UI',system-ui,-apple-system,sans-serif}
         body{background:#f4f6f8;color:var(--text);min-height:100vh}
 
         /* Login */
-        .login-screen{position:fixed;inset:0;background:linear-gradient(135deg,#1a1a2e,#16213e);display:flex;align-items:center;justify-content:center;z-index:9999;padding:1rem}
+        .login-screen{position:fixed;inset:0;background:linear-gradient(135deg,#1a1a2e,#16213e);display:none;align-items:center;justify-content:center;z-index:9999;padding:1rem}
         .login-box{background:#fff;padding:2.5rem;border-radius:16px;width:100%;max-width:400px;box-shadow:0 20px 60px rgba(0,0,0,.3)}
         .login-logo{width:140px;height:60px;background:linear-gradient(135deg,var(--accent),#6bffba);border-radius:10px;margin:0 auto 1.5rem;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:0.9rem;letter-spacing:0.5px;box-shadow:0 4px 15px rgba(233,69,96,.3)}
         .login-box h2{margin-bottom:0.25rem;color:#1a1a2e;text-align:center;font-size:1.5rem}
@@ -29,7 +32,6 @@
         .login-box input:focus{border-color:var(--accent)}
         .input-group{margin-bottom:1rem}
         .input-group label{display:block;font-size:0.8rem;color:#666;font-weight:600;margin-bottom:0.35rem;text-transform:uppercase;letter-spacing:0.5px}
-        .input-group .hint{font-size:0.8rem;color:#888;margin-top:0.35rem}
         .password-wrap{position:relative}
         .password-wrap input{padding-right:2.75rem;margin-bottom:0}
         .btn-preview{position:absolute;right:0.6rem;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:#888;font-size:1.1rem;padding:0.25rem;display:flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:6px;transition:all .2s}
@@ -39,27 +41,61 @@
         .remember-label input[type="checkbox"]{width:18px;height:18px;accent-color:var(--accent);cursor:pointer}
         .forgot-link{font-size:0.85rem;color:var(--accent);text-decoration:none;font-weight:600}
         .forgot-link:hover{text-decoration:underline}
-        .login-box button{width:100%;padding:1rem;background:var(--accent);color:#fff;border:none;border-radius:10px;font-weight:700;cursor:pointer;font-size:1rem;transition:all .2s;box-shadow:0 4px 15px rgba(233,69,96,.3)}
-        .login-box button:hover{opacity:.9;transform:translateY(-1px);box-shadow:0 6px 20px rgba(233,69,96,.4)}
-        .login-box button:disabled{opacity:.5;cursor:not-allowed;transform:none;box-shadow:none}
-        .login-error{color:#e94560;font-size:0.85rem;margin-top:0.75rem;text-align:center;display:none;align-items:center;justify-content:center;gap:0.35rem}
-        .login-error::before{content:"⚠️"}
+        .login-box > button{width:100%;padding:1rem;background:var(--accent);color:#fff;border:none;border-radius:10px;font-weight:700;cursor:pointer;font-size:1rem;transition:all .2s;box-shadow:0 4px 15px rgba(233,69,96,.3)}
+        .login-box > button:hover{opacity:.9;transform:translateY(-1px);box-shadow:0 6px 20px rgba(233,69,96,.4)}
+        .login-box > button:disabled{opacity:.5;cursor:not-allowed;transform:none;box-shadow:none}
+        .login-error{color:#e94560;font-size:0.85rem;margin-top:0.75rem;text-align:center;display:none;align-items:center;justify-content:center;gap:0.35rem;background:#fff0f2;padding:0.65rem 1rem;border-radius:8px;border:1px solid #ffe0e5}
+        .login-error.visible{display:flex}
 
         /* Layout */
-        .admin-layout{display:none;grid-template-columns:260px 1fr;min-height:100vh}
-        aside{background:var(--sidebar);color:#fff;padding:1.5rem;position:sticky;top:0;height:100vh;overflow-y:auto;display:flex;flex-direction:column}
-        aside .logo{font-size:1.25rem;font-weight:700;margin-bottom:2.5rem;display:flex;align-items:center;gap:0.6rem;padding:0 0.5rem}
-        aside .logo-icon{width:36px;height:36px;background:linear-gradient(135deg,var(--accent),#ff6b81);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:1.1rem}
-        aside nav{display:flex;flex-direction:column;gap:0.35rem}
-        aside nav a{color:#b8b8b8;text-decoration:none;padding:0.8rem 1rem;border-radius:10px;font-size:0.92rem;transition:all .2s;display:flex;align-items:center;gap:0.85rem;font-weight:500}
+        .admin-layout{display:none;grid-template-columns:var(--sidebar-width) 1fr;min-height:100vh;transition:grid-template-columns 0.3s ease}
+        .admin-layout.sidebar-collapsed{grid-template-columns:var(--sidebar-collapsed) 1fr}
+
+        /* Sidebar */
+        aside{background:var(--sidebar);color:#fff;position:sticky;top:0;height:100vh;overflow-y:auto;display:flex;flex-direction:column;transition:width 0.3s ease;z-index:100}
+        .admin-layout.sidebar-collapsed aside{width:var(--sidebar-collapsed)}
+
+        .sidebar-logo-area{padding:1.25rem 1rem;display:flex;align-items:center;justify-content:space-between;gap:0.5rem;border-bottom:1px solid rgba(255,255,255,0.06)}
+        .sidebar-logo{display:flex;align-items:center;gap:0.6rem;overflow:hidden;white-space:nowrap}
+        .sidebar-logo img{width:36px;height:36px;flex-shrink:0;border-radius:8px;object-fit:contain}
+        .sidebar-logo-text{font-size:1.1rem;font-weight:700;opacity:1;transition:opacity 0.2s}
+        .admin-layout.sidebar-collapsed .sidebar-logo-text{opacity:0;width:0}
+
+        .sidebar-controls{display:flex;align-items:center;gap:0.35rem}
+        .sidebar-btn{width:28px;height:28px;border-radius:6px;border:none;background:rgba(255,255,255,0.08);color:#b8b8b8;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:0.85rem;transition:all .2s;flex-shrink:0}
+        .sidebar-btn:hover{background:rgba(255,255,255,0.15);color:#fff}
+        .sidebar-btn.active{background:var(--accent);color:#fff}
+
+        aside nav{display:flex;flex-direction:column;gap:0.35rem;padding:0.75rem 0.75rem 1rem;flex:1}
+        .admin-layout.sidebar-collapsed aside nav{padding:0.75rem 0.5rem 1rem}
+
+        aside nav a{color:#b8b8b8;text-decoration:none;padding:0.75rem 0.85rem;border-radius:10px;font-size:0.92rem;transition:all .2s;display:flex;align-items:center;gap:0.85rem;font-weight:500;white-space:nowrap;overflow:hidden}
+        .admin-layout.sidebar-collapsed aside nav a{padding:0.75rem;justify-content:center;gap:0}
         aside nav a:hover,aside nav a.active{background:rgba(255,255,255,.08);color:#fff}
         aside nav a.active{box-shadow:inset 3px 0 0 var(--accent)}
-        aside nav a .nav-icon{width:22px;height:22px;display:flex;align-items:center;justify-content:center;font-size:1.05rem}
-        aside .nav-divider{height:1px;background:rgba(255,255,255,.08);margin:0.75rem 0}
-        aside .nav-section-label{color:rgba(255,255,255,.35);font-size:0.7rem;text-transform:uppercase;letter-spacing:1px;padding:0 1rem;margin-bottom:0.4rem;font-weight:600}
-        .admin-main{padding:2rem;overflow-x:auto}
-        .admin-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:2rem;flex-wrap:wrap;gap:1rem}
-        .admin-header h1{font-size:1.6rem;font-weight:700}
+        aside nav a .nav-icon{width:22px;height:22px;display:flex;align-items:center;justify-content:center;font-size:1.05rem;flex-shrink:0}
+        aside nav a .nav-label{opacity:1;transition:opacity 0.2s}
+        .admin-layout.sidebar-collapsed aside nav a .nav-label{opacity:0;width:0;display:none}
+        aside .nav-divider{height:1px;background:rgba(255,255,255,.08);margin:0.5rem 0.75rem}
+        .admin-layout.sidebar-collapsed aside .nav-divider{margin:0.5rem 0.5rem}
+        aside .nav-section-label{color:rgba(255,255,255,.35);font-size:0.7rem;text-transform:uppercase;letter-spacing:1px;padding:0 0.85rem;margin-bottom:0.4rem;font-weight:600;white-space:nowrap;overflow:hidden}
+        .admin-layout.sidebar-collapsed aside .nav-section-label{opacity:0;height:0;margin:0;padding:0}
+
+        .admin-layout.sidebar-collapsed aside nav a{position:relative}
+        .admin-layout.sidebar-collapsed aside nav a:hover::after{
+            content:attr(data-label);position:absolute;left:calc(100% + 8px);top:50%;transform:translateY(-50%);
+            background:#1a1a2e;color:#fff;padding:0.4rem 0.75rem;border-radius:6px;
+            font-size:0.8rem;white-space:nowrap;z-index:200;box-shadow:0 4px 12px rgba(0,0,0,0.3);
+            pointer-events:none;font-weight:500
+        }
+        .admin-layout.sidebar-collapsed aside nav a:hover::before{
+            content:'';position:absolute;left:calc(100% + 2px);top:50%;transform:translateY(-50%);
+            border:6px solid transparent;border-right-color:#1a1a2e;z-index:200
+        }
+
+        .admin-main{padding:2rem;overflow-x:auto;transition:padding 0.3s}
+        .admin-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:1.5rem;flex-wrap:wrap;gap:1rem}
+        .admin-header h1{font-size:1.5rem;font-weight:700}
         .admin-header-actions{display:flex;align-items:center;gap:1rem}
         .notification-btn{position:relative;width:40px;height:40px;border-radius:10px;border:none;background:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:1.15rem;box-shadow:0 2px 8px rgba(0,0,0,.06);transition:all .2s}
         .notification-btn:hover{background:#f8f9fc;transform:translateY(-1px)}
@@ -69,23 +105,32 @@
         .admin-profile .badge-role{background:var(--accent);color:#fff;padding:0.25rem 0.6rem;border-radius:20px;font-size:0.7rem;font-weight:700;text-transform:uppercase}
 
         /* Stats */
-        .stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:1.25rem;margin-bottom:2rem}
-        .stat-card{background:#fff;padding:1.5rem;border-radius:14px;box-shadow:0 2px 12px rgba(0,0,0,.04);transition:transform .2s,box-shadow .2s}
+        .stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:1rem;margin-bottom:1.5rem}
+        .stat-card{background:#fff;padding:1rem 1.25rem;border-radius:12px;box-shadow:0 2px 12px rgba(0,0,0,.04);transition:transform .2s,box-shadow .2s}
         .stat-card:hover{transform:translateY(-2px);box-shadow:0 8px 24px rgba(0,0,0,.08)}
-        .stat-card h4{font-size:0.8rem;color:#888;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:0.5rem;display:flex;align-items:center;gap:0.4rem}
-        .stat-card .value{font-size:1.85rem;font-weight:700;color:#1a1a2e}
-        .stat-card .stat-icon{width:32px;height:32px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:1rem;margin-bottom:0.75rem}
-        .stat-card.submitted{border-left:4px solid var(--accent)}
+        .stat-card h4{font-size:0.75rem;color:#888;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:0.35rem;display:flex;align-items:center;gap:0.4rem}
+        .stat-card .value{font-size:1.5rem;font-weight:700;color:#1a1a2e}
+        .stat-card .stat-icon{width:28px;height:28px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:0.9rem;margin-bottom:0.5rem}
+        .stat-card.submitted{border-left:3px solid var(--accent)}
         .stat-card.submitted .stat-icon{background:#ffe0e5;color:var(--accent)}
-        .stat-card.confirmed{border-left:4px solid var(--success)}
+        .stat-card.confirmed{border-left:3px solid var(--success)}
         .stat-card.confirmed .stat-icon{background:#d4edda;color:var(--success)}
-        .stat-card.pending{border-left:4px solid var(--warning)}
+        .stat-card.pending{border-left:3px solid var(--warning)}
         .stat-card.pending .stat-icon{background:#fff3cd;color:var(--warning)}
-        .stat-card.revenue{border-left:4px solid var(--info)}
+        .stat-card.revenue{border-left:3px solid var(--info)}
         .stat-card.revenue .stat-icon{background:#d1ecf1;color:var(--info)}
+        /* Review stats */
+        .stat-card.review-pending{border-left:3px solid var(--warning)}
+        .stat-card.review-pending .stat-icon{background:#fff3cd;color:var(--warning)}
+        .stat-card.review-verified{border-left:3px solid var(--success)}
+        .stat-card.review-verified .stat-icon{background:#d4edda;color:var(--success)}
+        .stat-card.review-rejected{border-left:3px solid var(--danger)}
+        .stat-card.review-rejected .stat-icon{background:#f8d7da;color:var(--danger)}
+        .stat-card.avg-rating{border-left:3px solid #9b59b6}
+        .stat-card.avg-rating .stat-icon{background:#f3e5f5;color:#9b59b6}
 
         /* Filters */
-        .filters{background:#fff;padding:1.25rem;border-radius:14px;margin-bottom:1.5rem;display:flex;gap:1rem;flex-wrap:wrap;align-items:end;box-shadow:0 2px 12px rgba(0,0,0,.04)}
+        .filters{background:#fff;padding:1.25rem;border-radius:14px;margin-bottom:1.25rem;display:flex;gap:1rem;flex-wrap:wrap;align-items:end;box-shadow:0 2px 12px rgba(0,0,0,.04)}
         .filters input,.filters select{padding:0.65rem 0.9rem;border:2px solid #e8e8e8;border-radius:10px;font-size:0.9rem;outline:none;min-width:160px;background:#fff}
         .filters input:focus,.filters select:focus{border-color:var(--accent)}
         .filters button{background:#1a1a2e;color:#fff;border:none;padding:0.65rem 1.25rem;border-radius:10px;font-weight:600;cursor:pointer;transition:all .2s}
@@ -94,12 +139,12 @@
 
         /* Table */
         .table-wrap{background:#fff;border-radius:14px;box-shadow:0 2px 12px rgba(0,0,0,.04);overflow:hidden}
-        table{width:100%;border-collapse:collapse;font-size:0.9rem;min-width:900px}
+        table{width:100%;border-collapse:collapse;font-size:0.9rem;min-width:700px}
         thead{background:#f8f9fc}
-        th{padding:1rem;text-align:left;font-weight:600;color:#666;font-size:0.78rem;text-transform:uppercase;letter-spacing:0.5px;border-bottom:2px solid #e8e8e8;white-space:nowrap}
-        td{padding:1rem;border-bottom:1px solid #f0f0f0;vertical-align:top}
+        th{padding:0.85rem 1rem;text-align:left;font-weight:600;color:#666;font-size:0.78rem;text-transform:uppercase;letter-spacing:0.5px;border-bottom:2px solid #e8e8e8;white-space:nowrap}
+        td{padding:0.85rem 1rem;border-bottom:1px solid #f0f0f0;vertical-align:top}
         tr:hover{background:#fafafa}
-        .badge{display:inline-block;padding:4px 10px;border-radius:20px;font-size:0.75rem;font-weight:700;text-transform:uppercase}
+        .badge{display:inline-block;padding:3px 10px;border-radius:20px;font-size:0.72rem;font-weight:700;text-transform:uppercase;letter-spacing:0.3px}
         .badge-submitted{background:#ffe0e5;color:#c0392b}
         .badge-price_sent{background:#fff3cd;color:#856404}
         .badge-confirmed{background:#d4edda;color:#155724}
@@ -107,33 +152,39 @@
         .badge-in_transit{background:#cce5ff;color:#004085}
         .badge-delivered{background:#d4edda;color:#155724}
         .badge-cancelled{background:#f8d7da;color:#721c24}
-        .product-name{font-weight:600;color:#1a1a2e;max-width:240px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-        .customer-info{line-height:1.5}
-        .customer-info small{display:block;color:#888;font-size:0.8rem}
-        .token{font-family:'Courier New',monospace;font-size:0.8rem;background:#f4f4f4;padding:2px 6px;border-radius:4px}
-        .actions{display:flex;gap:0.5rem}
-        .btn-icon{width:34px;height:34px;border:none;border-radius:8px;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;transition:all .2s;font-size:0.95rem}
+        /* Review badges */
+        .badge-pending{background:#fff3cd;color:#856404}
+        .badge-verified{background:#d4edda;color:#155724}
+        .badge-rejected{background:#f8d7da;color:#721c24}
+        .customer-info{line-height:1.4}
+        .customer-info small{display:block;color:#888;font-size:0.78rem}
+        .token{font-family:'Courier New',monospace;font-size:0.78rem;background:#f4f4f4;padding:2px 6px;border-radius:4px}
+        .actions{display:flex;gap:0.4rem;flex-wrap:wrap}
+        .btn-icon{width:30px;height:30px;border:none;border-radius:6px;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;transition:all .2s;font-size:0.85rem}
+        .btn-view{background:#f3e8ff;color:#7c3aed}
+        .btn-view:hover{background:#7c3aed;color:#fff}
         .btn-edit{background:#e8f4fd;color:#2980b9}
         .btn-edit:hover{background:#2980b9;color:#fff}
         .btn-wa{background:#dcf8e6;color:#128c7e}
         .btn-wa:hover{background:#25d366;color:#fff}
-        .btn-view{background:#f3e8ff;color:#7c3aed}
-        .btn-view:hover{background:#7c3aed;color:#fff}
         .btn-link{background:#f0f0f0;color:#666}
         .btn-link:hover{background:#666;color:#fff}
+        .btn-verify{background:#d4edda;color:#155724}
+        .btn-verify:hover{background:#25d366;color:#fff}
+        .btn-reject{background:#f8d7da;color:#721c24}
+        .btn-reject:hover{background:#c0392b;color:#fff}
+        .btn-delete{background:#ffe0e5;color:#c0392b}
+        .btn-delete:hover{background:#c0392b;color:#fff}
 
-        /* Skeleton loaders */
-        .skeleton{background:linear-gradient(90deg,#f0f0f0 25%,#e0e0e0 50%,#f0f0f0 75%);background-size:200% 100%;animation:skeleton 1.5s infinite;border-radius:4px}
-        @keyframes skeleton{0%{background-position:200% 0}100%{background-position:-200% 0}}
-        .skeleton-text{height:12px;margin-bottom:8px}
-        .skeleton-title{height:20px;width:60%;margin-bottom:12px}
-        .skeleton-badge{height:24px;width:80px;display:inline-block}
+        /* Review specific */
+        .review-stars-inline{color:#ff9f43;font-size:0.95rem;letter-spacing:1px}
+        .review-comment-cell{max-width:300px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:0.85rem;color:#555}
 
         /* Checkbox for bulk */
         .select-all{cursor:pointer;width:18px;height:18px}
 
         /* Pagination */
-        .pagination{display:flex;justify-content:space-between;align-items:center;margin-top:1.5rem;padding:0 0.5rem}
+        .pagination{display:flex;justify-content:space-between;align-items:center;margin-top:1.25rem;padding:0 0.5rem}
         .page-info{font-size:0.9rem;color:#666}
         .page-buttons{display:flex;gap:0.5rem}
         .page-btn{padding:0.5rem 1rem;border:1px solid #e8e8e8;background:#fff;border-radius:8px;cursor:pointer;font-weight:600;transition:all .2s}
@@ -153,8 +204,8 @@
         .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);backdrop-filter:blur(4px);z-index:2000;display:none;align-items:center;justify-content:center;padding:1rem}
         .modal-overlay.active{display:flex}
         .modal-panel{background:#fff;border-radius:16px;width:100%;max-width:640px;max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.3)}
-        .modal-header{padding:1.5rem;border-bottom:1px solid #f0f0f0;display:flex;justify-content:space-between;align-items:center}
-        .modal-header h3{margin:0;font-size:1.25rem}
+        .modal-header{padding:1.25rem 1.5rem;border-bottom:1px solid #f0f0f0;display:flex;justify-content:space-between;align-items:center}
+        .modal-header h3{margin:0;font-size:1.2rem}
         .modal-body{padding:1.5rem}
         .detail-grid{display:grid;grid-template-columns:1fr 1fr;gap:1.25rem;margin-bottom:1.5rem}
         .detail-group{display:flex;flex-direction:column;gap:0.35rem}
@@ -196,15 +247,26 @@
         .section-content{display:none}
         .section-content.active{display:block}
 
-        /* Reviews & Payments placeholder */
+        /* Placeholder cards */
         .placeholder-card{background:#fff;border-radius:14px;padding:3rem;text-align:center;box-shadow:0 2px 12px rgba(0,0,0,.04)}
         .placeholder-card .placeholder-icon{font-size:3rem;margin-bottom:1rem;opacity:.3}
         .placeholder-card h3{color:#1a1a2e;margin-bottom:0.5rem}
         .placeholder-card p{color:#888;font-size:0.95rem}
 
+        /* Skeleton */
+        .skeleton{background:linear-gradient(90deg,#f0f0f0 25%,#e0e0e0 50%,#f0f0f0 75%);background-size:200% 100%;animation:skeleton 1.5s infinite;border-radius:4px}
+        @keyframes skeleton{0%{background-position:200% 0}100%{background-position:-200% 0}}
+
+        /* Review section specific */
+        .review-filters .filters select{min-width:140px}
+
         @media(max-width:768px){
-            .admin-layout{grid-template-columns:1fr}
-            aside{height:auto;position:relative}
+            .admin-layout{grid-template-columns:1fr !important}
+            aside{height:auto;position:relative;width:100% !important}
+            .admin-layout.sidebar-collapsed aside{width:100% !important}
+            .sidebar-logo-text{display:block !important;opacity:1 !important}
+            aside nav a .nav-label{display:block !important;opacity:1 !important}
+            .admin-layout.sidebar-collapsed aside nav a::after,.admin-layout.sidebar-collapsed aside nav a::before{display:none !important}
             .detail-grid{grid-template-columns:1fr}
             .form-row{grid-template-columns:1fr}
             .filters{flex-direction:column;align-items:stretch}
@@ -212,6 +274,8 @@
             .notification-dropdown{width:280px;right:-60px}
         }
     </style>
+<base target="_blank">
+<base target="_blank">
 </head>
 <body>
 
@@ -221,23 +285,19 @@
         <div class="login-logo" id="loginLogo">
           <img src="/image/logo.svg" alt="Shop2Bhutan Logo" width="120" height="40" loading="eager" decoding="async">
         </div>
-
         <h2>Admin Panel</h2>
         <p class="subtitle">Sign in to manage your store</p>
-
         <div class="input-group">
             <label for="adminEmail">Email Address</label>
             <input type="email" id="adminEmail" name="email" autocomplete="username" placeholder="admin@shop2bhutan.com" onkeydown="if(event.key==='Enter')doLogin()">
         </div>
-
         <div class="input-group">
             <label for="adminPassword">Password</label>
             <div class="password-wrap">
                 <input type="password" id="adminPassword" placeholder="Enter your password" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()">
-                <button type="button" id="previewBtn" class="btn-preview" onclick="togglePasswordPreview()" title="Show password">👁️</button>
+                <button type="button" id="previewBtn" class="btn-preview" onclick="togglePasswordPreview()" title="Show password"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button>
             </div>
         </div>
-
         <div class="remember-row">
             <label class="remember-label">
                 <input type="checkbox" id="rememberMe">
@@ -245,7 +305,6 @@
             </label>
             <a href="#" class="forgot-link" onclick="toast('Contact your administrator to reset your password.','info');return false">Forgot password?</a>
         </div>
-
         <button onclick="doLogin()" id="loginBtn">Sign In</button>
         <div class="login-error" id="loginError"></div>
     </div>
@@ -254,35 +313,52 @@
 <!-- ADMIN DASHBOARD -->
 <div class="admin-layout" id="adminLayout">
     <aside>
-        <div class="logo">
-            <div class="logo-icon">📦</div>
-            Shop2Bhutan
+        <div class="sidebar-logo-area">
+            <div class="sidebar-logo">
+                <img src="/image/logo.svg" alt="Shop2Bhutan" width="36" height="36">
+                <span class="sidebar-logo-text">Shop2Bhutan</span>
+            </div>
+            <div class="sidebar-controls">
+                <button type="button" class="sidebar-btn" id="pinSidebarBtn" onclick="togglePinSidebar()" title="Pin sidebar"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="17" x2="12" y2="3"/><path d="M5 17h14"/><path d="M15 3l-3-3-3 3"/></svg></button>
+                <button type="button" class="sidebar-btn" id="toggleSidebarBtn" onclick="toggleSidebar()" title="Collapse sidebar"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg></button>
+            </div>
         </div>
         <nav>
-            <a href="#" class="active" data-section="orders" onclick="showSection('orders');return false">
-                <span class="nav-icon">🛒</span> Orders
+            <a href="#" class="active" data-section="orders" data-label="Orders" onclick="showSection('orders');return false">
+                <span class="nav-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg></span>
+                <span class="nav-label">Orders</span>
             </a>
-            <a href="#" data-section="reviews" onclick="showSection('reviews');return false">
-                <span class="nav-icon">⭐</span> Reviews
+            <a href="#" data-section="quotations" data-label="Quotations" onclick="showSection('quotations');return false">
+                <span class="nav-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg></span>
+                <span class="nav-label">Quotations</span>
             </a>
-            <a href="#" data-section="payments" onclick="showSection('payments');return false">
-                <span class="nav-icon">💳</span> Payments
+            <a href="#" data-section="reviews" data-label="Reviews" onclick="showSection('reviews');return false">
+                <span class="nav-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg></span>
+                <span class="nav-label">Reviews</span>
+            </a>
+            <a href="#" data-section="payments" data-label="Payments" onclick="showSection('payments');return false">
+                <span class="nav-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg></span>
+                <span class="nav-label">Payments</span>
             </a>
             <div class="nav-divider"></div>
             <div class="nav-section-label">Analytics</div>
-            <a href="#" onclick="alert('Coming soon');return false">
-                <span class="nav-icon">📊</span> Reports
+            <a href="#" data-label="Reports" onclick="alert('Coming soon');return false">
+                <span class="nav-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="20" x2="12" y2="10"/><line x1="18" y1="20" x2="18" y2="4"/><line x1="6" y1="20" x2="6" y2="16"/></svg></span>
+                <span class="nav-label">Reports</span>
             </a>
             <div class="nav-divider"></div>
             <div class="nav-section-label">System</div>
-            <a href="#" onclick="alert('Coming soon');return false">
-                <span class="nav-icon">⚙️</span> Settings
+            <a href="#" data-label="Settings" onclick="alert('Coming soon');return false">
+                <span class="nav-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></span>
+                <span class="nav-label">Settings</span>
             </a>
-            <a href="index.html">
-                <span class="nav-icon">🏠</span> Back to Site
+            <a href="index.html" data-label="Back to Site">
+                <span class="nav-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg></span>
+                <span class="nav-label">Back to Site</span>
             </a>
-            <a href="#" onclick="logout();return false" style="margin-top:auto;color:#e94560">
-                <span class="nav-icon">🚪</span> Logout
+            <a href="#" data-label="Logout" onclick="logout();return false" style="margin-top:auto;color:#e94560">
+                <span class="nav-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg></span>
+                <span class="nav-label">Logout</span>
             </a>
         </nav>
     </aside>
@@ -293,7 +369,7 @@
             <div class="admin-header-actions">
                 <div style="position:relative;">
                     <button class="notification-btn" onclick="toggleNotifications()" title="Notifications">
-                        🔔
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
                         <span class="notification-badge" id="notifBadge" style="display:none">0</span>
                     </button>
                     <div class="notification-dropdown" id="notifDropdown">
@@ -318,31 +394,29 @@
 
         <!-- ORDERS SECTION -->
         <div class="section-content active" id="section-orders">
-            <!-- Stats -->
             <div class="stats-grid" id="statsGrid">
                 <div class="stat-card submitted">
-                    <div class="stat-icon">📋</div>
+                    <div class="stat-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/></svg></div>
                     <h4>New Orders</h4>
-                    <div class="value" id="statSubmitted"><div class="skeleton skeleton-title"></div></div>
+                    <div class="value" id="statSubmitted"><div class="skeleton" style="height:18px;width:60%;"></div></div>
                 </div>
                 <div class="stat-card confirmed">
-                    <div class="stat-icon">✅</div>
+                    <div class="stat-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg></div>
                     <h4>Confirmed</h4>
-                    <div class="value" id="statConfirmed"><div class="skeleton skeleton-title"></div></div>
+                    <div class="value" id="statConfirmed"><div class="skeleton" style="height:18px;width:60%;"></div></div>
                 </div>
                 <div class="stat-card pending">
-                    <div class="stat-icon">📅</div>
+                    <div class="stat-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></div>
                     <h4>This Week</h4>
-                    <div class="value" id="statWeek"><div class="skeleton skeleton-title"></div></div>
+                    <div class="value" id="statWeek"><div class="skeleton" style="height:18px;width:60%;"></div></div>
                 </div>
                 <div class="stat-card revenue">
-                    <div class="stat-icon">💰</div>
+                    <div class="stat-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="20" height="12" rx="2"/><circle cx="12" cy="12" r="2"/><path d="M6 12h.01"/><path d="M18 12h.01"/></svg></div>
                     <h4>Total Revenue</h4>
-                    <div class="value" id="statRevenue"><div class="skeleton skeleton-title"></div></div>
+                    <div class="value" id="statRevenue"><div class="skeleton" style="height:18px;width:60%;"></div></div>
                 </div>
             </div>
 
-            <!-- Filters -->
             <div class="filters">
                 <div>
                     <label style="display:block;font-size:0.8rem;color:#888;margin-bottom:0.35rem">Search</label>
@@ -370,11 +444,10 @@
                     <input type="date" id="filterDate">
                 </div>
                 <div style="margin-left:auto;display:flex;gap:0.5rem">
-                    <button onclick="exportCSV()" id="exportBtn">⬇️ Export CSV</button>
+                    <button onclick="exportCSV()" id="exportBtn"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:4px"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> Export CSV</button>
                 </div>
             </div>
 
-            <!-- Bulk Actions Bar -->
             <div id="bulkBar" style="display:none;background:#1a1a2e;color:#fff;padding:0.75rem 1rem;border-radius:10px;margin-bottom:1rem;align-items:center;justify-content:space-between;">
                 <span id="bulkCount">0 selected</span>
                 <div style="display:flex;gap:0.5rem">
@@ -384,7 +457,6 @@
                 </div>
             </div>
 
-            <!-- Table -->
             <div class="table-wrap">
                 <table>
                     <thead>
@@ -406,26 +478,100 @@
                 </table>
             </div>
 
-            <!-- Pagination -->
             <div class="pagination" id="pagination">
                 <div class="page-info" id="pageInfo">Loading…</div>
                 <div class="page-buttons" id="pageButtons"></div>
             </div>
         </div>
 
+        <!-- QUOTATIONS SECTION -->
+        <div class="section-content" id="section-quotations">
+            <div class="placeholder-card">
+                <div class="placeholder-icon"><svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg></div>
+                <h3>Quotations</h3>
+                <p>Quotation management is coming soon. You'll be able to create, send, and track price quotes for customers here.</p>
+            </div>
+        </div>
+
         <!-- REVIEWS SECTION -->
         <div class="section-content" id="section-reviews">
-            <div class="placeholder-card">
-                <div class="placeholder-icon">⭐</div>
-                <h3>Customer Reviews</h3>
-                <p>Review management is coming soon. You'll be able to moderate, reply to, and analyze customer feedback here.</p>
+            <!-- Review Stats -->
+            <div class="stats-grid">
+                <div class="stat-card review-pending">
+                    <div class="stat-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div>
+                    <h4>Pending Review</h4>
+                    <div class="value" id="statReviewPending"><div class="skeleton" style="height:18px;width:60%;"></div></div>
+                </div>
+                <div class="stat-card review-verified">
+                    <div class="stat-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg></div>
+                    <h4>Verified</h4>
+                    <div class="value" id="statReviewVerified"><div class="skeleton" style="height:18px;width:60%;"></div></div>
+                </div>
+                <div class="stat-card review-rejected">
+                    <div class="stat-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg></div>
+                    <h4>Rejected</h4>
+                    <div class="value" id="statReviewRejected"><div class="skeleton" style="height:18px;width:60%;"></div></div>
+                </div>
+                <div class="stat-card avg-rating">
+                    <div class="stat-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg></div>
+                    <h4>Avg Rating</h4>
+                    <div class="value" id="statAvgRating"><div class="skeleton" style="height:18px;width:60%;"></div></div>
+                </div>
+            </div>
+
+            <!-- Review Filters -->
+            <div class="filters review-filters">
+                <div>
+                    <label style="display:block;font-size:0.8rem;color:#888;margin-bottom:0.35rem">Search</label>
+                    <input type="text" id="reviewFilterSearch" placeholder="Name, phone, comment…">
+                </div>
+                <div>
+                    <label style="display:block;font-size:0.8rem;color:#888;margin-bottom:0.35rem">Status</label>
+                    <select id="reviewFilterStatus">
+                        <option value="">All Status</option>
+                        <option value="pending">Pending</option>
+                        <option value="verified">Verified</option>
+                        <option value="rejected">Rejected</option>
+                    </select>
+                </div>
+                <div>
+                    <label style="display:block;font-size:0.8rem;color:#888;margin-bottom:0.35rem">Rating</label>
+                    <select id="reviewFilterRating">
+                        <option value="">All Ratings</option>
+                        <option value="5">5 Stars</option>
+                        <option value="4">4 Stars</option>
+                        <option value="3">3 Stars</option>
+                        <option value="2">2 Stars</option>
+                        <option value="1">1 Star</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Reviews Table -->
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Review ID</th>
+                            <th>Customer</th>
+                            <th>Rating</th>
+                            <th>Comment</th>
+                            <th>Status</th>
+                            <th>Date</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="reviewsTableBody">
+                        <tr><td colspan="7" style="text-align:center;padding:2rem;color:#888">Loading reviews…</td></tr>
+                    </tbody>
+                </table>
             </div>
         </div>
 
         <!-- PAYMENTS SECTION -->
         <div class="section-content" id="section-payments">
             <div class="placeholder-card">
-                <div class="placeholder-icon">💳</div>
+                <div class="placeholder-icon"><svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg></div>
                 <h3>Payment Management</h3>
                 <p>Payment tracking, refund processing, and transaction history will be available here soon.</p>
             </div>
@@ -433,17 +579,17 @@
     </main>
 </div>
 
-<!-- ORDER DETAIL MODAL -->
+<!-- ORDER/REVIEW DETAIL MODAL -->
 <div class="modal-overlay" id="orderModal">
     <div class="modal-panel">
         <div class="modal-header">
-            <h3>Order Details</h3>
+            <h3>Details</h3>
             <button onclick="closeOrderModal()" style="background:none;border:none;font-size:1.5rem;cursor:pointer;color:#888">&times;</button>
         </div>
         <div class="modal-body" id="modalBody"></div>
         <div class="modal-footer">
             <button class="btn-secondary" onclick="closeOrderModal()">Close</button>
-            <button class="btn-primary" onclick="confirmSaveOrder()">Save Changes</button>
+            <button class="btn-primary" id="modalSaveBtn" onclick="confirmSaveOrder()">Save Changes</button>
         </div>
     </div>
 </div>
@@ -464,6 +610,140 @@
 
 <!-- TOAST -->
 <div class="toast" id="toast"></div>
+
+<script>
+/* ============ PASSWORD PREVIEW ============ */
+function togglePasswordPreview() {
+    const input = document.getElementById('adminPassword');
+    const btn = document.getElementById('previewBtn');
+    const eyeOpen = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>';
+    const eyeOff = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>';
+    if (input.type === 'password') {
+        input.type = 'text';
+        btn.innerHTML = eyeOff;
+        btn.title = 'Hide password';
+    } else {
+        input.type = 'password';
+        btn.innerHTML = eyeOpen;
+        btn.title = 'Show password';
+    }
+}
+
+/* ============ SIDEBAR COLLAPSE & PIN ============ */
+let sidebarPinned = false;
+let sidebarCollapsed = false;
+
+function toggleSidebar() {
+    const layout = document.getElementById('adminLayout');
+    const btn = document.getElementById('toggleSidebarBtn');
+    const chevronLeft = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>';
+    const chevronRight = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>';
+    sidebarCollapsed = !sidebarCollapsed;
+
+    if (sidebarCollapsed) {
+        layout.classList.add('sidebar-collapsed');
+        btn.innerHTML = chevronRight;
+        btn.title = 'Expand sidebar';
+    } else {
+        layout.classList.remove('sidebar-collapsed');
+        btn.innerHTML = chevronLeft;
+        btn.title = 'Collapse sidebar';
+    }
+    localStorage.setItem('s2b_sidebar_collapsed', sidebarCollapsed ? '1' : '0');
+}
+
+function togglePinSidebar() {
+    const btn = document.getElementById('pinSidebarBtn');
+    sidebarPinned = !sidebarPinned;
+
+    if (sidebarPinned) {
+        btn.classList.add('active');
+        btn.title = 'Unpin sidebar';
+    } else {
+        btn.classList.remove('active');
+        btn.title = 'Pin sidebar';
+    }
+    localStorage.setItem('s2b_sidebar_pinned', sidebarPinned ? '1' : '0');
+}
+
+function initSidebar() {
+    const pinned = localStorage.getItem('s2b_sidebar_pinned');
+    const collapsed = localStorage.getItem('s2b_sidebar_collapsed');
+
+    if (pinned === '1') {
+        sidebarPinned = true;
+        document.getElementById('pinSidebarBtn').classList.add('active');
+        document.getElementById('pinSidebarBtn').title = 'Unpin sidebar';
+    }
+    if (collapsed === '1' && !sidebarPinned) {
+        toggleSidebar();
+    }
+
+    if (window.innerWidth <= 1024 && !sidebarPinned) {
+        const layout = document.getElementById('adminLayout');
+        if (!layout.classList.contains('sidebar-collapsed')) {
+            toggleSidebar();
+        }
+    }
+}
+
+/* ============ SECTION SWITCHING ============ */
+function showSection(section) {
+    document.querySelectorAll('.section-content').forEach(el => el.classList.remove('active'));
+    document.querySelectorAll('aside nav a[data-section]').forEach(el => el.classList.remove('active'));
+
+    const target = document.getElementById('section-' + section);
+    const navLink = document.querySelector('aside nav a[data-section="' + section + '"]');
+
+    if (target) target.classList.add('active');
+    if (navLink) navLink.classList.add('active');
+
+    const titles = {
+        orders: 'Orders Dashboard',
+        quotations: 'Quotations',
+        reviews: 'Review Moderation',
+        payments: 'Payment Management'
+    };
+    document.getElementById('pageTitle').textContent = titles[section] || 'Dashboard';
+
+    // Notify the module script about section change
+    if (typeof window.onSectionChange === 'function') {
+        window.onSectionChange(section);
+    }
+}
+
+/* ============ NOTIFICATIONS ============ */
+function toggleNotifications() {
+    document.getElementById('notifDropdown').classList.toggle('active');
+}
+function clearNotifications() {
+    document.getElementById('notifList').innerHTML = '<div class="notif-empty">No new notifications</div>';
+    document.getElementById('notifBadge').style.display = 'none';
+}
+
+/* ============ TOAST ============ */
+function toast(msg, type) {
+    const el = document.getElementById('toast');
+    el.textContent = msg;
+    el.className = 'toast' + (type ? ' toast-' + type : '');
+    requestAnimationFrame(() => el.classList.add('show'));
+    setTimeout(() => el.classList.remove('show'), 3000);
+}
+
+/* ============ MODALS ============ */
+function closeOrderModal() {
+    document.getElementById('orderModal').classList.remove('active');
+    document.body.style.overflow = '';
+}
+function closeConfirmModal() {
+    document.getElementById('confirmModal').classList.remove('active');
+}
+
+/* ============ INIT ============ */
+document.addEventListener('DOMContentLoaded', () => {
+    initSidebar();
+});
+</script>
 
 <script type="module" src="assets/js/admin.js"></script>
 </body>

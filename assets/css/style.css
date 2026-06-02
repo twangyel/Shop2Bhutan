@@ -554,6 +554,91 @@ footer {
   background: #f8f9fc; border-radius: 12px; padding: 1rem 1.25rem;
   margin-bottom: 1.5rem; border: 1px solid #e8e8e8;
 }
+
+
+/* ============================================================
+   VERIFIED BADGE — Modern, Professional, Clean
+   ============================================================ */
+
+.verified-badge-modern {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    background: linear-gradient(135deg, #d4edda 0%, #c3e6cb 100%);
+    color: #155724;
+    padding: 4px 10px;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+    border: 1px solid #b1dfbb;
+    box-shadow: 0 1px 3px rgba(21, 87, 36, 0.08);
+    transition: all 0.2s ease;
+}
+
+.verified-badge-modern:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 3px 8px rgba(21, 87, 36, 0.15);
+}
+
+.verified-badge-modern svg {
+    flex-shrink: 0;
+}
+
+/* Review header layout */
+.review-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.75rem;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.review-stars {
+    color: #ff9f43;
+    font-size: 1rem;
+    letter-spacing: 2px;
+}
+
+.star-empty {
+    color: #e0e0e0;
+}
+
+/* Skeleton for reviews */
+.skeleton-review {
+    min-width: 300px;
+    padding: 1.5rem;
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.04);
+}
+
+/* Review card improvements */
+.review-card {
+    position: relative;
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.review-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(0,0,0,0.08);
+}
+
+/* Review submission success message */
+.review-success-hint {
+    background: #d4edda;
+    color: #155724;
+    padding: 0.75rem 1rem;
+    border-radius: 8px;
+    font-size: 0.85rem;
+    margin-bottom: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
 @media (prefers-color-scheme: dark) { .checkout-summary { background: #16162a; border-color: #2a2a3e; } }
 .checkout-summary h4 { margin: 0 0 0.75rem; font-size: 1rem; color: var(--color-text); }
 .checkout-item {
