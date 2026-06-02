@@ -352,9 +352,7 @@ window.verifyReview = async function(id) {
 
     const { error } = await supabase
         .from('reviews')
-        // In verifyReview and rejectReview:
-.update({ status: 'verified', moderated_by: moderator })
-// NOT: updated_at: new Date().toISOString()
+        .update({ status: 'verified', moderated_by: moderator })
         .eq('id', id);
 
     if (error) {
@@ -372,9 +370,7 @@ window.rejectReview = async function(id) {
 
     const { error } = await supabase
         .from('reviews')
-        // In verifyReview and rejectReview:
-.update({ status: 'verified', moderated_by: moderator })
-// NOT: updated_at: new Date().toISOString()
+        .update({ status: 'rejected', moderated_by: moderator })
         .eq('id', id);
 
     if (error) {
