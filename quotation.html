@@ -3,8 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Quotation — Shop2Bhutan</title>
+    <title>Your Quotation — Shop2Bhutan</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <style>
         :root {
             --primary: #e94560;
@@ -13,232 +15,489 @@
             --accent: #6bffba;
             --success: #25d366;
             --warning: #ff9f43;
+            --info: #2980b9;
             --danger: #c0392b;
             --surface: #ffffff;
             --bg: #f4f6f8;
             --text: #1a1a2e;
-            --muted: #6b7280;
+            --text-muted: #6b7280;
             --border: #e5e7eb;
-            --radius: 16px;
+            --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
             --shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
-            --shadow-lg: 0 20px 25px -5px rgb(0 0 0 / 0.1);
+            --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1);
+            --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.1);
+            --radius: 16px;
+            --radius-sm: 12px;
+            --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
-            font-family: 'Inter', sans-serif;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
             background: var(--bg);
             color: var(--text);
             min-height: 100vh;
             line-height: 1.6;
+            -webkit-font-smoothing: antialiased;
         }
 
         /* Header */
         .header {
-            background: linear-gradient(135deg, var(--secondary), #16213e);
-            padding: 2rem 1.5rem 4rem;
+            background: linear-gradient(135deg, var(--secondary) 0%, #16213e 50%, #0f3460 100%);
+            padding: 2rem 1.5rem;
             text-align: center;
             position: relative;
+            overflow: hidden;
+        }
+        .header::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.03'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
         }
         .logo {
-            width: 140px; height: 48px;
+            width: 140px;
+            height: 45px;
             background: linear-gradient(135deg, var(--primary), var(--accent));
             border-radius: 10px;
-            display: inline-flex; align-items: center; justify-content: center;
-            color: #fff; font-weight: 700; font-size: 0.9rem;
-            margin-bottom: 1.5rem;
-        }
-        .header h1 { color: #fff; font-size: 1.75rem; font-weight: 800; }
-        .header p { color: rgba(255,255,255,0.7); margin-top: 0.5rem; }
-
-        /* Card */
-        .card {
-            max-width: 640px;
-            margin: -2.5rem auto 2rem;
-            background: var(--surface);
-            border-radius: var(--radius);
-            box-shadow: var(--shadow-lg);
-            overflow: hidden;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            color: #fff;
+            font-weight: 700;
+            font-size: 0.9rem;
+            margin-bottom: 1rem;
             position: relative;
-            z-index: 2;
-            animation: slideUp 0.5s ease-out;
+            z-index: 1;
         }
-        @keyframes slideUp {
-            from { opacity: 0; transform: translateY(30px); }
-            to { opacity: 1; transform: translateY(0); }
+        .header h1 {
+            color: #fff;
+            font-size: 1.5rem;
+            font-weight: 700;
+            position: relative;
+            z-index: 1;
+        }
+        .header p {
+            color: rgba(255,255,255,0.7);
+            font-size: 0.9rem;
+            margin-top: 0.25rem;
+            position: relative;
+            z-index: 1;
+        }
+
+        /* Container */
+        .container {
+            max-width: 700px;
+            margin: 0 auto;
+            padding: 0 1.5rem 3rem;
         }
 
         /* Status Banner */
         .status-banner {
-            padding: 1rem 1.5rem;
+            margin-top: -1.5rem;
+            position: relative;
+            z-index: 2;
+            background: var(--surface);
+            border-radius: var(--radius);
+            padding: 1.25rem 1.5rem;
+            box-shadow: var(--shadow-lg);
             display: flex;
             align-items: center;
             justify-content: space-between;
-            font-weight: 600;
-            font-size: 0.9rem;
+            flex-wrap: wrap;
+            gap: 0.75rem;
+            margin-bottom: 1.5rem;
         }
-        .status-banner.sent { background: #fffbeb; color: #92400e; }
-        .status-banner.accepted { background: #ecfdf5; color: #065f46; }
-        .status-banner.declined { background: #fef2f2; color: var(--danger); }
-        .status-banner.expired { background: #f3f4f6; color: var(--muted); }
-
-        /* Sections */
-        .section { padding: 1.5rem; border-bottom: 1px solid var(--border); }
-        .section:last-child { border-bottom: none; }
-
-        .section-title {
-            font-size: 0.7rem; font-weight: 700;
-            text-transform: uppercase; letter-spacing: 0.1em;
-            color: var(--muted); margin-bottom: 1rem;
+        .status-label {
+            font-size: 0.75rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: var(--text-muted);
         }
-
-        /* Customer Info */
-        .customer-grid {
-            display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;
+        .status-value {
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: var(--text);
         }
-        .info-row { display: flex; flex-direction: column; gap: 0.25rem; }
-        .info-row .label { font-size: 0.8rem; color: var(--muted); font-weight: 500; }
-        .info-row .value { font-size: 0.95rem; font-weight: 600; }
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+            padding: 0.4rem 1rem;
+            border-radius: 100px;
+            font-size: 0.8rem;
+            font-weight: 700;
+            text-transform: uppercase;
+        }
+        .status-draft { background: #f3f4f6; color: #6b7280; }
+        .status-sent { background: #eff6ff; color: #1e40af; }
+        .status-accepted { background: #ecfdf5; color: #065f46; }
+        .status-rejected { background: #fef2f2; color: #991b1b; }
+        .status-expired { background: #f3f4f6; color: #9ca3af; }
+        .status-paid { background: #ecfdf5; color: #065f46; }
+
+        /* Cards */
+        .card {
+            background: var(--surface);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            margin-bottom: 1rem;
+            overflow: hidden;
+        }
+        .card-header {
+            padding: 1.25rem 1.5rem;
+            border-bottom: 1px solid var(--border);
+        }
+        .card-header h2 {
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: var(--text);
+        }
+        .card-header p {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            margin-top: 0.25rem;
+        }
+        .card-body {
+            padding: 1.5rem;
+        }
 
         /* Items Table */
-        .items-table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+        .items-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.9rem;
+        }
         .items-table th {
-            text-align: left; padding: 0.75rem 0;
-            font-size: 0.7rem; font-weight: 700;
-            text-transform: uppercase; letter-spacing: 0.05em;
-            color: var(--muted); border-bottom: 2px solid var(--border);
+            text-align: left;
+            padding: 0.75rem;
+            font-size: 0.7rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--text-muted);
+            border-bottom: 2px solid var(--border);
         }
-        .items-table td { padding: 0.875rem 0; border-bottom: 1px solid var(--border); }
-        .items-table tr:last-child td { border-bottom: none; }
-        .item-name { font-weight: 600; }
-        .item-meta { font-size: 0.8rem; color: var(--muted); margin-top: 0.15rem; }
-        .text-right { text-align: right; }
-        .text-center { text-align: center; }
-
-        /* Breakdown */
-        .breakdown-row {
-            display: flex; justify-content: space-between;
-            padding: 0.5rem 0; font-size: 0.9rem; color: var(--muted);
+        .items-table td {
+            padding: 0.75rem;
+            border-bottom: 1px solid var(--border-light);
         }
-        .breakdown-row.total {
-            font-size: 1.15rem; font-weight: 700; color: var(--text);
-            border-top: 2px dashed var(--border); padding-top: 1rem; margin-top: 0.5rem;
-        }
-        .breakdown-row.profit {
-            font-size: 0.85rem; color: var(--success); font-weight: 600;
+        .items-table tr:last-child td {
+            border-bottom: none;
         }
 
-        /* Validity */
-        .validity {
-            display: flex; align-items: center; gap: 0.5rem;
-            padding: 0.875rem 1rem;
-            background: #f0f9ff; border-radius: 10px;
-            font-size: 0.85rem; color: #0369a1;
+        /* Price Breakdown */
+        .price-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 0.6rem 0;
+            font-size: 0.9rem;
+            color: var(--text-muted);
         }
-        .validity.expired { background: #fef2f2; color: var(--danger); }
+        .price-row.total {
+            border-top: 2px solid var(--border);
+            margin-top: 0.5rem;
+            padding-top: 1rem;
+            font-size: 1.15rem;
+            font-weight: 700;
+            color: var(--text);
+        }
+        .price-row.profit {
+            color: var(--success);
+            font-weight: 600;
+        }
 
         /* Action Buttons */
         .actions {
+            display: flex;
+            gap: 0.75rem;
             padding: 1.5rem;
-            display: flex; gap: 1rem;
-            flex-direction: column;
+            border-top: 1px solid var(--border);
         }
         .btn {
-            width: 100%; padding: 1rem;
-            border: none; border-radius: 12px;
-            font-size: 1rem; font-weight: 700;
-            cursor: pointer; transition: all 0.2s;
-            display: flex; align-items: center; justify-content: center; gap: 0.5rem;
+            flex: 1;
+            padding: 1rem;
+            border-radius: var(--radius-sm);
+            font-weight: 700;
+            font-size: 0.95rem;
+            cursor: pointer;
+            transition: var(--transition);
+            border: none;
+            font-family: inherit;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
         }
-        .btn-accept {
-            background: var(--success); color: #fff;
-            box-shadow: 0 4px 15px rgba(37, 211, 102, 0.3);
+        .btn-primary {
+            background: var(--primary);
+            color: #fff;
         }
-        .btn-accept:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(37, 211, 102, 0.4); }
-        .btn-decline {
-            background: #f3f4f6; color: var(--muted);
+        .btn-primary:hover {
+            background: var(--primary-dark);
+            transform: translateY(-1px);
+            box-shadow: 0 6px 20px rgba(233, 69, 96, 0.25);
         }
-        .btn-decline:hover { background: #e5e7eb; }
-        .btn:disabled { opacity: 0.6; cursor: not-allowed; transform: none !important; }
-
-        /* Decline Form */
-        .decline-form {
-            display: none;
-            padding: 0 1.5rem 1.5rem;
-            animation: slideDown 0.3s ease-out;
+        .btn-secondary {
+            background: var(--surface);
+            color: var(--text);
+            border: 2px solid var(--border);
         }
-        @keyframes slideDown {
-            from { opacity: 0; max-height: 0; }
-            to { opacity: 1; max-height: 300px; }
+        .btn-secondary:hover {
+            background: var(--bg);
+            border-color: var(--text-muted);
         }
-        .decline-form textarea {
-            width: 100%; padding: 0.875rem;
-            border: 2px solid var(--border); border-radius: 10px;
-            font-family: inherit; font-size: 0.9rem;
-            resize: vertical; min-height: 80px;
-            outline: none;
+        .btn-success {
+            background: var(--success);
+            color: #fff;
         }
-        .decline-form textarea:focus { border-color: var(--primary); }
+        .btn-success:hover {
+            background: #1a9c4e;
+            transform: translateY(-1px);
+        }
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none !important;
+        }
 
         /* Payment Section */
         .payment-section {
-            padding: 1.5rem;
-            background: linear-gradient(135deg, #f0fdf4, #ecfdf5);
+            display: none;
+            animation: slideUp 0.5s ease-out;
+        }
+        .payment-section.active {
+            display: block;
+        }
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .payment-tabs {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 1.5rem;
+        }
+        .payment-tab {
+            flex: 1;
+            padding: 0.75rem;
+            border: 2px solid var(--border);
+            border-radius: var(--radius-sm);
+            background: var(--surface);
+            cursor: pointer;
             text-align: center;
+            font-weight: 600;
+            font-size: 0.85rem;
+            transition: var(--transition);
         }
-        .payment-section h3 { font-size: 1.1rem; margin-bottom: 0.5rem; }
-        .payment-section p { color: var(--muted); font-size: 0.9rem; margin-bottom: 1rem; }
-        .payment-methods {
-            display: flex; gap: 0.75rem; justify-content: center; flex-wrap: wrap;
+        .payment-tab.active {
+            border-color: var(--primary);
+            background: #fff5f7;
+            color: var(--primary);
         }
-        .pay-btn {
-            padding: 0.75rem 1.5rem;
-            border-radius: 10px; border: none;
-            font-weight: 600; font-size: 0.9rem;
-            cursor: pointer; transition: all 0.2s;
+        .payment-tab:hover:not(.active) {
+            border-color: var(--text-muted);
         }
-        .pay-bnb { background: #f0b90b; color: #1a1a2e; }
-        .pay-bnb:hover { transform: translateY(-2px); }
-        .pay-bank { background: var(--secondary); color: #fff; }
-        .pay-bank:hover { transform: translateY(-2px); }
 
-        /* Already Responded */
-        .responded-state {
-            padding: 2rem; text-align: center;
+        /* QR Code */
+        .qr-container {
+            text-align: center;
+            padding: 1.5rem;
+            background: #fafafa;
+            border-radius: var(--radius-sm);
+            margin-bottom: 1.5rem;
         }
-        .responded-state .icon {
-            width: 64px; height: 64px;
+        #qrcode {
+            display: inline-block;
+            padding: 1rem;
+            background: #fff;
+            border-radius: 12px;
+            box-shadow: var(--shadow-sm);
+        }
+        .qr-label {
+            margin-top: 0.75rem;
+            font-size: 0.85rem;
+            color: var(--text-muted);
+        }
+
+        /* Bank Details */
+        .bank-details {
+            background: #fafafa;
+            border-radius: var(--radius-sm);
+            padding: 1.25rem;
+            margin-bottom: 1.5rem;
+        }
+        .bank-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 0.5rem 0;
+            font-size: 0.9rem;
+            border-bottom: 1px solid var(--border);
+        }
+        .bank-row:last-child {
+            border-bottom: none;
+        }
+        .bank-row .label {
+            color: var(--text-muted);
+            font-weight: 500;
+        }
+        .bank-row .value {
+            font-weight: 600;
+            color: var(--text);
+            font-family: 'Courier New', monospace;
+        }
+        .copy-btn {
+            background: none;
+            border: none;
+            color: var(--primary);
+            cursor: pointer;
+            font-size: 0.8rem;
+            font-weight: 600;
+            margin-left: 0.5rem;
+        }
+        .copy-btn:hover {
+            text-decoration: underline;
+        }
+
+        /* Upload Area */
+        .upload-area {
+            border: 2px dashed var(--border);
+            border-radius: var(--radius-sm);
+            padding: 2rem;
+            text-align: center;
+            cursor: pointer;
+            transition: var(--transition);
+            background: #fafafa;
+        }
+        .upload-area:hover {
+            border-color: var(--primary);
+            background: #fff5f7;
+        }
+        .upload-area.dragover {
+            border-color: var(--primary);
+            background: #fff5f7;
+            transform: scale(1.02);
+        }
+        .upload-area.has-file {
+            border-color: var(--success);
+            background: #f0fdf4;
+        }
+        .upload-icon {
+            font-size: 2.5rem;
+            margin-bottom: 0.75rem;
+        }
+        .upload-text {
+            font-size: 0.9rem;
+            color: var(--text-muted);
+            margin-bottom: 0.5rem;
+        }
+        .upload-hint {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            opacity: 0.7;
+        }
+        #fileInput { display: none; }
+
+        .preview-img {
+            max-width: 200px;
+            max-height: 200px;
+            border-radius: 8px;
+            margin-top: 1rem;
+            box-shadow: var(--shadow);
+        }
+
+        /* Notes */
+        .notes-input {
+            width: 100%;
+            padding: 0.75rem;
+            border: 2px solid var(--border);
+            border-radius: var(--radius-sm);
+            font-family: inherit;
+            font-size: 0.9rem;
+            resize: vertical;
+            min-height: 80px;
+            outline: none;
+        }
+        .notes-input:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(233, 69, 96, 0.1);
+        }
+
+        /* Success State */
+        .success-state {
+            text-align: center;
+            padding: 3rem 1.5rem;
+            display: none;
+        }
+        .success-state.active {
+            display: block;
+            animation: slideUp 0.5s ease-out;
+        }
+        .success-icon {
+            width: 80px;
+            height: 80px;
+            background: #ecfdf5;
             border-radius: 50%;
-            display: flex; align-items: center; justify-content: center;
-            margin: 0 auto 1rem;
-            font-size: 1.75rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 1.5rem;
+            font-size: 2.5rem;
         }
-        .responded-state.accepted .icon { background: #d1fae5; }
-        .responded-state.declined .icon { background: #fee2e2; }
+        .success-state h2 {
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+        }
+        .success-state p {
+            color: var(--text-muted);
+            margin-bottom: 1.5rem;
+        }
 
-        /* Footer */
-        .footer {
-            text-align: center; padding: 2rem;
-            color: var(--muted); font-size: 0.85rem;
+        /* Loading */
+        .spinner {
+            width: 24px;
+            height: 24px;
+            border: 3px solid var(--border);
+            border-top-color: var(--primary);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            display: inline-block;
         }
-        .footer a { color: var(--primary); text-decoration: none; font-weight: 600; }
+        @keyframes spin { to { transform: rotate(360deg); } }
 
         /* Toast */
         .toast {
-            position: fixed; bottom: 2rem; left: 50%;
+            position: fixed;
+            bottom: 2rem;
+            left: 50%;
             transform: translateX(-50%) translateY(100px);
-            background: var(--secondary); color: #fff;
-            padding: 1rem 1.5rem; border-radius: 12px;
-            font-weight: 600; box-shadow: var(--shadow-lg);
-            z-index: 1000; opacity: 0;
+            background: var(--secondary);
+            color: #fff;
+            padding: 1rem 1.5rem;
+            border-radius: var(--radius-sm);
+            font-weight: 600;
+            font-size: 0.9rem;
+            box-shadow: var(--shadow-xl);
+            z-index: 1000;
+            opacity: 0;
             transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
         }
-        .toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
+        .toast.show {
+            transform: translateX(-50%) translateY(0);
+            opacity: 1;
+        }
         .toast.error { background: var(--danger); }
+        .toast.success { background: var(--success); }
 
-        @media (max-width: 480px) {
-            .customer-grid { grid-template-columns: 1fr; }
-            .header h1 { font-size: 1.4rem; }
+        /* Responsive */
+        @media (max-width: 640px) {
+            .actions { flex-direction: column; }
+            .payment-tabs { flex-direction: column; }
+            .header h1 { font-size: 1.25rem; }
+            .card-body { padding: 1rem; }
         }
     </style>
 </head>
@@ -247,328 +506,619 @@
     <header class="header">
         <div class="logo">Shop2Bhutan</div>
         <h1>Your Quotation</h1>
-        <p>Review the details below and accept to proceed with your order</p>
+        <p>Review and accept your personalized quote</p>
     </header>
 
-    <main class="card" id="quotationCard">
-        <div class="loading" style="padding:3rem;text-align:center;color:var(--muted);">
-            <div style="width:40px;height:40px;border:3px solid var(--border);border-top-color:var(--primary);border-radius:50%;animation:spin 1s linear infinite;margin:0 auto 1rem;"></div>
-            Loading your quotation...
+    <div class="container">
+        <!-- Status Banner -->
+        <div class="status-banner" id="statusBanner">
+            <div>
+                <div class="status-label">Quotation Status</div>
+                <div class="status-value" id="statusText">Loading...</div>
+            </div>
+            <div class="status-badge status-sent" id="statusBadge">Sent</div>
         </div>
-    </main>
 
-    <footer class="footer">
-        <p>Questions? <a href="https://wa.me/97517123456" target="_blank">Chat with us on WhatsApp</a></p>
-        <p style="margin-top:0.5rem;opacity:0.6;">Valid for 7 days from issue date</p>
-    </footer>
+        <!-- Main Content -->
+        <div id="mainContent">
+            <!-- Quotation Details Card -->
+            <div class="card">
+                <div class="card-header">
+                    <h2>📋 Quotation Details</h2>
+                    <p>Valid until <span id="validUntil">—</span></p>
+                </div>
+                <div class="card-body">
+                    <table class="items-table" id="itemsTable">
+                        <thead>
+                            <tr>
+                                <th>Item</th>
+                                <th style="text-align:center;">Qty</th>
+                                <th style="text-align:right;">Unit Price</th>
+                                <th style="text-align:right;">Total</th>
+                            </tr>
+                        </thead>
+                        <tbody id="itemsBody">
+                            <!-- Dynamic -->
+                        </tbody>
+                    </table>
+
+                    <div style="margin-top:1.5rem;padding-top:1.5rem;border-top:2px solid var(--border);">
+                        <div class="price-row">
+                            <span>Subtotal</span>
+                            <span id="subtotal">Nu. 0</span>
+                        </div>
+                        <div class="price-row">
+                            <span>Service Charge</span>
+                            <span id="serviceCharge">Nu. 0</span>
+                        </div>
+                        <div class="price-row">
+                            <span>Shipping</span>
+                            <span id="shipping">Nu. 0</span>
+                        </div>
+                        <div class="price-row">
+                            <span>Delivery</span>
+                            <span id="delivery">Nu. 0</span>
+                        </div>
+                        <div class="price-row" id="gstRow" style="display:none;">
+                            <span>GST (5%)</span>
+                            <span id="gst">Nu. 0</span>
+                        </div>
+                        <div class="price-row total">
+                            <span>Total Amount Due</span>
+                            <span id="totalAmount">Nu. 0</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Customer Notes -->
+            <div class="card" id="notesCard">
+                <div class="card-header">
+                    <h2>📝 Notes from Shop2Bhutan</h2>
+                </div>
+                <div class="card-body">
+                    <p id="adminNotes" style="color:var(--text-muted);font-size:0.9rem;line-height:1.7;">—</p>
+                </div>
+            </div>
+
+            <!-- Actions -->
+            <div class="actions" id="actionButtons">
+                <button class="btn btn-secondary" onclick="rejectQuotation()">
+                    ❌ Decline
+                </button>
+                <button class="btn btn-primary" onclick="acceptQuotation()">
+                    ✓ Accept & Proceed to Payment
+                </button>
+            </div>
+        </div>
+
+        <!-- Payment Section (shown after accept) -->
+        <div class="payment-section" id="paymentSection">
+            <div class="card">
+                <div class="card-header">
+                    <h2>💳 Payment</h2>
+                    <p>Choose your payment method and complete the transfer</p>
+                </div>
+                <div class="card-body">
+                    <!-- Payment Tabs -->
+                    <div class="payment-tabs">
+                        <button class="payment-tab active" onclick="switchPayment('qr')" id="tabQr">
+                            📱 Scan QR
+                        </button>
+                        <button class="payment-tab" onclick="switchPayment('bank')" id="tabBank">
+                            🏦 Bank Transfer
+                        </button>
+                    </div>
+
+                    <!-- QR Code Panel -->
+                    <div id="qrPanel">
+                        <div class="qr-container">
+                            <div id="qrcode"></div>
+                            <div class="qr-label">Scan with your banking app</div>
+                            <div class="qr-label" style="font-size:0.75rem;margin-top:0.5rem;">
+                                Amount: <strong id="qrAmount">Nu. 0</strong>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Bank Transfer Panel -->
+                    <div id="bankPanel" style="display:none;">
+                        <div class="bank-details" id="bankDetails">
+                            <!-- Dynamic -->
+                        </div>
+                    </div>
+
+                    <!-- Amount Display -->
+                    <div style="background:var(--secondary);color:#fff;padding:1rem 1.25rem;border-radius:var(--radius-sm);margin-bottom:1.5rem;text-align:center;">
+                        <div style="font-size:0.8rem;opacity:0.8;margin-bottom:0.25rem;">Total Amount to Pay</div>
+                        <div style="font-size:1.5rem;font-weight:800;" id="paymentAmount">Nu. 0</div>
+                    </div>
+
+                    <!-- Upload Screenshot -->
+                    <div style="margin-bottom:1.5rem;">
+                        <label style="display:block;font-size:0.8rem;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;color:var(--text-muted);margin-bottom:0.75rem;">
+                            Upload Payment Screenshot
+                        </label>
+                        <div class="upload-area" id="uploadArea" onclick="document.getElementById('fileInput').click()">
+                            <div class="upload-icon">📤</div>
+                            <div class="upload-text">Click or drag payment screenshot here</div>
+                            <div class="upload-hint">JPG, PNG up to 5MB</div>
+                            <img id="previewImg" class="preview-img" style="display:none;">
+                        </div>
+                        <input type="file" id="fileInput" accept="image/jpeg,image/png,image/jpg" onchange="handleFileSelect(event)">
+                    </div>
+
+                    <!-- Customer Notes -->
+                    <div style="margin-bottom:1.5rem;">
+                        <label style="display:block;font-size:0.8rem;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;color:var(--text-muted);margin-bottom:0.75rem;">
+                            Add a Note (Optional)
+                        </label>
+                        <textarea class="notes-input" id="customerNote" placeholder="Any special instructions or reference number..."></textarea>
+                    </div>
+
+                    <button class="btn btn-success" style="width:100%;" onclick="submitPayment()" id="submitPaymentBtn">
+                        ✅ I've Paid — Submit Screenshot
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Success State -->
+        <div class="success-state" id="successState">
+            <div class="success-icon">✓</div>
+            <h2>Payment Submitted!</h2>
+            <p>Thank you! We've received your payment screenshot. Our team will verify it shortly and update your order status.</p>
+            <div style="background:#fafafa;border-radius:var(--radius-sm);padding:1.25rem;margin-top:1rem;text-align:left;">
+                <div style="font-size:0.75rem;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;color:var(--text-muted);margin-bottom:0.5rem;">What's Next?</div>
+                <div style="font-size:0.9rem;color:var(--text);line-height:1.8;">
+                    1. We'll verify your payment within 24 hours<br>
+                    2. You'll receive a WhatsApp confirmation<br>
+                    3. Your order will be marked as "Confirmed"<br>
+                    4. Track progress at <a href="/track.html" style="color:var(--primary);">shop2bhutan.com/track</a>
+                </div>
+            </div>
+        </div>
+    </div>
 
     <div class="toast" id="toast"></div>
 
     <script type="module">
         import { supabase } from './assets/js/supabase.js';
 
-        const TOKEN = new URLSearchParams(window.location.search).get('token');
-        const CARD = document.getElementById('quotationCard');
-        const TOAST = document.getElementById('toast');
+        // Get token from URL
+        const urlParams = new URLSearchParams(window.location.search);
+        const token = urlParams.get('token');
 
-        function showToast(msg, isError = false) {
-            TOAST.textContent = msg;
-            TOAST.className = 'toast' + (isError ? ' error' : '') + ' show';
-            setTimeout(() => TOAST.classList.remove('show'), 3500);
-        }
+        let currentQuotation = null;
+        let selectedFile = null;
+        let paymentMethod = 'qr';
 
-        function escapeHtml(text) {
-            if (!text) return '';
-            const d = document.createElement('div');
-            d.textContent = text;
-            return d.innerHTML;
-        }
-
-        function formatNu(amount) {
-            return 'Nu. ' + (parseFloat(amount) || 0).toLocaleString();
-        }
-
-        function isExpired(validUntil) {
-            if (!validUntil) return false;
-            return new Date(validUntil) < new Date().setHours(0,0,0,0);
+        // Initialize
+        if (!token) {
+            showToast('Invalid quotation link. Please check your URL.', true);
+            document.getElementById('mainContent').innerHTML = `
+                <div class="card">
+                    <div class="card-body" style="text-align:center;padding:3rem;">
+                        <div style="font-size:3rem;margin-bottom:1rem;">🔍</div>
+                        <h2 style="margin-bottom:0.5rem;">Quotation Not Found</h2>
+                        <p style="color:var(--text-muted);">The link appears to be invalid or expired.</p>
+                    </div>
+                </div>
+            `;
+        } else {
+            loadQuotation();
         }
 
         async function loadQuotation() {
-            if (!TOKEN) {
-                CARD.innerHTML = errorState('Invalid Link', 'This quotation link appears to be broken. Please contact us for assistance.');
-                return;
-            }
-
-            const { data: q, error } = await supabase
+            const { data, error } = await supabase
                 .from('quotations')
-                .select(`*, order:orders(id, trip_date, customer:customers(*), items:order_items(*))`)
-                .eq('customer_token', TOKEN)
+                .select(`
+                    *,
+                    order:orders(
+                        id,
+                        order_code,
+                        customer:customers(name, phone, dzongkhag)
+                    )
+                `)
+                .eq('customer_token', token)
                 .single();
 
-            if (error || !q) {
-                CARD.innerHTML = errorState('Quotation Not Found', 'This link may have expired or is invalid. Please contact Shop2Bhutan for a new quotation.');
+            if (error || !data) {
+                showToast('Quotation not found or expired.', true);
                 return;
             }
 
-            // Log view (fire and forget)
-            supabase.from('quotation_views').insert({ quotation_id: q.id }).then(() => {});
-
-            renderQuotation(q);
-        }
-
-        function errorState(title, message) {
-            return `
-                <div class="responded-state">
-                    <div class="icon" style="background:#fee2e2;color:var(--danger);font-size:2rem;">!</div>
-                    <h3 style="margin-bottom:0.5rem;">${escapeHtml(title)}</h3>
-                    <p style="color:var(--muted);">${escapeHtml(message)}</p>
-                </div>
-            `;
+            currentQuotation = data;
+            renderQuotation(data);
         }
 
         function renderQuotation(q) {
-            const c = q.order?.customer || {};
+            const order = q.order;
             const items = q.items || [];
-            const expired = isExpired(q.valid_until);
-            const status = expired ? 'expired' : q.status;
-            const responded = q.customer_response && q.customer_response !== 'pending';
 
-            // Determine what to show
-            if (responded) {
-                renderRespondedState(q);
-                return;
-            }
+            // Status
+            const statusMap = {
+                'draft': { text: 'Draft', class: 'status-draft' },
+                'sent': { text: 'Awaiting Your Response', class: 'status-sent' },
+                'accepted': { text: 'Accepted — Pending Payment', class: 'status-accepted' },
+                'rejected': { text: 'Declined', class: 'status-rejected' },
+                'expired': { text: 'Expired', class: 'status-expired' },
+                'paid': { text: 'Payment Submitted', class: 'status-paid' }
+            };
+            const s = statusMap[q.status] || statusMap['draft'];
+            document.getElementById('statusText').textContent = s.text;
+            document.getElementById('statusBadge').className = `status-badge ${s.class}`;
+            document.getElementById('statusBadge').textContent = q.status.replace(/_/g, ' ');
 
-            if (q.status !== 'sent' && q.status !== 'draft') {
-                renderRespondedState(q);
-                return;
-            }
+            // Valid until
+            document.getElementById('validUntil').textContent = q.valid_until 
+                ? new Date(q.valid_until).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
+                : '7 days from now';
 
-            const bannerClass = expired ? 'expired' : 'sent';
-            const bannerText = expired ? 'Expired' : 'Awaiting Your Response';
-            const bannerIcon = expired ? '⏰' : '📋';
-
-            let itemsHtml = items.map((item, i) => `
+            // Items
+            const tbody = document.getElementById('itemsBody');
+            tbody.innerHTML = items.map(item => `
                 <tr>
                     <td>
-                        <div class="item-name">${escapeHtml(item.name)}</div>
-                        ${item.base_cost ? `<div class="item-meta">Our cost: ${formatNu(item.base_cost)}</div>` : ''}
+                        <div style="font-weight:600;">${escapeHtml(item.name)}</div>
+                        ${item.base_cost ? `<div style="font-size:0.8rem;color:var(--text-muted);">Cost: Nu. ${item.base_cost}</div>` : ''}
                     </td>
-                    <td class="text-center">${item.quantity}</td>
-                    <td class="text-right">${formatNu(item.unit_price)}</td>
-                    <td class="text-right" style="font-weight:700;">${formatNu(item.total)}</td>
+                    <td style="text-align:center;">${item.quantity}</td>
+                    <td style="text-align:right;">Nu. ${item.unit_price?.toLocaleString() || 0}</td>
+                    <td style="text-align:right;font-weight:600;">Nu. ${item.total?.toLocaleString() || 0}</td>
                 </tr>
             `).join('');
 
-            const validityText = q.valid_until
-                ? (expired ? `Expired on ${new Date(q.valid_until).toLocaleDateString()}` : `Valid until ${new Date(q.valid_until).toLocaleDateString()}`)
-                : 'Valid for 7 days';
+            // Prices
+            document.getElementById('subtotal').textContent = `Nu. ${(q.subtotal || 0).toLocaleString()}`;
+            document.getElementById('serviceCharge').textContent = `Nu. ${(q.service_charge_amount || 0).toLocaleString()} ${q.service_charge_label ? '(' + q.service_charge_label + ')' : ''}`;
+            document.getElementById('shipping').textContent = `Nu. ${(q.shipping_charge || 0).toLocaleString()}`;
+            document.getElementById('delivery').textContent = `Nu. ${(q.delivery_charge || 0).toLocaleString()}`;
+            
+            if (q.gst_applicable && q.gst_amount > 0) {
+                document.getElementById('gstRow').style.display = 'flex';
+                document.getElementById('gst').textContent = `Nu. ${(q.gst_amount || 0).toLocaleString()}`;
+            }
+            
+            document.getElementById('totalAmount').textContent = `Nu. ${(q.total_amount || 0).toLocaleString()}`;
+            document.getElementById('paymentAmount').textContent = `Nu. ${(q.total_amount || 0).toLocaleString()}`;
+            document.getElementById('qrAmount').textContent = `Nu. ${(q.total_amount || 0).toLocaleString()}`;
 
-            CARD.innerHTML = `
-                <div class="status-banner ${bannerClass}">
-                    <span>${bannerIcon} ${bannerText}</span>
-                    <span style="font-family:monospace;font-size:0.85rem;">${String(q.id).slice(0,8).toUpperCase()}</span>
-                </div>
-
-                <!-- Customer -->
-                <div class="section">
-                    <div class="section-title">Customer Details</div>
-                    <div class="customer-grid">
-                        <div class="info-row">
-                            <span class="label">Name</span>
-                            <span class="value">${escapeHtml(c.name || 'N/A')}</span>
-                        </div>
-                        <div class="info-row">
-                            <span class="label">Phone</span>
-                            <span class="value">${escapeHtml(c.phone || 'N/A')}</span>
-                        </div>
-                        <div class="info-row">
-                            <span class="label">Dzongkhag</span>
-                            <span class="value">${escapeHtml(c.dzongkhag || 'N/A')}</span>
-                        </div>
-                        <div class="info-row">
-                            <span class="label">Trip Date</span>
-                            <span class="value">${q.order?.trip_date ? new Date(q.order.trip_date).toLocaleDateString() : 'To be confirmed'}</span>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Items -->
-                <div class="section">
-                    <div class="section-title">Quotation Items</div>
-                    <table class="items-table">
-                        <thead>
-                            <tr><th>Item</th><th class="text-center">Qty</th><th class="text-right">Unit</th><th class="text-right">Total</th></tr>
-                        </thead>
-                        <tbody>${itemsHtml}</tbody>
-                    </table>
-                </div>
-
-                <!-- Breakdown -->
-                <div class="section">
-                    <div class="section-title">Price Breakdown</div>
-                    <div class="breakdown-row"><span>Subtotal</span><span>${formatNu(q.subtotal)}</span></div>
-                    <div class="breakdown-row"><span>Service Charge ${q.service_charge_type === 'percentage' ? `(${q.service_charge_value}%)` : ''}</span><span>${formatNu(q.service_charge_amount)}</span></div>
-                    <div class="breakdown-row"><span>Shipping</span><span>${formatNu(q.shipping_charge)}</span></div>
-                    <div class="breakdown-row"><span>Delivery</span><span>${formatNu(q.delivery_charge)}</span></div>
-                    ${q.gst_applicable ? `<div class="breakdown-row"><span>GST (${q.gst_amount > 0 ? '5%' : '0%'})</span><span>${formatNu(q.gst_amount)}</span></div>` : ''}
-                    <div class="breakdown-row total"><span>Total Amount</span><span style="color:var(--primary);">${formatNu(q.total_amount)}</span></div>
-                </div>
-
-                ${q.notes ? `
-                <div class="section">
-                    <div class="section-title">Notes</div>
-                    <p style="font-size:0.9rem;color:var(--muted);line-height:1.7;">${escapeHtml(q.notes)}</p>
-                </div>
-                ` : ''}
-
-                <div class="section" style="padding-bottom:0;">
-                    <div class="validity ${expired ? 'expired' : ''}">
-                        <span>${expired ? '⚠️' : '✓'}</span>
-                        <span>${validityText}</span>
-                    </div>
-                </div>
-
-                ${!expired ? `
-                <div class="actions">
-                    <button class="btn btn-accept" onclick="acceptQuotation()" id="acceptBtn">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-                        Accept Quotation & Proceed to Payment
-                    </button>
-                    <button class="btn btn-decline" onclick="showDeclineForm()" id="declineBtn">
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-                        Decline
-                    </button>
-                </div>
-
-                <div class="decline-form" id="declineForm">
-                    <textarea id="declineReason" placeholder="Please let us know why you're declining (optional)..."></textarea>
-                    <div style="display:flex;gap:0.75rem;margin-top:0.75rem;">
-                        <button class="btn btn-decline" onclick="hideDeclineForm()" style="flex:1;">Cancel</button>
-                        <button class="btn" onclick="declineQuotation()" style="flex:1;background:var(--danger);color:#fff;" id="confirmDeclineBtn">Confirm Decline</button>
-                    </div>
-                </div>
-                ` : `
-                <div class="actions">
-                    <a href="https://wa.me/97517123456?text=Hi%2C%20my%20quotation%20${encodeURIComponent(String(q.id).slice(0,8).toUpperCase())}%20has%20expired.%20Can%20you%20send%20a%20new%20one%3F" 
-                       target="_blank" class="btn btn-accept" style="text-decoration:none;background:var(--primary);">
-                        Request New Quotation
-                    </a>
-                </div>
-                `}
-            `;
-        }
-
-        function renderRespondedState(q) {
-            const isAccepted = q.customer_response === 'accepted';
-            const icon = isAccepted ? '✓' : '✕';
-            const title = isAccepted ? 'Quotation Accepted' : 'Quotation Declined';
-            const message = isAccepted
-                ? 'Thank you! We have received your acceptance. Please complete your payment to confirm the order.'
-                : 'You have declined this quotation. Feel free to contact us if you change your mind.';
-
-            CARD.innerHTML = `
-                <div class="responded-state ${q.customer_response}">
-                    <div class="icon">${icon}</div>
-                    <h3>${title}</h3>
-                    <p>${message}</p>
-                    ${isAccepted ? `
-                    <div style="margin-top:1.5rem;padding:1.25rem;background:#f0fdf4;border-radius:12px;">
-                        <div style="font-size:0.85rem;color:var(--muted);margin-bottom:0.5rem;">Amount Due</div>
-                        <div style="font-size:1.75rem;font-weight:800;color:var(--text);">${formatNu(q.total_amount)}</div>
-                    </div>
-                    <div class="payment-section" style="margin-top:1.5rem;">
-                        <h3>Complete Your Payment</h3>
-                        <p>Choose your preferred payment method</p>
-                        <div class="payment-methods">
-                            <button class="pay-btn pay-bnb" onclick="payWithBNB()">Pay with BNB</button>
-                            <button class="pay-btn pay-bank" onclick="payWithBank()">Bank Transfer</button>
-                        </div>
-                    </div>
-                    ` : ''}
-                </div>
-            `;
-        }
-
-        // ===== ACTIONS =====
-        window.showDeclineForm = function() {
-            document.getElementById('declineForm').style.display = 'block';
-            document.getElementById('acceptBtn').disabled = true;
-        };
-
-        window.hideDeclineForm = function() {
-            document.getElementById('declineForm').style.display = 'none';
-            document.getElementById('acceptBtn').disabled = false;
-        };
-
-        window.acceptQuotation = async function() {
-            const btn = document.getElementById('acceptBtn');
-            btn.disabled = true;
-            btn.innerHTML = '<div style="width:20px;height:20px;border:2px solid #fff;border-top-color:transparent;border-radius:50%;animation:spin 1s linear infinite;display:inline-block;vertical-align:middle;margin-right:0.5rem;"></div> Processing...';
-
-            const { error } = await supabase
-                .from('quotations')
-                .update({
-                    customer_response: 'accepted',
-                    responded_at: new Date().toISOString(),
-                    status: 'accepted'
-                })
-                .eq('customer_token', TOKEN)
-                .eq('status', 'sent'); // only if still sent
-
-            if (error) {
-                showToast('Error: ' + error.message, true);
-                btn.disabled = false;
-                btn.innerHTML = 'Accept Quotation & Proceed to Payment';
-                return;
+            // Notes
+            if (q.notes) {
+                document.getElementById('adminNotes').textContent = q.notes;
+            } else {
+                document.getElementById('notesCard').style.display = 'none';
             }
 
-            showToast('Quotation accepted! Redirecting to payment...');
-            setTimeout(() => loadQuotation(), 800);
+            // If already accepted/paid, show appropriate state
+            if (q.status === 'accepted' || q.status === 'paid') {
+                document.getElementById('actionButtons').style.display = 'none';
+                if (q.payment_screenshot) {
+                    showSuccessState();
+                } else {
+                    showPaymentSection();
+                }
+            } else if (q.status === 'rejected' || q.status === 'expired') {
+                document.getElementById('actionButtons').style.display = 'none';
+            }
+
+            // Generate QR code
+            generateQR(q);
+            
+            // Render bank details
+            renderBankDetails(q);
+        }
+
+        function generateQR(q) {
+            const container = document.getElementById('qrcode');
+            container.innerHTML = '';
+            
+            // Generate a simple payment QR with amount
+            const qrData = JSON.stringify({
+                merchant: 'Shop2Bhutan',
+                amount: q.total_amount,
+                order_id: q.order_id,
+                quotation_id: q.id
+            });
+            
+            new QRCode(container, {
+                text: qrData,
+                width: 180,
+                height: 180,
+                colorDark: '#1a1a2e',
+                colorLight: '#ffffff',
+                correctLevel: QRCode.CorrectLevel.M
+            });
+        }
+
+        function renderBankDetails(q) {
+            const bank = q.bank_details || {
+                bank_name: 'Bank of Bhutan',
+                account_name: 'Shop2Bhutan Pvt Ltd',
+                account_number: '1000123456789',
+                branch: 'Thimphu Main',
+                swift: 'BHUBBTBT'
+            };
+
+            document.getElementById('bankDetails').innerHTML = `
+                <div class="bank-row">
+                    <span class="label">Bank Name</span>
+                    <span class="value">${escapeHtml(bank.bank_name)}</span>
+                </div>
+                <div class="bank-row">
+                    <span class="label">Account Name</span>
+                    <span class="value">${escapeHtml(bank.account_name)}</span>
+                </div>
+                <div class="bank-row">
+                    <span class="label">Account Number</span>
+                    <span class="value">
+                        ${escapeHtml(bank.account_number)}
+                        <button class="copy-btn" onclick="copyToClipboard('${bank.account_number}')">Copy</button>
+                    </span>
+                </div>
+                <div class="bank-row">
+                    <span class="label">Branch</span>
+                    <span class="value">${escapeHtml(bank.branch)}</span>
+                </div>
+                <div class="bank-row">
+                    <span class="label">SWIFT Code</span>
+                    <span class="value">${escapeHtml(bank.swift || 'N/A')}</span>
+                </div>
+                <div class="bank-row" style="background:var(--primary);color:#fff;margin:0.75rem -1.25rem -1.25rem;padding:0.75rem 1.25rem;border-radius:0 0 var(--radius-sm) var(--radius-sm);">
+                    <span class="label" style="color:rgba(255,255,255,0.8);">Amount to Transfer</span>
+                    <span class="value" style="color:#fff;font-size:1.1rem;">Nu. ${(q.total_amount || 0).toLocaleString()}</span>
+                </div>
+            `;
+        }
+
+        // Payment tab switching
+        window.switchPayment = function(method) {
+            paymentMethod = method;
+            document.querySelectorAll('.payment-tab').forEach(t => t.classList.remove('active'));
+            document.getElementById(method === 'qr' ? 'tabQr' : 'tabBank').classList.add('active');
+            document.getElementById('qrPanel').style.display = method === 'qr' ? 'block' : 'none';
+            document.getElementById('bankPanel').style.display = method === 'bank' ? 'block' : 'none';
         };
 
-        window.declineQuotation = async function() {
-            const reason = document.getElementById('declineReason')?.value || '';
-            const btn = document.getElementById('confirmDeclineBtn');
+        // Accept quotation
+        window.acceptQuotation = async function() {
+            if (!confirm('Accept this quotation and proceed to payment?')) return;
+
+            const btn = document.querySelector('#actionButtons .btn-primary');
             btn.disabled = true;
-            btn.textContent = 'Processing...';
+            btn.innerHTML = '<div class="spinner"></div> Processing...';
 
             const { error } = await supabase
                 .from('quotations')
-                .update({
-                    customer_response: 'declined',
-                    responded_at: new Date().toISOString(),
-                    decline_reason: reason || null,
-                    status: 'rejected'
+                .update({ 
+                    status: 'accepted',
+                    accepted_at: new Date().toISOString(),
+                    updated_at: new Date().toISOString()
                 })
-                .eq('customer_token', TOKEN)
+                .eq('id', currentQuotation.id)
                 .eq('status', 'sent');
 
             if (error) {
                 showToast('Error: ' + error.message, true);
                 btn.disabled = false;
-                btn.textContent = 'Confirm Decline';
+                btn.innerHTML = '✓ Accept & Proceed to Payment';
                 return;
             }
 
-            showToast('Quotation declined');
-            setTimeout(() => loadQuotation(), 600);
+            // Also update order status
+            await supabase
+                .from('orders')
+                .update({ 
+                    status: 'confirmed',
+                    customer_response: 'accepted',
+                    updated_at: new Date().toISOString()
+                })
+                .eq('id', currentQuotation.order_id);
+
+            showToast('Quotation accepted! Please complete payment.', false);
+            showPaymentSection();
         };
 
-        window.payWithBNB = function() {
-            // Integrate with your BNB payment gateway
-            showToast('Redirecting to BNB payment...');
-            // window.location.href = `/payment/bnb?token=${TOKEN}`;
+        // Reject quotation
+        window.rejectQuotation = async function() {
+            if (!confirm('Are you sure you want to decline this quotation?')) return;
+
+            const { error } = await supabase
+                .from('quotations')
+                .update({ 
+                    status: 'rejected',
+                    updated_at: new Date().toISOString()
+                })
+                .eq('id', currentQuotation.id);
+
+            if (error) {
+                showToast('Error: ' + error.message, true);
+                return;
+            }
+
+            document.getElementById('statusText').textContent = 'Declined';
+            document.getElementById('statusBadge').className = 'status-badge status-rejected';
+            document.getElementById('statusBadge').textContent = 'Rejected';
+            document.getElementById('actionButtons').style.display = 'none';
+            showToast('Quotation declined.', true);
         };
 
-        window.payWithBank = function() {
-            // Show bank details or redirect
-            showToast('Bank transfer instructions sent to your phone');
-            // Or: window.location.href = `/payment/bank?token=${TOKEN}`;
+        function showPaymentSection() {
+            document.getElementById('actionButtons').style.display = 'none';
+            document.getElementById('paymentSection').classList.add('active');
+            document.getElementById('statusText').textContent = 'Accepted — Awaiting Payment';
+            document.getElementById('statusBadge').className = 'status-badge status-accepted';
+            document.getElementById('statusBadge').textContent = 'Accepted';
+        }
+
+        function showSuccessState() {
+            document.getElementById('mainContent').style.display = 'none';
+            document.getElementById('paymentSection').classList.remove('active');
+            document.getElementById('successState').classList.add('active');
+            document.getElementById('statusText').textContent = 'Payment Submitted';
+            document.getElementById('statusBadge').className = 'status-badge status-paid';
+            document.getElementById('statusBadge').textContent = 'Paid';
+        }
+
+        // File upload handling
+        const uploadArea = document.getElementById('uploadArea');
+        const fileInput = document.getElementById('fileInput');
+
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+            uploadArea.addEventListener(eventName, preventDefaults, false);
+        });
+
+        function preventDefaults(e) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+
+        ['dragenter', 'dragover'].forEach(eventName => {
+            uploadArea.addEventListener(eventName, () => uploadArea.classList.add('dragover'), false);
+        });
+
+        ['dragleave', 'drop'].forEach(eventName => {
+            uploadArea.addEventListener(eventName, () => uploadArea.classList.remove('dragover'), false);
+        });
+
+        uploadArea.addEventListener('drop', handleDrop, false);
+
+        function handleDrop(e) {
+            const dt = e.dataTransfer;
+            const files = dt.files;
+            handleFiles(files);
+        }
+
+        window.handleFileSelect = function(e) {
+            handleFiles(e.target.files);
         };
 
-        // Init
-        loadQuotation();
+        function handleFiles(files) {
+            if (files.length === 0) return;
+            const file = files[0];
+            
+            // Validate
+            if (!['image/jpeg', 'image/png', 'image/jpg'].includes(file.type)) {
+                showToast('Please upload a JPG or PNG image.', true);
+                return;
+            }
+            if (file.size > 5 * 1024 * 1024) {
+                showToast('File size must be under 5MB.', true);
+                return;
+            }
+
+            selectedFile = file;
+            
+            // Preview
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const img = document.getElementById('previewImg');
+                img.src = e.target.result;
+                img.style.display = 'block';
+                uploadArea.classList.add('has-file');
+                document.querySelector('.upload-text').textContent = file.name;
+                document.querySelector('.upload-hint').textContent = 'Click to change file';
+            };
+            reader.readAsDataURL(file);
+        }
+
+        // Submit payment
+        window.submitPayment = async function() {
+            if (!selectedFile) {
+                showToast('Please upload a payment screenshot first.', true);
+                return;
+            }
+
+            const btn = document.getElementById('submitPaymentBtn');
+            btn.disabled = true;
+            btn.innerHTML = '<div class="spinner"></div> Uploading...';
+
+            try {
+                // Upload to Supabase Storage
+                const fileExt = selectedFile.name.split('.').pop();
+                const fileName = `payment-${currentQuotation.id}-${Date.now()}.${fileExt}`;
+                
+                const { data: uploadData, error: uploadError } = await supabase.storage
+                    .from('payment-screenshots')
+                    .upload(fileName, selectedFile, {
+                        cacheControl: '3600',
+                        upsert: false
+                    });
+
+                if (uploadError) throw uploadError;
+
+                // Get public URL
+                const { data: { publicUrl } } = supabase.storage
+                    .from('payment-screenshots')
+                    .getPublicUrl(fileName);
+
+                // Update quotation
+                const { error: updateError } = await supabase
+                    .from('quotations')
+                    .update({
+                        status: 'paid',
+                        payment_status: 'pending_verification',
+                        payment_screenshot: publicUrl,
+                        payment_amount: currentQuotation.total_amount,
+                        payment_method: paymentMethod,
+                        customer_notes: document.getElementById('customerNote').value || null,
+                        updated_at: new Date().toISOString()
+                    })
+                    .eq('id', currentQuotation.id);
+
+                if (updateError) throw updateError;
+
+                // Create payment record
+                await supabase.from('payments').insert({
+                    order_id: currentQuotation.order_id,
+                    quotation_id: currentQuotation.id,
+                    amount: currentQuotation.total_amount,
+                    status: 'pending',
+                    method: paymentMethod,
+                    screenshot_url: publicUrl,
+                    notes: document.getElementById('customerNote').value || null,
+                    created_at: new Date().toISOString()
+                });
+
+                showSuccessState();
+                showToast('Payment submitted successfully!', false);
+
+            } catch (err) {
+                showToast('Error: ' + err.message, true);
+                btn.disabled = false;
+                btn.innerHTML = '✅ I\'ve Paid — Submit Screenshot';
+            }
+        };
+
+        // Utilities
+        window.copyToClipboard = function(text) {
+            navigator.clipboard.writeText(text).then(() => {
+                showToast('Copied to clipboard!', false);
+            });
+        };
+
+        function escapeHtml(text) {
+            if (!text) return '';
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        function showToast(msg, isError) {
+            const t = document.getElementById('toast');
+            t.textContent = msg;
+            t.className = 'toast' + (isError ? ' error' : ' success') + ' show';
+            setTimeout(() => t.classList.remove('show'), 3500);
+        }
+
+        // Expose functions for inline onclick
+        window.acceptQuotation = acceptQuotation;
+        window.rejectQuotation = rejectQuotation;
+        window.switchPayment = switchPayment;
+        window.handleFileSelect = handleFileSelect;
+        window.submitPayment = submitPayment;
+        window.copyToClipboard = copyToClipboard;
     </script>
 </body>
 </html>

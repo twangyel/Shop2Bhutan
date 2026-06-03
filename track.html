@@ -699,6 +699,223 @@
             align-self: flex-start;
         }
 
+        /* ===== QUOTATION CARD ===== */
+        .quotation-card {
+            background: linear-gradient(135deg, #fff5f7 0%, #fff 100%);
+            border: 2px solid rgba(233, 69, 96, 0.15);
+            border-radius: var(--radius);
+            padding: 1.5rem;
+            margin: 0 2rem 2rem;
+        }
+
+        .quotation-card h3 {
+            font-size: 1rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+            color: var(--text);
+        }
+
+        .quotation-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 0.5rem 0;
+            font-size: 0.9rem;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .quotation-row:last-child {
+            border-bottom: none;
+            margin-top: 0.5rem;
+            padding-top: 1rem;
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: var(--primary);
+        }
+
+        .quotation-actions {
+            display: flex;
+            gap: 0.75rem;
+            margin-top: 1.25rem;
+        }
+
+        .btn {
+            flex: 1;
+            padding: 0.875rem;
+            border-radius: var(--radius-sm);
+            font-weight: 700;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: var(--transition);
+            border: none;
+            font-family: inherit;
+            text-align: center;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.4rem;
+        }
+
+        .btn-primary {
+            background: var(--primary);
+            color: #fff;
+        }
+
+        .btn-primary:hover {
+            background: var(--primary-dark);
+            transform: translateY(-1px);
+            box-shadow: 0 6px 20px rgba(233, 69, 96, 0.25);
+        }
+
+        .btn-secondary {
+            background: var(--surface);
+            color: var(--text);
+            border: 2px solid var(--border);
+        }
+
+        .btn-secondary:hover {
+            background: var(--bg);
+            border-color: var(--text-muted);
+        }
+
+        .btn-success {
+            background: var(--success);
+            color: #fff;
+        }
+
+        .btn-success:hover {
+            background: #1a9c4e;
+        }
+
+        /* ===== PAYMENT SECTION (for accepted quotations) ===== */
+        .payment-section {
+            padding: 0 2rem 2rem;
+        }
+
+        .payment-card {
+            background: var(--surface);
+            border: 2px solid var(--border);
+            border-radius: var(--radius-sm);
+            padding: 1.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .payment-tabs {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .payment-tab {
+            flex: 1;
+            padding: 0.75rem;
+            border: 2px solid var(--border);
+            border-radius: 8px;
+            background: var(--surface);
+            cursor: pointer;
+            text-align: center;
+            font-weight: 600;
+            font-size: 0.85rem;
+            transition: var(--transition);
+        }
+
+        .payment-tab.active {
+            border-color: var(--primary);
+            background: #fff5f7;
+            color: var(--primary);
+        }
+
+        .qr-container {
+            text-align: center;
+            padding: 1.5rem;
+            background: #fafafa;
+            border-radius: var(--radius-sm);
+        }
+
+        #qrcode {
+            display: inline-block;
+            padding: 1rem;
+            background: #fff;
+            border-radius: 12px;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .bank-details {
+            background: #fafafa;
+            border-radius: var(--radius-sm);
+            padding: 1.25rem;
+        }
+
+        .bank-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 0.6rem 0;
+            font-size: 0.9rem;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .bank-row:last-child {
+            border-bottom: none;
+        }
+
+        .bank-row .label {
+            color: var(--text-muted);
+            font-weight: 500;
+        }
+
+        .bank-row .value {
+            font-weight: 600;
+            color: var(--text);
+            font-family: 'Courier New', monospace;
+        }
+
+        .copy-btn {
+            background: none;
+            border: none;
+            color: var(--primary);
+            cursor: pointer;
+            font-size: 0.8rem;
+            font-weight: 600;
+            margin-left: 0.5rem;
+        }
+
+        .copy-btn:hover {
+            text-decoration: underline;
+        }
+
+        .upload-area {
+            border: 2px dashed var(--border);
+            border-radius: var(--radius-sm);
+            padding: 2rem;
+            text-align: center;
+            cursor: pointer;
+            transition: var(--transition);
+            background: #fafafa;
+        }
+
+        .upload-area:hover {
+            border-color: var(--primary);
+            background: #fff5f7;
+        }
+
+        .upload-area.has-file {
+            border-color: var(--success);
+            background: #f0fdf4;
+        }
+
+        .upload-icon {
+            font-size: 2rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .preview-img {
+            max-width: 200px;
+            max-height: 200px;
+            border-radius: 8px;
+            margin-top: 1rem;
+            box-shadow: var(--shadow);
+        }
+
         /* ===== SUPPORT CTA ===== */
         .support-section {
             padding: 0 2rem 2rem;
@@ -771,6 +988,10 @@
             background: var(--danger);
         }
 
+        .toast.success {
+            background: var(--success);
+        }
+
         /* ===== RESPONSIVE ===== */
         @media (max-width: 640px) {
             .hero { padding: 2.5rem 1rem 4rem; }
@@ -779,12 +1000,14 @@
             .search-box button { justify-content: center; }
             .tracking-header { padding: 1.5rem; }
             .progress-section { padding: 1.5rem; }
-            .timeline-section, .details-grid, .items-section, .support-section {
+            .timeline-section, .details-grid, .items-section, .support-section,
+            .payment-section, .quotation-card {
                 padding-left: 1.5rem;
                 padding-right: 1.5rem;
             }
             .step-label { font-size: 0.6rem; max-width: 60px; }
             .step-dot { width: 22px; height: 22px; font-size: 0.65rem; }
+            .quotation-card { margin-left: 1.5rem; margin-right: 1.5rem; }
         }
 
         /* ===== REDUCED MOTION ===== */
@@ -795,8 +1018,6 @@
             }
         }
     </style>
-<base target="_blank">
-<base target="_blank">
 </head>
 <body>
 
@@ -812,9 +1033,8 @@
                     id="trackInput" 
                     placeholder="e.g. S2B-260603-THI-004 or your phone number"
                     autocomplete="off"
-                    onkeydown="if(event.key==='Enter')trackOrder()"
                 >
-                <button onclick="trackOrder()" id="trackBtn">
+                <button id="trackBtn">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
                     Track
                 </button>
@@ -836,278 +1056,7 @@
     <!-- TOAST -->
     <div class="toast" id="toast"></div>
 
-    <script type="module">
-        import { supabase } from './assets/js/supabase.js';
-
-        const STEPS = [
-            { key: 'submitted', label: 'Submitted', desc: 'Order received' },
-            { key: 'price_sent', label: 'Quoted', desc: 'Price quote sent' },
-            { key: 'confirmed', label: 'Confirmed', desc: 'Payment confirmed' },
-            { key: 'purchased', label: 'Purchased', desc: 'Items purchased' },
-            { key: 'in_transit', label: 'In Transit', desc: 'Shipping to Bhutan' },
-            { key: 'delivered', label: 'Delivered', desc: 'Order completed' }
-        ];
-
-        const STATUS_ORDER = ['submitted', 'price_sent', 'confirmed', 'purchased', 'in_transit', 'delivered'];
-
-        function showToast(msg, isError = false) {
-            const t = document.getElementById('toast');
-            t.textContent = msg;
-            t.className = 'toast' + (isError ? ' error' : '') + ' show';
-            setTimeout(() => t.classList.remove('show'), 3500);
-        }
-
-        function getStepIndex(status) {
-            return STATUS_ORDER.indexOf(status);
-        }
-
-        function escapeHtml(text) {
-            if (!text) return '';
-            const div = document.createElement('div');
-            div.textContent = text;
-            return div.innerHTML;
-        }
-
-        async function trackOrder() {
-            const input = document.getElementById('trackInput').value.trim();
-            const btn = document.getElementById('trackBtn');
-            const container = document.getElementById('resultContainer');
-
-            if (!input) {
-                showToast('Please enter an order code or phone number', true);
-                return;
-            }
-
-            btn.disabled = true;
-            btn.innerHTML = '<div class="spinner" style="width:20px;height:20px;border-width:2px;"></div> Searching...';
-            container.innerHTML = `
-                <div class="loading-pulse">
-                    <div class="spinner"></div>
-                    <p style="color:var(--text-muted);font-weight:500;">Looking up your order...</p>
-                </div>
-            `;
-
-            let query = supabase
-                .from('orders')
-                .select(`*, customer:customers(*), items:order_items(*), history:order_status_history(*), quotation:quotations(*), payments:payments(*)`)
-                .order('created_at', { ascending: false, foreignTable: 'order_status_history' });
-
-            // 1. Pure digits  = phone
-            // 2. UUID pattern = raw id
-            // 3. Everything else = order_code (e.g. S2B-260603-THI-004)
-            const isPhone = /^\d+$/.test(input);
-            const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(input);
-
-            if (isPhone) {
-                query = query.eq('customer.phone', input);
-            } else if (isUuid) {
-                query = query.eq('id', input);
-            } else {
-                query = query.eq('order_code', input);
-            }
-
-            // Use .limit(1) instead of .single() so phone searches don't crash
-            // when multiple orders exist (we just show the most recent one).
-            const { data, error } = await query.limit(1);
-
-            btn.disabled = false;
-            btn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg> Track';
-
-            if (error || !data || data.length === 0) {
-                container.innerHTML = `
-                    <div class="state-card">
-                        <div class="state-icon error">!</div>
-                        <h3>Order Not Found</h3>
-                        <p>We couldn't find an order matching "${escapeHtml(input)}".<br>Please check your order code or phone number and try again.</p>
-                    </div>
-                `;
-                return;
-            }
-
-            renderTracking(data[0]);
-        }
-
-        function renderTracking(order) {
-            const container = document.getElementById('resultContainer');
-            const c = order.customer || {};
-            const items = order.items || [];
-            const history = order.history || [];
-            const quotation = order.quotation?.[0] || null;
-            const payments = order.payments || [];
-            const status = order.status || 'submitted';
-            const currentStep = getStepIndex(status);
-            const progressPercent = currentStep >= 0 ? (currentStep / (STEPS.length - 1)) * 100 : 0;
-
-            // Build timeline from history
-            const timelineItems = history.length > 0 ? history.map((h, i) => {
-                const isLatest = i === history.length - 1;
-                const stepIdx = getStepIndex(h.status);
-                return {
-                    status: h.status,
-                    label: STEPS.find(s => s.key === h.status)?.label || h.status,
-                    desc: STEPS.find(s => s.key === h.status)?.desc || '',
-                    time: h.created_at,
-                    active: isLatest,
-                    completed: stepIdx < currentStep
-                };
-            }) : [{
-                status: status,
-                label: STEPS.find(s => s.key === status)?.label || status,
-                desc: STEPS.find(s => s.key === status)?.desc || '',
-                time: order.created_at,
-                active: true,
-                completed: false
-            }];
-
-            // Reverse for display (newest first)
-            timelineItems.reverse();
-
-            const paidAmount = payments.filter(p => p.status === 'completed').reduce((s, p) => s + (parseFloat(p.amount) || 0), 0);
-
-            container.innerHTML = `
-                <div class="tracking-card">
-                    <!-- Header -->
-                    <div class="tracking-header">
-                        <div class="tracking-id">
-                            <div>
-                                <div class="label">Order ID</div>
-                                <div class="value">${escapeHtml(order.order_code || String(order.id).slice(0, 8).toUpperCase())}</div>
-                            </div>
-                        </div>
-                        <div class="status-badge status-${status}">
-                            ${status.replace(/_/g, ' ')}
-                        </div>
-                    </div>
-
-                    <!-- Progress Bar -->
-                    <div class="progress-section">
-                        <div class="progress-bar-container">
-                            <div class="progress-track">
-                                <div class="progress-fill" style="width: ${progressPercent}%"></div>
-                            </div>
-                            <div class="progress-steps">
-                                ${STEPS.map((step, i) => {
-                                    let dotClass = 'pending';
-                                    if (i < currentStep) dotClass = 'completed';
-                                    else if (i === currentStep) dotClass = 'active';
-                                    return `
-                                        <div class="step ${dotClass}">
-                                            <div class="step-dot ${dotClass}">
-                                                ${i < currentStep ? '✓' : (i === currentStep ? (i + 1) : (i + 1))}
-                                            </div>
-                                            <div class="step-label">${step.label}</div>
-                                        </div>
-                                    `;
-                                }).join('')}
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Timeline -->
-                    <div class="timeline-section">
-                        <div class="section-title">Status History</div>
-                        <div class="timeline">
-                            ${timelineItems.map(item => `
-                                <div class="timeline-item ${item.active ? 'active' : ''} ${item.completed ? 'completed' : ''}">
-                                    <div class="timeline-dot"></div>
-                                    <div class="timeline-content">
-                                        <h4>${item.label}</h4>
-                                        <p>${item.desc}</p>
-                                        <div class="timeline-time">
-                                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-                                            ${item.time ? new Date(item.time).toLocaleString('en-US', { 
-                                                month: 'short', day: 'numeric', year: 'numeric',
-                                                hour: '2-digit', minute: '2-digit'
-                                            }) : 'Pending'}
-                                        </div>
-                                    </div>
-                                </div>
-                            `).join('')}
-                        </div>
-                    </div>
-
-                    <!-- Details Grid -->
-                    <div class="details-grid">
-                        <div class="detail-box">
-                            <div class="label">Customer</div>
-                            <div class="value">${escapeHtml(c.name || 'N/A')}</div>
-                        </div>
-                        <div class="detail-box">
-                            <div class="label">Phone</div>
-                            <div class="value">${escapeHtml(c.phone || 'N/A')}</div>
-                        </div>
-                        <div class="detail-box">
-                            <div class="label">Dzongkhag</div>
-                            <div class="value">${escapeHtml(c.dzongkhag || 'N/A')}</div>
-                        </div>
-                        <div class="detail-box">
-                            <div class="label">Trip Date</div>
-                            <div class="value">${order.trip_date ? new Date(order.trip_date).toLocaleDateString() : 'Not set'}</div>
-                        </div>
-                        ${quotation ? `
-                        <div class="detail-box">
-                            <div class="label">Quotation Amount</div>
-                            <div class="value price">Nu. ${quotation.total_amount || '0'}</div>
-                        </div>
-                        ` : ''}
-                        <div class="detail-box">
-                            <div class="label">Payment</div>
-                            <div class="value">${order.payment_method === '50_50' ? '50/50 Split' : 'Full Payment'}</div>
-                        </div>
-                        ${paidAmount > 0 ? `
-                        <div class="detail-box">
-                            <div class="label">Paid So Far</div>
-                            <div class="value price">Nu. ${paidAmount.toLocaleString()}</div>
-                        </div>
-                        ` : ''}
-                    </div>
-
-                    <!-- Items -->
-                    <div class="items-section">
-                        <div class="section-title">Order Items (${items.length})</div>
-                        ${items.map((item, i) => `
-                            <div class="item-card" style="animation-delay: ${0.1 + (i * 0.1)}s">
-                                ${item.screenshot 
-                                    ? `<img src="${escapeHtml(item.screenshot)}" class="item-img" onclick="window.open('${escapeHtml(item.screenshot)}','_blank')" title="Click to enlarge">`
-                                    : `<div class="item-img placeholder">📦</div>`
-                                }
-                                <div class="item-info">
-                                    <h4>${escapeHtml(item.product_name || 'Product')}</h4>
-                                    <p>${item.platform ? `Platform: ${escapeHtml(item.platform)}` : 'Direct order'}</p>
-                                    ${item.variant ? `<p>Variant: ${escapeHtml(item.variant)}</p>` : ''}
-                                    ${item.product_link && !item.product_link.startsWith('search://') 
-                                        ? `<p><a href="${escapeHtml(item.product_link)}" target="_blank" style="color:var(--primary);text-decoration:none;font-weight:500;">View Product ↗</a></p>` 
-                                        : ''
-                                    }
-                                </div>
-                                <div class="item-qty">×${item.quantity || 1}</div>
-                            </div>
-                        `).join('')}
-                    </div>
-
-                    <!-- Support -->
-                    <div class="support-section">
-                        <a href="https://wa.me/975${c.phone || '17123456'}?text=Hi%2C%20I%20have%20a%20question%20about%20my%20order%20${encodeURIComponent(order.order_code || String(order.id).slice(0, 8).toUpperCase())}" 
-                           target="_blank" class="support-btn">
-                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>
-                            Chat with us on WhatsApp
-                        </a>
-                    </div>
-                </div>
-            `;
-        }
-
-        // Check URL params for order ID
-        const urlParams = new URLSearchParams(window.location.search);
-        const prefillId = urlParams.get('order');
-        if (prefillId) {
-            document.getElementById('trackInput').value = prefillId;
-            trackOrder();
-        }
-
-        // Expose for inline onclick
-        window.trackOrder = trackOrder;
-    </script>
-
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <script type="module" src="assets/js/track.js"></script>
 </body>
 </html>

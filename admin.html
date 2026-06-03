@@ -453,6 +453,20 @@
             .admin-main { padding: 1.25rem 1rem; }
             .stats-grid { grid-template-columns: 1fr 1fr; }
         }
+
+        /* Payment stat cards */
+.stat-card.payment-completed::after { background: var(--success); }
+.stat-card.payment-completed .stat-icon { background: var(--success-light); color: var(--success); }
+.stat-card.payment-pending::after { background: var(--warning); }
+.stat-card.payment-pending .stat-icon { background: var(--warning-light); color: var(--warning); }
+.stat-card.payment-refunded::after { background: var(--danger); }
+.stat-card.payment-refunded .stat-icon { background: var(--danger-light); color: var(--danger); }
+
+/* Payment method badges */
+.badge-bank_transfer { background: #e0e7ff; color: #3730a3; }
+.badge-cash { background: var(--success-light); color: var(--success); }
+.badge-online { background: var(--info-light); color: var(--info); }
+.badge-other { background: #f5f5f4; color: var(--text-secondary); }
     </style>
 </head>
 <body>
@@ -494,7 +508,7 @@
         <div class="sidebar-logo-area">
             <div class="sidebar-logo">
                 <img src="/image/logo.svg" alt="Shop2Bhutan" width="34" height="34">
-                <span class="sidebar-logo-text">Shop2Bhutan</span>
+                
             </div>
             <div class="sidebar-controls">
                 <button type="button" class="sidebar-btn" id="pinSidebarBtn" onclick="togglePinSidebar()" title="Pin sidebar"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="17" x2="12" y2="3"/><path d="M5 17h14"/><path d="M15 3l-3-3-3 3"/></svg></button>
@@ -810,69 +824,223 @@
         </div>
 
         <!-- ═══ PAYMENTS SECTION ═══ -->
-        <div class="section-content" id="section-payments">
-            <div class="placeholder-card">
-                <div class="placeholder-icon"><svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg></div>
-                <h3>Payment Management</h3>
-                <p>Payment tracking, refund processing, and transaction history will be available here soon.</p>
-            </div>
+     <!-- ═══ PAYMENTS SECTION ═══ -->
+<div class="section-content" id="section-payments">
+    <div class="stats-grid" id="paymentStatsGrid">
+        <div class="stat-card payment-completed">
+            <div class="stat-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg></div>
+            <h4>Total Received</h4>
+            <div class="value" id="statPaymentTotal"><div class="skeleton" style="height:20px;width:50%;"></div></div>
         </div>
+        <div class="stat-card payment-pending">
+            <div class="stat-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div>
+            <h4>Pending</h4>
+            <div class="value" id="statPaymentPending"><div class="skeleton" style="height:20px;width:50%;"></div></div>
+        </div>
+        <div class="stat-card payment-refunded">
+            <div class="stat-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 14 4 9 9 4"/><path d="M4 9h10a4 4 0 0 1 4 4v4"/></svg></div>
+            <h4>Refunded</h4>
+            <div class="value" id="statPaymentRefunded"><div class="skeleton" style="height:20px;width:50%;"></div></div>
+        </div>
+        <div class="stat-card revenue">
+            <div class="stat-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></div>
+            <h4>This Week</h4>
+            <div class="value" id="statPaymentWeek"><div class="skeleton" style="height:20px;width:50%;"></div></div>
+        </div>
+    </div>
+
+    <div class="filters">
+        <div>
+            <label style="display:block;font-size:.68rem;color:var(--text-muted);margin-bottom:.35rem;font-weight:600;text-transform:uppercase;letter-spacing:.6px">Search</label>
+            <input type="text" id="paymentFilterSearch" placeholder="Order ID, customer, txn ref…">
+        </div>
+        <div>
+            <label style="display:block;font-size:.68rem;color:var(--text-muted);margin-bottom:.35rem;font-weight:600;text-transform:uppercase;letter-spacing:.6px">Status</label>
+            <select id="paymentFilterStatus">
+                <option value="">All Status</option>
+                <option value="completed">Completed</option>
+                <option value="pending">Pending</option>
+                <option value="refunded">Refunded</option>
+                <option value="failed">Failed</option>
+            </select>
+        </div>
+        <div>
+            <label style="display:block;font-size:.68rem;color:var(--text-muted);margin-bottom:.35rem;font-weight:600;text-transform:uppercase;letter-spacing:.6px">Method</label>
+            <select id="paymentFilterMethod">
+                <option value="">All Methods</option>
+                <option value="bank_transfer">Bank Transfer</option>
+                <option value="cash">Cash</option>
+                <option value="online">Online</option>
+                <option value="50_50">50/50</option>
+            </select>
+        </div>
+        <div>
+            <label style="display:block;font-size:.68rem;color:var(--text-muted);margin-bottom:.35rem;font-weight:600;text-transform:uppercase;letter-spacing:.6px">Date</label>
+            <input type="date" id="paymentFilterDate">
+        </div>
+        <div style="margin-left:auto;display:flex;gap:.5rem">
+            <button onclick="exportPaymentsCSV()" id="exportPaymentBtn"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:4px"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>Export</button>
+        </div>
+    </div>
+
+    <div class="table-wrap">
+        <table>
+            <thead>
+                <tr>
+                    <th>Payment ID</th>
+                    <th>Order</th>
+                    <th>Customer</th>
+                    <th>Amount</th>
+                    <th>Method</th>
+                    <th>Status</th>
+                    <th>Reference</th>
+                    <th>Date</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody id="paymentsTableBody">
+                <tr><td colspan="9" style="text-align:center;padding:2.5rem;color:var(--text-muted)">Loading payments…</td></tr>
+            </tbody>
+        </table>
+    </div>
+</div>
 
         <!-- ═══ SETTINGS SECTION ═══ -->
-        <div class="section-content" id="section-settings">
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.25rem;">
-                <div class="table-wrap" style="padding:1.5rem;">
-                    <h3 style="font-size:1.1rem;margin-bottom:1.25rem;color:var(--text);font-family:var(--font-display);font-weight:400;">Charge Configuration</h3>
-                    <div style="display:flex;flex-direction:column;gap:1rem;">
+<div class="section-content" id="section-settings">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.25rem;align-items:start;">
+        
+        <!-- LEFT COLUMN -->
+        <div style="display:flex;flex-direction:column;gap:1.25rem;">
+            
+            <!-- Store Profile -->
+            <div class="table-wrap" style="padding:1.5rem;">
+                <h3 style="font-size:1.1rem;margin-bottom:1.25rem;color:var(--text);font-family:var(--font-display);font-weight:400;">Store Profile</h3>
+                <div style="display:flex;flex-direction:column;gap:1rem;">
+                    <div>
+                        <label style="display:block;font-size:.68rem;color:var(--text-muted);margin-bottom:.35rem;font-weight:600;text-transform:uppercase;letter-spacing:.6px">Store Name</label>
+                        <input type="text" id="settingStoreName" placeholder="Shop2Bhutan" style="width:100%;padding:.65rem;border:1.5px solid var(--border);border-radius:8px;font-size:.88rem;outline:none;font-family:var(--font-body);background:var(--surface-raised);">
+                    </div>
+                    <div class="form-row">
                         <div>
-                            <label style="display:block;font-size:.68rem;color:var(--text-muted);margin-bottom:.35rem;font-weight:600;text-transform:uppercase;letter-spacing:.6px">Service Charge Type</label>
-                            <select id="settingServiceType" style="width:100%;padding:.65rem;border:1.5px solid var(--border);border-radius:8px;font-size:.88rem;outline:none;font-family:var(--font-body);background:var(--surface-raised);">
-                                <option value="percentage">Percentage (%)</option>
-                                <option value="fixed">Fixed Amount (Nu.)</option>
-                            </select>
+                            <label style="display:block;font-size:.68rem;color:var(--text-muted);margin-bottom:.35rem;font-weight:600;text-transform:uppercase;letter-spacing:.6px">Phone</label>
+                            <input type="text" id="settingStorePhone" placeholder="975 17XX XXXX" style="width:100%;padding:.65rem;border:1.5px solid var(--border);border-radius:8px;font-size:.88rem;outline:none;font-family:var(--font-body);background:var(--surface-raised);">
                         </div>
                         <div>
-                            <label style="display:block;font-size:.68rem;color:var(--text-muted);margin-bottom:.35rem;font-weight:600;text-transform:uppercase;letter-spacing:.6px">Service Charge Value</label>
-                            <input type="number" id="settingServiceValue" placeholder="e.g. 10" style="width:100%;padding:.65rem;border:1.5px solid var(--border);border-radius:8px;font-size:.88rem;outline:none;font-family:var(--font-body);background:var(--surface-raised);">
-                            <small style="color:var(--text-muted);font-size:.78rem;">If percentage, enter 10 for 10%. If fixed, enter amount.</small>
+                            <label style="display:block;font-size:.68rem;color:var(--text-muted);margin-bottom:.35rem;font-weight:600;text-transform:uppercase;letter-spacing:.6px">Email</label>
+                            <input type="email" id="settingStoreEmail" placeholder="admin@shop2bhutan.com" style="width:100%;padding:.65rem;border:1.5px solid var(--border);border-radius:8px;font-size:.88rem;outline:none;font-family:var(--font-body);background:var(--surface-raised);">
                         </div>
-                        <div>
-                            <label style="display:block;font-size:.68rem;color:var(--text-muted);margin-bottom:.35rem;font-weight:600;text-transform:uppercase;letter-spacing:.6px">Default Shipping Charge (Nu.)</label>
-                            <input type="number" id="settingShipping" placeholder="0" style="width:100%;padding:.65rem;border:1.5px solid var(--border);border-radius:8px;font-size:.88rem;outline:none;font-family:var(--font-body);background:var(--surface-raised);">
-                        </div>
-                        <div style="display:flex;align-items:center;gap:1rem;flex-wrap:wrap;">
-                            <label style="display:flex;align-items:center;gap:.5rem;cursor:pointer;font-size:.88rem;color:var(--text-secondary);font-weight:500;">
-                                <input type="checkbox" id="settingGstEnabled" style="width:16px;height:16px;accent-color:var(--accent);">
-                                <span>Enable GST</span>
-                            </label>
-                            <div style="display:flex;align-items:center;gap:.35rem;">
-                                <input type="number" id="settingGstRate" value="5" style="width:65px;padding:.5rem;border:1.5px solid var(--border);border-radius:8px;font-size:.88rem;outline:none;font-family:var(--font-body);background:var(--surface-raised);">
-                                <span style="color:var(--text-muted);font-size:.88rem;">%</span>
-                            </div>
-                        </div>
-                        <button onclick="saveSettings()" id="saveSettingsBtn" class="btn-primary" style="margin-top:.5rem;">Save Charge Settings</button>
+                    </div>
+                    <div>
+                        <label style="display:block;font-size:.68rem;color:var(--text-muted);margin-bottom:.35rem;font-weight:600;text-transform:uppercase;letter-spacing:.6px">Address / Tagline</label>
+                        <textarea id="settingStoreAddress" placeholder="Bhutan's trusted shopping partner..." style="width:100%;padding:.65rem;border:1.5px solid var(--border);border-radius:8px;font-size:.88rem;outline:none;font-family:var(--font-body);background:var(--surface-raised);resize:vertical;min-height:60px;"></textarea>
                     </div>
                 </div>
+            </div>
 
-                <div class="table-wrap" style="padding:1.5rem;">
-                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.25rem;">
-                        <h3 style="font-size:1.1rem;color:var(--text);font-family:var(--font-display);font-weight:400;">Delivery Rates by Dzongkhag</h3>
-                        <button onclick="addDeliveryRateRow()" style="background:var(--text);color:#fff;border:none;padding:.35rem .7rem;border-radius:6px;font-size:.78rem;font-weight:600;cursor:pointer;transition:background .15s;font-family:var(--font-body);">+ Add Rate</button>
+            <!-- Charge Configuration -->
+            <div class="table-wrap" style="padding:1.5rem;">
+                <h3 style="font-size:1.1rem;margin-bottom:1.25rem;color:var(--text);font-family:var(--font-display);font-weight:400;">Charge Configuration</h3>
+                <div style="display:flex;flex-direction:column;gap:1rem;">
+                    <div>
+                        <label style="display:block;font-size:.68rem;color:var(--text-muted);margin-bottom:.35rem;font-weight:600;text-transform:uppercase;letter-spacing:.6px">Service Charge Type</label>
+                        <select id="settingServiceType" style="width:100%;padding:.65rem;border:1.5px solid var(--border);border-radius:8px;font-size:.88rem;outline:none;font-family:var(--font-body);background:var(--surface-raised);">
+                            <option value="percentage">Percentage (%)</option>
+                            <option value="fixed">Fixed Amount (Nu.)</option>
+                        </select>
                     </div>
-                    <div style="max-height:400px;overflow-y:auto;">
-                        <table style="font-size:.88rem;">
-                            <thead>
-                                <tr><th style="text-align:left;padding:.5rem;">Dzongkhag</th><th style="text-align:left;padding:.5rem;">Rate (Nu.)</th><th style="width:50px;"></th></tr>
-                            </thead>
-                            <tbody id="deliveryRatesTableBody">
-                                <tr><td colspan="3" style="text-align:center;padding:1.5rem;color:var(--text-muted);">Loading rates…</td></tr>
-                            </tbody>
-                        </table>
+                    <div>
+                        <label style="display:block;font-size:.68rem;color:var(--text-muted);margin-bottom:.35rem;font-weight:600;text-transform:uppercase;letter-spacing:.6px">Service Charge Value</label>
+                        <input type="number" id="settingServiceValue" placeholder="e.g. 10" style="width:100%;padding:.65rem;border:1.5px solid var(--border);border-radius:8px;font-size:.88rem;outline:none;font-family:var(--font-body);background:var(--surface-raised);">
+                        <small style="color:var(--text-muted);font-size:.78rem;">If percentage, enter 10 for 10%. If fixed, enter amount. Leave 0 to use default tiered pricing.</small>
                     </div>
-                    <button onclick="saveDeliveryRates()" id="saveDeliveryRatesBtn" style="background:var(--success);color:#fff;border:none;padding:.7rem 1.35rem;border-radius:8px;font-weight:700;cursor:pointer;margin-top:1rem;width:100%;transition:opacity .15s;font-family:var(--font-body);font-size:.88rem;">Save Delivery Rates</button>
+                    <div>
+                        <label style="display:block;font-size:.68rem;color:var(--text-muted);margin-bottom:.35rem;font-weight:600;text-transform:uppercase;letter-spacing:.6px">Default Shipping Charge (Nu.)</label>
+                        <input type="number" id="settingShipping" placeholder="0" style="width:100%;padding:.65rem;border:1.5px solid var(--border);border-radius:8px;font-size:.88rem;outline:none;font-family:var(--font-body);background:var(--surface-raised);">
+                    </div>
+                    <div style="display:flex;align-items:center;gap:1rem;flex-wrap:wrap;">
+                        <label style="display:flex;align-items:center;gap:.5rem;cursor:pointer;font-size:.88rem;color:var(--text-secondary);font-weight:500;">
+                            <input type="checkbox" id="settingGstEnabled" style="width:16px;height:16px;accent-color:var(--accent);">
+                            <span>Enable GST</span>
+                        </label>
+                        <div style="display:flex;align-items:center;gap:.35rem;">
+                            <input type="number" id="settingGstRate" value="5" style="width:65px;padding:.5rem;border:1.5px solid var(--border);border-radius:8px;font-size:.88rem;outline:none;font-family:var(--font-body);background:var(--surface-raised);">
+                            <span style="color:var(--text-muted);font-size:.88rem;">%</span>
+                        </div>
+                    </div>
+                    <button onclick="saveSettings()" id="saveSettingsBtn" class="btn-primary" style="margin-top:.5rem;">Save Settings</button>
+                </div>
+            </div>
+
+            <!-- Notification Preferences -->
+            <div class="table-wrap" style="padding:1.5rem;">
+                <h3 style="font-size:1.1rem;margin-bottom:1.25rem;color:var(--text);font-family:var(--font-display);font-weight:400;">Notifications</h3>
+                <div style="display:flex;flex-direction:column;gap:.85rem;">
+                    <label style="display:flex;align-items:center;gap:.65rem;cursor:pointer;font-size:.88rem;color:var(--text-secondary);">
+                        <input type="checkbox" id="settingNotifSound" style="width:16px;height:16px;accent-color:var(--accent);">
+                        <span>Play sound on new notification</span>
+                    </label>
+                    <label style="display:flex;align-items:center;gap:.65rem;cursor:pointer;font-size:.88rem;color:var(--text-secondary);">
+                        <input type="checkbox" id="settingNotifOrder" style="width:16px;height:16px;accent-color:var(--accent);">
+                        <span>Notify on new orders</span>
+                    </label>
+                    <label style="display:flex;align-items:center;gap:.65rem;cursor:pointer;font-size:.88rem;color:var(--text-secondary);">
+                        <input type="checkbox" id="settingNotifReview" style="width:16px;height:16px;accent-color:var(--accent);">
+                        <span>Notify on new reviews</span>
+                    </label>
+                    <label style="display:flex;align-items:center;gap:.65rem;cursor:pointer;font-size:.88rem;color:var(--text-secondary);">
+                        <input type="checkbox" id="settingNotifQuotation" style="width:16px;height:16px;accent-color:var(--accent);">
+                        <span>Notify on new quotations</span>
+                    </label>
                 </div>
             </div>
         </div>
+
+        <!-- RIGHT COLUMN -->
+        <div style="display:flex;flex-direction:column;gap:1.25rem;">
+            
+            <!-- WhatsApp Templates -->
+            <div class="table-wrap" style="padding:1.5rem;">
+                <h3 style="font-size:1.1rem;margin-bottom:1.25rem;color:var(--text);font-family:var(--font-display);font-weight:400;">WhatsApp Message Templates</h3>
+                <div style="display:flex;flex-direction:column;gap:1rem;">
+                    <div>
+                        <label style="display:block;font-size:.68rem;color:var(--text-muted);margin-bottom:.35rem;font-weight:600;text-transform:uppercase;letter-spacing:.6px">Quotation Ready</label>
+                        <textarea id="settingWaQuotation" style="width:100%;padding:.65rem;border:1.5px solid var(--border);border-radius:8px;font-size:.85rem;outline:none;font-family:var(--font-body);background:var(--surface-raised);resize:vertical;min-height:70px;"></textarea>
+                        <small style="color:var(--text-muted);font-size:.75rem;">Variables: <code>{{name}}</code>, <code>{{link}}</code>, <code>{{valid_until}}</code></small>
+                    </div>
+                    <div>
+                        <label style="display:block;font-size:.68rem;color:var(--text-muted);margin-bottom:.35rem;font-weight:600;text-transform:uppercase;letter-spacing:.6px">Order Confirmed</label>
+                        <textarea id="settingWaConfirmed" style="width:100%;padding:.65rem;border:1.5px solid var(--border);border-radius:8px;font-size:.85rem;outline:none;font-family:var(--font-body);background:var(--surface-raised);resize:vertical;min-height:70px;"></textarea>
+                        <small style="color:var(--text-muted);font-size:.75rem;">Variables: <code>{{name}}</code>, <code>{{code}}</code>, <code>{{trip_date}}</code></small>
+                    </div>
+                    <div>
+                        <label style="display:block;font-size:.68rem;color:var(--text-muted);margin-bottom:.35rem;font-weight:600;text-transform:uppercase;letter-spacing:.6px">Payment Reminder</label>
+                        <textarea id="settingWaPayment" style="width:100%;padding:.65rem;border:1.5px solid var(--border);border-radius:8px;font-size:.85rem;outline:none;font-family:var(--font-body);background:var(--surface-raised);resize:vertical;min-height:70px;"></textarea>
+                        <small style="color:var(--text-muted);font-size:.75rem;">Variables: <code>{{name}}</code>, <code>{{code}}</code>, <code>{{amount}}</code></small>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Delivery Rates -->
+            <div class="table-wrap" style="padding:1.5rem;">
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.25rem;">
+                    <h3 style="font-size:1.1rem;color:var(--text);font-family:var(--font-display);font-weight:400;">Delivery Rates by Dzongkhag</h3>
+                    <button onclick="addDeliveryRateRow()" style="background:var(--text);color:#fff;border:none;padding:.35rem .7rem;border-radius:6px;font-size:.78rem;font-weight:600;cursor:pointer;transition:background .15s;font-family:var(--font-body);">+ Add Rate</button>
+                </div>
+                <div style="max-height:320px;overflow-y:auto;border:1px solid var(--border-light);border-radius:8px;">
+                    <table style="font-size:.88rem;width:100%;">
+                        <thead style="position:sticky;top:0;background:var(--surface-raised);z-index:1;">
+                            <tr><th style="text-align:left;padding:.6rem .75rem;border-bottom:1.5px solid var(--border);">Dzongkhag</th><th style="text-align:left;padding:.6rem .75rem;border-bottom:1.5px solid var(--border);">Rate (Nu.)</th><th style="width:50px;border-bottom:1.5px solid var(--border);"></th></tr>
+                        </thead>
+                        <tbody id="deliveryRatesTableBody">
+                            <tr><td colspan="3" style="text-align:center;padding:1.5rem;color:var(--text-muted);">Loading rates…</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+                <button onclick="saveDeliveryRates()" id="saveDeliveryRatesBtn" class="btn-primary" style="margin-top:1rem;width:100%;">Save Delivery Rates</button>
+            </div>
+        </div>
+    </div>
+</div>
     </main>
 </div>
 

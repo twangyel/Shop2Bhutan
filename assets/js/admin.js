@@ -1021,18 +1021,36 @@ let appSettings = null;
 let deliveryRates = [];
 
 async function fetchSettings() {
-    const { data, error } = await supabase.from('app_settings').select('*').limit(1);
+    const { data, error } = await supabase.from('app_settings').select('*').limit(1).single();
     if (error) {
         console.error('Settings fetch error:', error);
+        // Use defaults if table empty
+        appSettings = {
+            id: 1,
+            store_name: 'Shop2Bhutan',
+            store_phone: '',
+            store_email: '',
+            store_address: '',
+            service_charge_type: 'percentage',
+            service_charge_value: 0,
+            default_shipping: 0,
+            gst_enabled: false,
+            gst_rate: 5,
+            wa_template_quotation: 'Hi {{name}}! 👋\n\nYour quotation is ready for review. Please click the link below:\n\n{{link}}\n\nThis link is valid until {{valid_until}}.\n\n- Shop2Bhutan',
+            wa_template_order_confirmed: 'Hi {{name}},\n\nYour order {{code}} has been confirmed. Trip date: {{trip_date}}.\n\nThank you for shopping with us!\n\n- Shop2Bhutan',
+            wa_template_payment_reminder: 'Hi {{name}},\n\nFriendly reminder for payment on order {{code}}.\n\nAmount due: Nu. {{amount}}\n\n- Shop2Bhutan',
+            notif_sound_enabled: true,
+            notif_new_order: true,
+            notif_new_review: true,
+            notif_new_quotation: true
+        };
         return;
     }
-    appSettings = data?.[0] || {
-        service_charge_type: 'percentage',
-        service_charge_value: 0,
-        default_shipping: 0,
-        gst_enabled: false,
-        gst_rate: 5
-    };
+    appSettings = data;
+    // Apply notification sound setting immediately
+    if (appSettings && typeof appSettings.notif_sound_enabled === 'boolean') {
+        notificationSoundEnabled = appSettings.notif_sound_enabled;
+    }
 }
 
 async function fetchDeliveryRates() {
@@ -1046,17 +1064,40 @@ async function fetchDeliveryRates() {
 
 function renderSettings() {
     if (!appSettings) return;
-    const typeEl = document.getElementById('settingServiceType');
-    const valEl = document.getElementById('settingServiceValue');
-    const shipEl = document.getElementById('settingShipping');
-    const gstEnEl = document.getElementById('settingGstEnabled');
-    const gstRateEl = document.getElementById('settingGstRate');
+    const s = appSettings;
 
-    if (typeEl) typeEl.value = appSettings.service_charge_type || 'percentage';
-    if (valEl) valEl.value = appSettings.service_charge_value || '';
-    if (shipEl) shipEl.value = appSettings.default_shipping || '';
-    if (gstEnEl) gstEnEl.checked = appSettings.gst_enabled || false;
-    if (gstRateEl) gstRateEl.value = appSettings.gst_rate || 5;
+    // Store Profile
+    setVal('settingStoreName', s.store_name);
+    setVal('settingStorePhone', s.store_phone);
+    setVal('settingStoreEmail', s.store_email);
+    setVal('settingStoreAddress', s.store_address);
+
+    // Charges
+    setVal('settingServiceType', s.service_charge_type || 'percentage');
+    setVal('settingServiceValue', s.service_charge_value);
+    setVal('settingShipping', s.default_shipping);
+    setChecked('settingGstEnabled', s.gst_enabled);
+    setVal('settingGstRate', s.gst_rate || 5);
+
+    // WhatsApp Templates
+    setVal('settingWaQuotation', s.wa_template_quotation);
+    setVal('settingWaConfirmed', s.wa_template_order_confirmed);
+    setVal('settingWaPayment', s.wa_template_payment_reminder);
+
+    // Notifications
+    setChecked('settingNotifSound', s.notif_sound_enabled !== false);
+    setChecked('settingNotifOrder', s.notif_new_order !== false);
+    setChecked('settingNotifReview', s.notif_new_review !== false);
+    setChecked('settingNotifQuotation', s.notif_new_quotation !== false);
+}
+
+function setVal(id, val) {
+    const el = document.getElementById(id);
+    if (el) el.value = val != null ? val : '';
+}
+function setChecked(id, checked) {
+    const el = document.getElementById(id);
+    if (el) el.checked = !!checked;
 }
 
 function renderDeliveryRates() {
@@ -1072,6 +1113,7 @@ function renderDeliveryRates() {
 
 window.addDeliveryRateRow = function(dzongkhag = '', rate = '') {
     const tbody = document.getElementById('deliveryRatesTableBody');
+    if (!tbody) return;
     // Remove empty placeholder if present
     if (tbody.children.length === 1 && tbody.children[0].textContent.includes('No rates configured')) {
         tbody.innerHTML = '';
@@ -1099,21 +1141,32 @@ function gatherDeliveryRateRows() {
 
 window.saveSettings = async function() {
     const btn = document.getElementById('saveSettingsBtn');
-    btn.disabled = true; btn.textContent = 'Saving…';
+    if (btn) { btn.disabled = true; btn.textContent = 'Saving…'; }
 
     const payload = {
         id: 1,
-        service_charge_type: document.getElementById('settingServiceType').value,
-        service_charge_value: parseFloat(document.getElementById('settingServiceValue').value) || 0,
-        default_shipping: parseFloat(document.getElementById('settingShipping').value) || 0,
-        gst_enabled: document.getElementById('settingGstEnabled').checked,
-        gst_rate: parseFloat(document.getElementById('settingGstRate').value) || 5,
+        store_name: document.getElementById('settingStoreName')?.value || 'Shop2Bhutan',
+        store_phone: document.getElementById('settingStorePhone')?.value || null,
+        store_email: document.getElementById('settingStoreEmail')?.value || null,
+        store_address: document.getElementById('settingStoreAddress')?.value || null,
+        service_charge_type: document.getElementById('settingServiceType')?.value || 'percentage',
+        service_charge_value: parseFloat(document.getElementById('settingServiceValue')?.value) || 0,
+        default_shipping: parseFloat(document.getElementById('settingShipping')?.value) || 0,
+        gst_enabled: document.getElementById('settingGstEnabled')?.checked || false,
+        gst_rate: parseFloat(document.getElementById('settingGstRate')?.value) || 5,
+        wa_template_quotation: document.getElementById('settingWaQuotation')?.value || null,
+        wa_template_order_confirmed: document.getElementById('settingWaConfirmed')?.value || null,
+        wa_template_payment_reminder: document.getElementById('settingWaPayment')?.value || null,
+        notif_sound_enabled: document.getElementById('settingNotifSound')?.checked !== false,
+        notif_new_order: document.getElementById('settingNotifOrder')?.checked !== false,
+        notif_new_review: document.getElementById('settingNotifReview')?.checked !== false,
+        notif_new_quotation: document.getElementById('settingNotifQuotation')?.checked !== false,
         updated_at: new Date().toISOString()
     };
 
     const { error } = await supabase.from('app_settings').upsert(payload, { onConflict: 'id' });
 
-    btn.disabled = false; btn.textContent = 'Save Charge Settings';
+    if (btn) { btn.disabled = false; btn.textContent = 'Save Settings'; }
 
     if (error) {
         toast('Error saving settings: ' + error.message, 'error');
@@ -1121,13 +1174,15 @@ window.saveSettings = async function() {
     }
 
     appSettings = payload;
-    toast('Charge settings saved', 'success');
+    // Apply sound setting immediately
+    notificationSoundEnabled = payload.notif_sound_enabled;
+    toast('Settings saved successfully', 'success');
 };
 
 window.saveDeliveryRates = async function() {
     const btn = document.getElementById('saveDeliveryRatesBtn');
-    btn.disabled = true; btn.textContent = 'Saving…';
-    const restoreBtn = () => { btn.disabled = false; btn.textContent = 'Save Delivery Rates'; };
+    if (btn) { btn.disabled = true; btn.textContent = 'Saving…'; }
+    const restoreBtn = () => { if (btn) { btn.disabled = false; btn.textContent = 'Save Delivery Rates'; } };
 
     const rows = gatherDeliveryRateRows();
 
@@ -1144,9 +1199,7 @@ window.saveDeliveryRates = async function() {
         }
     }
 
-    // 2. Remove any dzongkhags the admin took out of the list. PostgREST's `in`
-    //    filter needs values wrapped in double quotes, otherwise names with
-    //    spaces or commas (e.g. "Trashi Yangtse") break the query.
+    // 2. Remove any dzongkhags the admin took out of the list.
     const keepDzongs = rows.map(r => r.dzongkhag);
     let delQuery = supabase.from('delivery_rates').delete();
     if (keepDzongs.length > 0) {
@@ -1245,6 +1298,17 @@ window.renderQuotations = function() {
         const matchesDzong = !dzong || c.dzongkhag === dzong;
         return matchesSearch && matchesStatus && matchesDzong;
     });
+
+    // In your admin.js renderQuotations(), update the status badge logic:
+const statusClass = `badge-${q.status || 'draft'}`;
+const statusText = (q.status || 'draft').replace(/_/g, ' ');
+
+// Add payment indicator
+const paymentIndicator = q.payment_status === 'pending_verification' 
+    ? `<span style="display:inline-block;margin-left:6px;width:8px;height:8px;background:var(--warning);border-radius:50%;animation:pulse 1s infinite;" title="Payment pending verification"></span>`
+    : q.payment_status === 'verified'
+    ? `<span style="display:inline-block;margin-left:6px;width:8px;height:8px;background:var(--success);border-radius:50%;" title="Payment verified"></span>`
+    : '';
 
     const tbody = document.getElementById('quotationsTableBody');
     if (!tbody) return;
@@ -1835,6 +1899,8 @@ window.openQuotationDetail = function(id) {
             </div>
         </div>
 
+        ((q.profit / q.total_amount)
+
         ${q.notes ? `
         <div style="margin-bottom:1.5rem;padding:1.25rem;background:#f8f9fc;border-radius:12px;">
             <label style="font-size:0.8rem;color:#888;text-transform:uppercase;font-weight:600;display:block;margin-bottom:0.75rem">Notes</label>
@@ -1861,6 +1927,8 @@ window.sendQuotation = async function(id) {
         toast('Quotation not found', 'error');
         return;
     }
+
+    
 
     // Generate token if not exists
     const { data: existing } = await supabase
@@ -1905,11 +1973,21 @@ window.sendQuotation = async function(id) {
         console.log('Customer link:', customerLink);
     }
 
-    // Open WhatsApp in new tab (not redirect)
+    // Build WhatsApp message from template
     const phone = quotation.order?.customer?.phone;
     const cname = quotation.order?.customer?.name || 'there';
+    const validUntil = quotation.valid_until 
+        ? new Date(quotation.valid_until).toLocaleDateString() 
+        : '7 days from now';
+    
+    // Use template from settings
+    let template = appSettings?.wa_template_quotation || 'Hi {{name}}! Your quotation is ready: {{link}}';
+    let waMsg = template
+        .replace(/{{name}}/g, cname)
+        .replace(/{{link}}/g, customerLink)
+        .replace(/{{valid_until}}/g, validUntil);
+
     if (phone) {
-        const waMsg = `Hi ${cname}! 👋\n\nYour quotation is ready for review. Please click the link below to view and accept:\n\n${customerLink}\n\nThis link is valid until ${quotation.valid_until ? new Date(quotation.valid_until).toLocaleDateString() : '7 days from now'}.\n\n- Shop2Bhutan`;
         window.open(`https://wa.me/${formatWhatsAppPhone(phone)}?text=${encodeURIComponent(waMsg)}`, '_blank', 'noopener');
     }
 
