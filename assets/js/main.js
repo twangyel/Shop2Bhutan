@@ -796,6 +796,17 @@ function clearFormErrors(form) {
   });
 }
 
+  /* --- Reset dzongkhag cards & payment styling on open --- */
+  document.querySelectorAll('#dzongkhagCards .dz-card').forEach(c => {
+    c.classList.remove('active', 'input-error');
+  });
+  const dzHidden = document.getElementById('orderDzongkhag');
+  if (dzHidden) dzHidden.value = '';
+
+  document.querySelectorAll('.payment-option, .payment-card').forEach(el => {
+    el.classList.remove('input-error');
+  });
+
 /* ============ PHONE HINT & AUTO-FILL ============ */
 function initPhoneHint() {
   const phoneInput = document.getElementById('orderPhone');
@@ -1005,12 +1016,13 @@ async function submitOrder(e) {
       }));
     }
 
-    const customOrderId = generateOrderId(dzongkhag);
+     const customOrderId = generateOrderId(dzongkhag);
+
     const { data: orderData, error: orderErr } = await supabase
       .from('orders')
       .insert({
-        id: customOrderId,
         customer_id: customerId,
+        order_code: customOrderId,   // ← human-readable ID
         status: 'submitted',
         payment_method: paymentMethod,
         trip_date: tripDate,
@@ -1019,11 +1031,12 @@ async function submitOrder(e) {
         admin_notes: document.getElementById('orderNotes').value.trim() || null,
         payment_status: 'pending'
       })
-      .select('id')
+      .select('id, order_code')      // ← select both
       .single();
 
-    if (orderErr) throw orderErr;
-    const orderId = orderData.id;
+        if (orderErr) throw orderErr;
+    const orderId = orderData.id;           // UUID — used internally
+    const orderCode = orderData.order_code; // S2B-xxx — shown to customer
 
     const orderItems = items.map(it => ({
       order_id: orderId,
@@ -1053,8 +1066,9 @@ async function submitOrder(e) {
     if (successProduct) successProduct.textContent = productText;
        if (successOrderId) successOrderId.textContent = customOrderId;
 
-    const orderIdStr = String(orderId);
-    const waMsg = `Hi Shop2Bhutan! I just placed an order (${orderIdStr.slice(0,8).toUpperCase()}). Please confirm my order.`;
+        if (successOrderId) successOrderId.textContent = orderCode;
+
+    const waMsg = `Hi Shop2Bhutan! I just placed an order (${orderCode}). Please confirm my order.`;
     if (waBtn) waBtn.href = `https://wa.me/${WHATSAPP_NUMBER.replace(/\D/g,'')}?text=${encodeURIComponent(waMsg)}`;
 
     if (orderFromCart) clearCart();
