@@ -607,7 +607,7 @@ window.renderOrders = function() {
             (o.items && o.items.some(i => i.product_name && i.product_name.toLowerCase().includes(search)));
         const matchesStatus = !status || o.status === status;
         const matchesDzong = !dzong || c.dzongkhag === dzong;
-        const matchesDate = !date || o.trip_date === date;
+        const matchesDate = !date || (o.trip_date && String(o.trip_date).slice(0, 10) === date);
         return matchesSearch && matchesStatus && matchesDzong && matchesDate;
     });
 
@@ -744,7 +744,7 @@ window.openOrderDetail = function(id) {
             <div class="form-row">
                 <div>
                     <label>Trip Date</label>
-                    <input type="date" id="editTripDate" value="${order.trip_date || ''}">
+                    <input type="date" id="editTripDate" value="${order.trip_date ? String(order.trip_date).slice(0, 10) : ''}">
                 </div>
                 <div>
                     <label>Customer Response</label>
