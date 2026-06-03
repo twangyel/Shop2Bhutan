@@ -80,11 +80,21 @@ window.__currentSection = currentSection;   // expose to global scope
 let unreadNotifications = [];
 let notificationSoundEnabled = true;
 
-function playChime() {
+// Use the global toast function defined in admin.html (styled with icons, progress bar, etc.)
+const toast = window.toast;
+
+async function playChime() {
     if (!notificationSoundEnabled) return;
     try {
         const AudioContext = window.AudioContext || window.webkitAudioContext;
         const ctx = new AudioContext();
+
+        // Modern browsers require user interaction before playing audio.
+        // Resume the context if it's suspended.
+        if (ctx.state === 'suspended') {
+            await ctx.resume();
+        }
+
         const now = ctx.currentTime;
 
         const osc1 = ctx.createOscillator();
@@ -620,14 +630,15 @@ window.renderOrders = function() {
         const dateStr = submittedDate ? submittedDate.toLocaleDateString() : '-';
         const timeStr = submittedDate ? submittedDate.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : '';
 
-        const hasScreenshot = (o.items || []).some(i => i.screenshot);
+        const screenshotItem = (o.items || []).find(i => i.screenshot);
+        const hasScreenshot = !!screenshotItem;
 
         return `
         <tr>
             <td><input type="checkbox" class="row-select" value="${o.id}" onchange="updateBulkBar()"></td>
             <td>
                 <span class="token">${o.id.slice(0, 8).toUpperCase()}</span>
-                ${hasScreenshot ? `<span title="Has product screenshot" style="display:inline-block;margin-left:6px;vertical-align:middle;color:#2980b9;cursor:pointer;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg></span>` : ''}
+                ${hasScreenshot ? `<span onclick="window.open('${escapeHtml(screenshotItem.screenshot)}','_blank')" title="Click to view product screenshot" style="display:inline-block;margin-left:6px;vertical-align:middle;color:#2980b9;cursor:pointer;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg></span>` : ''}
             </td>
             <td>
                 <div style="font-size:0.9rem;color:#1a1a2e;font-weight:500;">${dateStr}</div>
