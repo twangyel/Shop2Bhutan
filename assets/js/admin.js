@@ -80,20 +80,48 @@ window.__currentSection = currentSection;   // expose to global scope
 let unreadNotifications = [];
 let notificationSoundEnabled = true;
 
-// Use the global toast function defined in admin.html (styled with icons, progress bar, etc.)
-const toast = window.toast;
+// Wrapper around the global toast() function defined in admin.html.
+// Resolves window.toast at call time to avoid any load-order edge cases.
+function toast(msg, type) {
+    if (typeof window.toast === 'function') {
+        window.toast(msg, type);
+    } else {
+        console.warn('toast() unavailable:', msg, type);
+    }
+}
 
-async function playChime() {
+// ===== AUDIO =====
+// Browser autoplay policy: a new AudioContext starts suspended and can only
+// be resumed from within a real user-gesture handler. Realtime callbacks are
+// not user gestures, so we create ONE AudioContext and unlock it on the
+// user's first click/keypress, then reuse it for every chime.
+let audioCtx = null;
+function ensureAudioCtx() {
+    if (!audioCtx) {
+        const AC = window.AudioContext || window.webkitAudioContext;
+        if (!AC) return null;
+        try { audioCtx = new AC(); } catch (e) { return null; }
+    }
+    if (audioCtx.state === 'suspended') {
+        audioCtx.resume().catch(() => {});
+    }
+    return audioCtx;
+}
+function unlockAudio() {
+    ensureAudioCtx();
+    document.removeEventListener('click', unlockAudio);
+    document.removeEventListener('keydown', unlockAudio);
+    document.removeEventListener('touchstart', unlockAudio);
+}
+document.addEventListener('click', unlockAudio);
+document.addEventListener('keydown', unlockAudio);
+document.addEventListener('touchstart', unlockAudio);
+
+function playChime() {
     if (!notificationSoundEnabled) return;
     try {
-        const AudioContext = window.AudioContext || window.webkitAudioContext;
-        const ctx = new AudioContext();
-
-        // Modern browsers require user interaction before playing audio.
-        // Resume the context if it's suspended.
-        if (ctx.state === 'suspended') {
-            await ctx.resume();
-        }
+        const ctx = ensureAudioCtx();
+        if (!ctx || ctx.state !== 'running') return;
 
         const now = ctx.currentTime;
 
