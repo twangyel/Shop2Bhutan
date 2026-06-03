@@ -1,6 +1,6 @@
 /* ============================================================
    SHOP2BHUTAN — CUSTOMER MAIN.JS
-   Cart · Search · Checkout · Reviews
+   Cart · Search · Checkout · Reviews · Smart Search Redirect
    ============================================================ */
 
 /* ============ SUPABASE (loaded async — UI works even if this fails) ============ */
@@ -54,6 +54,26 @@ function escapeHtml(str) {
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#039;');
 }
+
+/* ============ CUSTOM ORDER ID ============ */
+function generateOrderId(dzongkhag) {
+  const now = new Date();
+  const dateStr = String(now.getFullYear()).slice(-2) + 
+                  String(now.getMonth() + 1).padStart(2, '0') + 
+                  String(now.getDate()).padStart(2, '0');
+  
+  const locCodes = { 'Thimphu': 'THI', 'Chukha': 'PHU', 'Paro': 'PAR' };
+  const loc = locCodes[dzongkhag] || 'BHU';
+  
+  // Persistent daily counter
+  const counterKey = `s2b_order_counter_${dateStr}`;
+  let counter = parseInt(localStorage.getItem(counterKey) || '0') + 1;
+  localStorage.setItem(counterKey, String(counter));
+  
+  return `S2B-${dateStr}-${loc}-${String(counter).padStart(3, '0')}`;
+}
+
+/* ============ CART ============ */
 
 /* ============ CART ============ */
 function loadCart() {
@@ -182,6 +202,84 @@ function renderCart() {
   });
 }
 
+/* ============ TRENDING / CURATED PRODUCTS ============ */
+const TRENDING_PRODUCTS = [
+  { id: 't1', name: 'boAt Airdopes 141 True Wireless Earbuds', platform: 'Amazon', category: 'Electronics', initials: 'BA', url: 'https://www.amazon.in/s?k=boat+airdopes+141' },
+  { id: 't2', name: 'Noise ColorFit Pulse Smartwatch', platform: 'Flipkart', category: 'Electronics', initials: 'NC', url: 'https://www.flipkart.com/search?q=noise+colorfit+pulse' },
+  { id: 't3', name: 'Ray-Ban Wayfarer Classic Sunglasses', platform: 'Myntra', category: 'Fashion', initials: 'RB', url: 'https://www.myntra.com/ray-ban-wayfarer' },
+  { id: 't4', name: 'Levi\'s 511 Slim Fit Denim Jeans', platform: 'Amazon', category: 'Fashion', initials: 'L5', url: 'https://www.amazon.in/s?k=levis+511+slim+fit+jeans' },
+  { id: 't5', name: 'Prestige Svachh Deluxe Pressure Cooker', platform: 'Flipkart', category: 'Home & Kitchen', initials: 'PS', url: 'https://www.flipkart.com/search?q=prestige+svachh+pressure+cooker' },
+  { id: 't6', name: 'Plum Green Tea Face Wash', platform: 'Amazon', category: 'Beauty', initials: 'PG', url: 'https://www.amazon.in/s?k=plum+green+tea+face+wash' },
+];
+
+function renderTrending(filter = 'all', searchQuery = '') {
+  const grid = document.getElementById('trendingGrid');
+  const empty = document.getElementById('trendingEmpty');
+  if (!grid) return;
+
+  const q = searchQuery.trim().toLowerCase();
+  const items = TRENDING_PRODUCTS.filter(p => {
+    const matchesCategory = filter === 'all' || p.category === filter;
+    const matchesSearch = !q || p.name.toLowerCase().includes(q) || p.category.toLowerCase().includes(q);
+    return matchesCategory && matchesSearch;
+  });
+
+  if (!items.length) {
+    grid.innerHTML = '';
+    if (empty) empty.hidden = false;
+    return;
+  }
+  if (empty) empty.hidden = true;
+
+  grid.innerHTML = items.map(p => `
+    <article class="trending-card" data-category="${escapeHtml(p.category)}">
+      <div class="trending-thumb" aria-hidden="true">${escapeHtml(p.initials)}</div>
+      <span class="trending-badge">${escapeHtml(p.platform)}</span>
+      <div class="trending-name">${escapeHtml(p.name)}</div>
+      <div class="trending-meta">Category: ${escapeHtml(p.category)}</div>
+      <button type="button" class="trending-add" data-id="${escapeHtml(p.id)}" aria-label="Add ${escapeHtml(p.name)} to cart">
+        <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+        Add to Cart
+      </button>
+    </article>
+  `).join('');
+
+  grid.querySelectorAll('.trending-add').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      const id = e.currentTarget.dataset.id;
+      const product = TRENDING_PRODUCTS.find(p => p.id === id);
+      if (!product) return;
+      addToCart({
+        url: product.url,
+        platform: product.platform,
+        name: product.name,
+        qty: 1,
+        screenshot: null
+      });
+    });
+  });
+}
+
+function initTrendingFilters() {
+  const filters = document.getElementById('trendingFilters');
+  if (!filters) return;
+
+  filters.querySelectorAll('.trending-filter').forEach(btn => {
+    btn.addEventListener('click', () => {
+      filters.querySelectorAll('.trending-filter').forEach(b => {
+        b.classList.remove('active');
+        b.setAttribute('aria-selected', 'false');
+      });
+      btn.classList.add('active');
+      btn.setAttribute('aria-selected', 'true');
+
+      const filter = btn.dataset.filter;
+      const searchVal = document.getElementById('searchInput')?.value.trim() || '';
+      renderTrending(filter, searchVal);
+    });
+  });
+}
+
 /* ============ SEARCH / URL DETECTION ============ */
 function detectPlatform(url) {
   try {
@@ -232,12 +330,67 @@ function extractProductNameFromUrl(url, platform) {
   return platform + ' Product';
 }
 
+/* ============ SMART SEARCH REDIRECT ============ */
+function buildStoreSearchUrls(query) {
+  const encoded = encodeURIComponent(query);
+  return [
+    { name: 'Amazon.in', url: `https://www.amazon.in/s?k=${encoded}`, color: '#FF9900', gradient: 'linear-gradient(135deg, #FF9900, #FF8C00)' },
+    { name: 'Flipkart', url: `https://www.flipkart.com/search?q=${encoded}`, color: '#047BD5', gradient: 'linear-gradient(135deg, #047BD5, #0968C0)' },
+    { name: 'Myntra', url: `https://www.myntra.com/${encoded.replace(/\+/g, '-')}`, color: '#FF3F6C', gradient: 'linear-gradient(135deg, #FF3F6C, #E31B53)' },
+  ];
+}
+
+function showSmartSearchRedirect(searchText) {
+  const helper = document.getElementById('searchHelper');
+  if (!helper) return;
+
+  const stores = buildStoreSearchUrls(searchText);
+
+  helper.innerHTML = `
+    <div class="detected-card smart-search-card">
+      <div class="smart-search-header">
+        <div class="smart-search-info">
+          <span class="detected-badge smart-search-badge">Search on Stores</span>
+          <span class="smart-search-query">"${escapeHtml(searchText)}"</span>
+          <span class="smart-search-hint">Browse real products on these stores, then paste the product link back here to order.</span>
+        </div>
+      </div>
+
+      <div class="smart-search-stores">
+        ${stores.map(s => `
+          <a href="${escapeHtml(s.url)}" target="_blank" rel="noopener noreferrer" class="smart-search-store-btn" style="--store-gradient: ${s.gradient}; --store-color: ${s.color};">
+            <div class="smart-search-store-logo" style="background: ${s.gradient};">${s.name[0]}</div>
+            <div class="smart-search-store-name">
+              <strong>${escapeHtml(s.name)}</strong>
+              <span>Open in new tab</span>
+            </div>
+            <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M7 17L17 7M17 7H7M17 7v10"/>
+            </svg>
+          </a>
+        `).join('')}
+      </div>
+
+      <div class="smart-search-footer">
+        <svg width="16" height="16" fill="none" stroke="#888" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M11.25 11.25l.041-.02a.75.75 0 011.063.852l-.708 2.836a.75.75 0 001.063.853l.041-.021M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+        </svg>
+        <span>Found a product? Copy its link and paste it in the search box above.</span>
+      </div>
+    </div>
+  `;
+}
+
 function handleSearch() {
   try {
     const input = document.getElementById('searchInput');
     const helper = document.getElementById('searchHelper');
     const val = input.value.trim();
-    if (!val) { hideDetectedUrl(); return; }
+    if (!val) { 
+      hideDetectedUrl(); 
+      renderTrending('all', ''); 
+      return; 
+    }
 
     if (isUrl(val)) {
       const platform = detectPlatform(val) || 'Link';
@@ -247,10 +400,27 @@ function handleSearch() {
       showDetectedUrl(val, platform);
     } else {
       hideDetectedUrl();
-      currentSearchUrl = 'search://' + val.toLowerCase().replace(/\s+/g, '-');
-      currentSearchPlatform = 'Search';
-      currentSearchName = val;
-      showSearchCard(val);
+      // Show Smart Search Redirect for non-URL text
+      showSmartSearchRedirect(val);
+
+      // Also filter the curated catalog
+      renderTrending('all', val);
+
+      // Highlight matching filter tab if it's a category name
+      const filters = document.getElementById('trendingFilters');
+      if (filters) {
+        const exactMatch = Array.from(filters.querySelectorAll('.trending-filter'))
+          .find(b => b.dataset.filter.toLowerCase() === val.toLowerCase());
+        if (exactMatch) {
+          filters.querySelectorAll('.trending-filter').forEach(b => {
+            b.classList.remove('active');
+            b.setAttribute('aria-selected', 'false');
+          });
+          exactMatch.classList.add('active');
+          exactMatch.setAttribute('aria-selected', 'true');
+          renderTrending(exactMatch.dataset.filter, '');
+        }
+      }
     }
   } catch (err) {
     console.error('Search error:', err);
@@ -336,83 +506,6 @@ function showDetectedUrl(url, platform) {
   });
 }
 
-function showSearchCard(searchText) {
-  const helper = document.getElementById('searchHelper');
-  const existing = cart.find(c => c.url === currentSearchUrl);
-  const existingQty = existing ? existing.qty : 1;
-
-  helper.innerHTML = `
-    <div class="detected-card">
-      <div class="detected-card-header">
-        <div class="detected-card-info">
-          <span class="detected-badge">Product Search</span>
-          <span class="detected-url" style="white-space:normal;overflow:visible;text-overflow:clip;font-weight:500;color:#222;">${escapeHtml(searchText)}</span>
-        </div>
-        <div style="display:flex;flex-direction:column;align-items:center;gap:6px;">
-          <div class="product-summary-qty" style="flex-direction:row;gap:4px;">
-            <label for="detectedQty" style="font-size:11px;color:#888;font-weight:600;text-transform:uppercase;">Qty</label>
-            <input type="number" id="detectedQty" value="${existingQty}" min="1" max="99" style="width:56px;padding:6px;font-size:14px;text-align:center;border:1px solid #ddd;border-radius:6px;">
-          </div>
-          <button type="button" id="addDetectedBtn" class="btn-detected-add">Add to Cart</button>
-        </div>
-      </div>
-
-      <div class="detected-screenshot-row">
-        <label class="detected-upload-btn" id="screenshotLabel">
-          <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909m-18 3.75h16.5a2.25 2.25 0 002.25-2.25V6a2.25 2.25 0 00-2.25-2.25H3.75A2.25 2.25 0 001.5 6v12a2.25 2.25 0 002.25 2.25z"/></svg>
-          <span>Attach product screenshot (optional)</span>
-          <input type="file" id="screenshotInput" accept="image/*" hidden>
-        </label>
-        <div class="detected-preview-wrap" id="screenshotPreview" hidden>
-          <img id="screenshotPreviewImg" src="" alt="Screenshot preview">
-          <button type="button" id="screenshotRemove" class="detected-preview-remove" aria-label="Remove screenshot">×</button>
-        </div>
-      </div>
-    </div>
-  `;
-
-  document.getElementById('addDetectedBtn').addEventListener('click', () => {
-    const qty = parseInt(document.getElementById('detectedQty').value, 10) || 1;
-    addToCart({
-      url: currentSearchUrl,
-      platform: currentSearchPlatform,
-      name: currentSearchName || 'Product',
-      screenshot: currentSearchScreenshot,
-      qty: qty
-    });
-    hideDetectedUrl();
-    const searchInput = document.getElementById('searchInput');
-    if (searchInput) searchInput.value = '';
-  });
-
-  const fileInput = document.getElementById('screenshotInput');
-  const previewWrap = document.getElementById('screenshotPreview');
-  const previewImg = document.getElementById('screenshotPreviewImg');
-  const removeBtn = document.getElementById('screenshotRemove');
-  const label = document.getElementById('screenshotLabel');
-
-  fileInput.addEventListener('change', (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = (ev) => {
-      currentSearchScreenshot = ev.target.result;
-      previewImg.src = ev.target.result;
-      previewWrap.hidden = false;
-      label.classList.add('has-image');
-    };
-    reader.readAsDataURL(file);
-  });
-
-  removeBtn.addEventListener('click', () => {
-    currentSearchScreenshot = null;
-    previewWrap.hidden = true;
-    previewImg.src = '';
-    fileInput.value = '';
-    label.classList.remove('has-image');
-  });
-}
-
 function hideDetectedUrl() {
   const helper = document.getElementById('searchHelper');
   if (helper) helper.innerHTML = '';
@@ -452,6 +545,56 @@ function getNextSaturday() {
   return next.toISOString().split('T')[0];
 }
 
+function getDeliveryEstimate() {
+  const today = new Date();
+  const day = today.getDay();
+  const hour = today.getHours();
+
+  // If ordered by Friday midnight (day 5) or Saturday before noon (day 6, hour < 12)
+  // Items arrive this Saturday-Sunday
+  // Otherwise, next Saturday-Sunday
+  const isThisWeek = (day <= 5) || (day === 6 && hour < 12);
+
+  let sat, sun;
+
+  if (isThisWeek) {
+    const daysUntilSat = (6 - day + 7) % 7;
+    sat = new Date(today);
+    sat.setDate(today.getDate() + daysUntilSat);
+  } else {
+    // Next Saturday
+    const daysUntilNextSat = (13 - day) % 7 || 7;
+    sat = new Date(today);
+    sat.setDate(today.getDate() + daysUntilNextSat);
+  }
+
+  sun = new Date(sat);
+  sun.setDate(sat.getDate() + 1);
+
+  const satStr = sat.toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short' });
+  const sunStr = sun.toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short' });
+
+  return {
+    display: `${satStr} – ${sunStr}${isThisWeek ? '' : ' (next week)'}`,
+    tripDate: sat.toISOString().split('T')[0]
+  };
+}
+
+function updateDeliveryEstimate() {
+  const estimateBox = document.getElementById('deliveryEstimateBox');
+  const dateEl = document.getElementById('deliveryEstimateDate');
+  const hiddenInput = document.getElementById('orderTripDate');
+
+  if (!dateEl) return;
+
+  const estimate = getDeliveryEstimate();
+  dateEl.textContent = estimate.display;
+
+  if (hiddenInput) {
+    hiddenInput.value = estimate.tripDate;
+  }
+}
+
 function openOrderModal(fromCart = false) {
   const modal = document.getElementById('orderModal');
   const form = document.getElementById('orderForm');
@@ -479,12 +622,7 @@ function openOrderModal(fromCart = false) {
   form.reset();
   clearFormErrors(form);
 
-  const today = new Date().toISOString().split('T')[0];
-  const tripInput = document.getElementById('orderTripDate');
-  if (tripInput) {
-    tripInput.min = today;
-    tripInput.value = getNextSaturday();
-  }
+  updateDeliveryEstimate();
 
   const isSingleItem = !fromCart || cart.length === 1;
 
@@ -579,6 +717,45 @@ function renderCheckoutSummary(container) {
   });
 }
 
+/* ============ DZONGKHAG CARDS ============ */
+function initDzongkhagCards() {
+  const container = document.getElementById('dzongkhagCards');
+  const hiddenInput = document.getElementById('orderDzongkhag');
+  if (!container || !hiddenInput) return;
+
+  container.querySelectorAll('.dz-card').forEach(card => {
+    card.addEventListener('click', () => {
+      // Visual selection
+      container.querySelectorAll('.dz-card').forEach(c => c.classList.remove('active'));
+      card.classList.add('active');
+
+      // Update hidden input for form submission
+      hiddenInput.value = card.dataset.value;
+
+      // Clear error state
+      card.classList.remove('input-error');
+      const err = document.getElementById('dzongkhagError');
+      if (err) err.hidden = true;
+    });
+  });
+}
+
+function selectDzongkhagCard(value) {
+  const container = document.getElementById('dzongkhagCards');
+  const hiddenInput = document.getElementById('orderDzongkhag');
+  if (!container || !hiddenInput) return;
+
+  hiddenInput.value = value || '';
+  container.querySelectorAll('.dz-card').forEach(card => {
+    const isMatch = card.dataset.value === value;
+    card.classList.toggle('active', isMatch);
+    if (isMatch) {
+      card.classList.add('auto-filled');
+      setTimeout(() => card.classList.remove('auto-filled'), 1000);
+    }
+  });
+}
+
 function closeOrderModalFn() {
   const modal = document.getElementById('orderModal');
   if (modal) {
@@ -610,7 +787,13 @@ function setFieldError(fieldId, message) {
 function clearFormErrors(form) {
   if (!form) return;
   form.querySelectorAll('.input-error').forEach(el => el.classList.remove('input-error'));
-  form.querySelectorAll('.field-error').forEach(el => el.remove());
+  form.querySelectorAll('.field-error').forEach(el => {
+    if (el.id === 'dzongkhagError') {
+      el.hidden = true;
+    } else {
+      el.remove();
+    }
+  });
 }
 
 /* ============ PHONE HINT & AUTO-FILL ============ */
@@ -649,30 +832,19 @@ function initCustomerAutoFill() {
   const doAutoFill = debounce(async () => {
     const cleanPhone = phoneInput.value.replace(/\s/g, '');
 
-    // Only check if it's a valid Bhutan number and different from last check
     if (!/^(17|77)\d{6}$/.test(cleanPhone) || cleanPhone === lastCheckedPhone) return;
     lastCheckedPhone = cleanPhone;
 
-    // Wait for supabase to be ready
     if (!supabase) {
-      console.log('Supabase not ready yet, waiting...');
       try {
         await supabaseReady;
       } catch (e) {
-        console.warn('Supabase failed to load, cannot auto-fill');
         return;
       }
     }
-
-    if (!supabase) {
-      console.warn('Supabase is null after waiting');
-      return;
-    }
+    if (!supabase) return;
 
     try {
-      console.log('Fetching customer for phone:', cleanPhone);
-
-      // Fetch customer by phone
       const { data: customer, error } = await supabase
         .from('customers')
         .select('name, dzongkhag, address')
@@ -680,27 +852,20 @@ function initCustomerAutoFill() {
         .limit(1)
         .maybeSingle();
 
-      if (error) {
-        console.error('Supabase error fetching customer:', error);
-        return;
-      }
-
-      console.log('Customer lookup result:', customer);
+      if (error) return;
 
       if (customer) {
         let filledAny = false;
 
-        // Only fill fields that are empty (don't overwrite user-typed data)
         if (nameInput && !nameInput.value.trim()) {
           nameInput.value = customer.name || '';
           nameInput.classList.add('auto-filled');
           setTimeout(() => nameInput.classList.remove('auto-filled'), 1000);
           filledAny = true;
         }
-        if (dzongkhagInput && !dzongkhagInput.value) {
-          dzongkhagInput.value = customer.dzongkhag || '';
-          dzongkhagInput.classList.add('auto-filled');
-          setTimeout(() => dzongkhagInput.classList.remove('auto-filled'), 1000);
+              const hiddenDz = document.getElementById('orderDzongkhag');
+        if (hiddenDz && !hiddenDz.value && ['Thimphu','Chukha','Paro'].includes(customer.dzongkhag)) {
+          selectDzongkhagCard(customer.dzongkhag);
           filledAny = true;
         }
         if (addressInput && !addressInput.value.trim()) {
@@ -710,7 +875,6 @@ function initCustomerAutoFill() {
           filledAny = true;
         }
 
-        // Show subtle hint only if we actually filled something
         if (filledAny) {
           const phoneHint = document.getElementById('phoneHint');
           if (phoneHint) {
@@ -724,8 +888,6 @@ function initCustomerAutoFill() {
           }
           toast('Your details have been auto-filled!', 'success');
         }
-      } else {
-        console.log('No customer found for phone:', cleanPhone);
       }
     } catch (err) {
       console.warn('Customer auto-fill failed:', err);
@@ -766,8 +928,13 @@ async function submitOrder(e) {
     setFieldError('orderName', 'Name is required');
     hasError = true;
   }
-  if (!dzongkhag) {
-    setFieldError('orderDzongkhag', 'Please select your dzongkhag');
+    if (!dzongkhag) {
+    const dzGroup = document.getElementById('dzongkhagCards')?.closest('.form-group');
+    if (dzGroup) {
+      const err = document.getElementById('dzongkhagError');
+      if (err) err.hidden = false;
+      dzGroup.querySelectorAll('.dz-card').forEach(c => c.classList.add('input-error'));
+    }
     hasError = true;
   }
   if (!address) {
@@ -775,7 +942,7 @@ async function submitOrder(e) {
     hasError = true;
   }
   if (!tripDate) {
-    setFieldError('orderTripDate', 'Please select a trip date');
+    toast('Delivery estimate not available. Please refresh the page.', 'error');
     hasError = true;
   }
   if (!paymentMethod) {
@@ -813,23 +980,7 @@ async function submitOrder(e) {
         .single();
       if (custErr) throw custErr;
       customerId = newCustomer.id;
-         } else {
-        // Create new customer with a UNIQUE placeholder phone
-        // NOTE: Ideally make the 'phone' column nullable in Supabase instead.
-        const uniquePlaceholder = `99${Date.now().toString().slice(-6)}`;
-
-        const { data: newCustomer, error: custErr } = await supabase
-          .from('customers')
-          .insert({
-            name: name,
-            dzongkhag: address,
-            phone: uniquePlaceholder,
-            address: address
-          })
-          .select('id')
-          .single();
-
-        }
+    }
 
     let items = [];
     const isSingle = !document.getElementById('productSummaryBox').hidden;
@@ -839,20 +990,26 @@ async function submitOrder(e) {
       const qty = parseInt(document.getElementById('modalOrderQty').value, 10) || 1;
       const variant = document.getElementById('orderVariant').value.trim();
       const platform = detectPlatform(url) || 'Other';
-      items.push({ url, name: productName || platform + ' Product', qty, variant, platform });
+      const screenshot = orderFromCart
+        ? (cart[0]?.screenshot || null)
+        : (document.getElementById('productSummaryScreenshot')?.src || null);
+      items.push({ url, name: productName || platform + ' Product', qty, variant, platform, screenshot });
     } else {
       items = cart.map(c => ({
         url: c.url,
         name: c.name || 'Product',
         qty: c.qty || 1,
         variant: '',
-        platform: c.platform || 'Other'
+        platform: c.platform || 'Other',
+        screenshot: c.screenshot || null
       }));
     }
 
+    const customOrderId = generateOrderId(dzongkhag);
     const { data: orderData, error: orderErr } = await supabase
       .from('orders')
       .insert({
+        id: customOrderId,
         customer_id: customerId,
         status: 'submitted',
         payment_method: paymentMethod,
@@ -874,7 +1031,8 @@ async function submitOrder(e) {
       platform: it.platform,
       product_link: it.url,
       quantity: it.qty,
-      variant: it.variant || null
+      variant: it.variant || null,
+      screenshot: it.screenshot || null
     }));
 
     const { error: itemsErr } = await supabase.from('order_items').insert(orderItems);
@@ -893,7 +1051,7 @@ async function submitOrder(e) {
       ? `${items.length} items ordered`
       : (items[0]?.name || 'Your product');
     if (successProduct) successProduct.textContent = productText;
-    if (successOrderId) successOrderId.textContent = String(orderId).toUpperCase();
+       if (successOrderId) successOrderId.textContent = customOrderId;
 
     const orderIdStr = String(orderId);
     const waMsg = `Hi Shop2Bhutan! I just placed an order (${orderIdStr.slice(0,8).toUpperCase()}). Please confirm my order.`;
@@ -919,7 +1077,6 @@ async function loadReviews() {
   if (!track) return;
 
   if (!supabase) {
-    // Supabase unavailable — show empty state
     track.innerHTML = '';
     if (emptyState) emptyState.hidden = false;
     return;
@@ -934,14 +1091,12 @@ async function loadReviews() {
 
   if (error || !data || !data.length) {
     if (error) console.warn('Failed to load reviews:', error.message);
-    // No verified reviews — show empty state
     track.innerHTML = '';
     if (emptyState) emptyState.hidden = false;
     initReviewCarousel();
     return;
   }
 
-  // Hide empty state since we have reviews
   if (emptyState) emptyState.hidden = true;
 
   track.innerHTML = data.map(r => {
@@ -1063,9 +1218,7 @@ async function submitReview(e) {
 
   try {
     let customerId = null;
-    let verified = false;
 
-    // If order ID provided, look up the customer from that order
     if (orderId) {
       const { data: orderData, error: orderErr } = await supabase
         .from('orders')
@@ -1074,19 +1227,12 @@ async function submitReview(e) {
         .limit(1)
         .maybeSingle();
 
-      if (orderErr) {
-        console.warn('Order lookup error:', orderErr);
-      } else if (orderData && orderData.customer_id) {
+      if (!orderErr && orderData && orderData.customer_id) {
         customerId = orderData.customer_id;
-        verified = true;
       }
     }
 
-    // If no customer found via order, create a minimal customer record
-    // This ensures customer_id is never null
-      // If no customer found via order, create a minimal customer record
     if (!customerId) {
-      // Try to find existing customer by name + address combo
       const { data: existingCustomer } = await supabase
         .from('customers')
         .select('id')
@@ -1097,9 +1243,7 @@ async function submitReview(e) {
 
       if (existingCustomer && existingCustomer.id) {
         customerId = existingCustomer.id;
-           } else {
-        // Create new customer with a UNIQUE placeholder phone
-        // NOTE: Ideally make the 'phone' column nullable in Supabase instead.
+      } else {
         const uniquePlaceholder = `99${Date.now().toString().slice(-6)}${Math.floor(Math.random() * 10)}`;
 
         const { data: newCustomer, error: custErr } = await supabase
@@ -1122,7 +1266,6 @@ async function submitReview(e) {
       }
     }
 
-    // Insert review with proper schema
     const { error } = await supabase.from('reviews').insert({
       order_id: orderId,
       customer_id: customerId,
@@ -1219,7 +1362,10 @@ document.addEventListener('DOMContentLoaded', () => {
   loadCart();
   initStarRating();
   initPhoneHint();
-  initCustomerAutoFill(); // NOW DEFINED ABOVE, so it works correctly
+  renderTrending();
+    initDzongkhagCards();
+  initTrendingFilters();
+  initCustomerAutoFill();
 
   supabaseReady.then(() => {
     loadReviews();
@@ -1238,10 +1384,22 @@ document.addEventListener('DOMContentLoaded', () => {
 
   document.querySelectorAll('#discoverTags .tag').forEach(tag => {
     tag.addEventListener('click', () => {
-      if (searchInput) {
-        searchInput.value = tag.dataset.search;
-        handleSearch();
+      const searchInput = document.getElementById('searchInput');
+      if (searchInput) searchInput.value = '';
+      hideDetectedUrl();
+
+      const filterVal = tag.dataset.search;
+      const filters = document.getElementById('trendingFilters');
+      if (filters) {
+        filters.querySelectorAll('.trending-filter').forEach(b => {
+          b.classList.toggle('active', b.dataset.filter === filterVal);
+          b.setAttribute('aria-selected', b.dataset.filter === filterVal);
+        });
       }
+      renderTrending(filterVal, '');
+
+      const trendingSection = document.querySelector('.trending-section');
+      if (trendingSection) trendingSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
     });
   });
 

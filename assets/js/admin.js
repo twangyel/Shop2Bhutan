@@ -184,24 +184,34 @@ window.clearNotifications = function() {
     renderNotifications();
 };
 
+async function initDashboard() {
+    await fetchOrders();
+    await fetchReviews();
+    await fetchQuotations();
+    await fetchSettings();       // <-- add
+    await fetchDeliveryRates();  // <-- add
+    setupRealtime();
+    populateDzongkhagFilter();
+    updateReviewStats();
+}
+
 window.onSectionChange = function(section) {
     currentSection = section;
     window.__currentSection = section;
 
     if (section === 'reviews') {
-        fetchReviews();        // <-- add this
+        fetchReviews();
         renderReviews();
     } else if (section === 'orders') {
         renderOrders();
+    } else if (section === 'quotations') {
+        fetchQuotations();
+        renderQuotations();
+    } else if (section === 'settings') {  // <-- add
+        renderSettings();
+        renderDeliveryRates();
     }
 };
-async function initDashboard() {
-    await fetchOrders();
-    await fetchReviews();
-    setupRealtime();
-    populateDzongkhagFilter();
-    updateReviewStats();
-}
 
 // ===== ORDERS =====
 async function fetchOrders() {
@@ -529,8 +539,22 @@ function setupRealtime() {
                 toast('New review received!', 'info');
             }
         })
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'quotations' }, (payload) => {   // <-- add
+            fetchQuotations();
+            if (payload.eventType === 'INSERT') {
+                playChime();
+                addNotification(
+                    'New Quotation Created',
+                    `Quotation ${payload.new.id?.slice(0, 8).toUpperCase() || ''}`,
+                    'info',
+                    () => { showSection('quotations'); }
+                );
+                toast('New quotation created!', 'info');
+            }
+        })
         .subscribe();
 }
+
 function updateStats() {
     const submitted = allOrders.filter(o => o.status === 'submitted').length;
     const confirmed = allOrders.filter(o => ['confirmed','purchased'].includes(o.status)).length;
@@ -596,10 +620,15 @@ window.renderOrders = function() {
         const dateStr = submittedDate ? submittedDate.toLocaleDateString() : '-';
         const timeStr = submittedDate ? submittedDate.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : '';
 
+        const hasScreenshot = (o.items || []).some(i => i.screenshot);
+
         return `
         <tr>
             <td><input type="checkbox" class="row-select" value="${o.id}" onchange="updateBulkBar()"></td>
-            <td><span class="token">${o.id.slice(0, 8).toUpperCase()}</span></td>
+            <td>
+                <span class="token">${o.id.slice(0, 8).toUpperCase()}</span>
+                ${hasScreenshot ? `<span title="Has product screenshot" style="display:inline-block;margin-left:6px;vertical-align:middle;color:#2980b9;cursor:pointer;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg></span>` : ''}
+            </td>
             <td>
                 <div style="font-size:0.9rem;color:#1a1a2e;font-weight:500;">${dateStr}</div>
                 <small style="color:#888">${timeStr}</small>
@@ -651,18 +680,20 @@ window.openOrderDetail = function(id) {
         <div style="margin:1.5rem 0;padding:1rem;background:#f8f9fc;border-radius:10px;">
             <label style="font-size:0.8rem;color:#888;text-transform:uppercase;font-weight:600;display:block;margin-bottom:0.75rem">Order Items (${items.length})</label>
             ${items.map(item => `
-                <div style="display:flex;justify-content:space-between;align-items:center;padding:0.5rem 0;border-bottom:1px solid #eee">
-                    <div style="min-width:0">
+                <div style="display:flex;justify-content:space-between;align-items:flex-start;padding:0.75rem 0;border-bottom:1px solid #eee;gap:12px;">
+                    <div style="min-width:0;flex:1;">
+                        ${item.screenshot ? `<div style="margin-bottom:0.5rem;"><img src="${escapeHtml(item.screenshot)}" style="width:90px;height:90px;object-fit:cover;border-radius:8px;border:1px solid #ddd;cursor:pointer;background:#fff;" onclick="window.open('${escapeHtml(item.screenshot)}','_blank')" title="Click to view full image"></div>` : ''}
                         <span class="badge" style="font-size:0.7rem">${item.platform || 'Store'}</span>
                         <div style="font-size:0.9rem;color:#1a1a2e;margin-top:0.25rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${item.product_name || 'N/A'}</div>
                         ${item.variant ? `<small style="color:#888">Variant: ${item.variant}</small>` : ''}
+                        ${item.product_link && item.product_link.startsWith('search://') ? `<small style="color:#e94560;display:block;margin-top:2px;">Search: ${escapeHtml(item.product_link.replace('search://','').replace(/-/g,' '))}</small>` : ''}
                     </div>
                     <div style="text-align:right;flex-shrink:0">
                         <div style="font-weight:600">Qty: ${item.quantity || 1}</div>
                         ${item.price_confirmed ? `<div style="color:#e94560;font-size:0.85rem">Nu. ${item.price_confirmed}</div>` : ''}
                     </div>
                 </div>
-                ${item.product_link ? `<a href="${item.product_link}" target="_blank" style="font-size:0.8rem;color:#e94560">Open Product Link ↗</a>` : ''}
+                ${item.product_link && !item.product_link.startsWith('search://') ? `<a href="${escapeHtml(item.product_link)}" target="_blank" style="font-size:0.8rem;color:#e94560">Open Product Link ↗</a>` : ''}
             `).join('')}
         </div>
 
@@ -827,6 +858,901 @@ window.bulkUpdateStatus = async function(newStatus) {
     toast(`${selected.length} order(s) marked as ${newStatus.replace(/_/g, ' ')}`, 'success');
 };
 
+// ===== SETTINGS STATE =====
+let appSettings = null;
+let deliveryRates = [];
+
+async function fetchSettings() {
+    const { data, error } = await supabase.from('app_settings').select('*').limit(1);
+    if (error) {
+        console.error('Settings fetch error:', error);
+        return;
+    }
+    appSettings = data?.[0] || {
+        service_charge_type: 'percentage',
+        service_charge_value: 0,
+        default_shipping: 0,
+        gst_enabled: false,
+        gst_rate: 5
+    };
+}
+
+async function fetchDeliveryRates() {
+    const { data, error } = await supabase.from('delivery_rates').select('*').order('dzongkhag');
+    if (error) {
+        console.error('Delivery rates fetch error:', error);
+        return;
+    }
+    deliveryRates = data || [];
+}
+
+function renderSettings() {
+    if (!appSettings) return;
+    const typeEl = document.getElementById('settingServiceType');
+    const valEl = document.getElementById('settingServiceValue');
+    const shipEl = document.getElementById('settingShipping');
+    const gstEnEl = document.getElementById('settingGstEnabled');
+    const gstRateEl = document.getElementById('settingGstRate');
+
+    if (typeEl) typeEl.value = appSettings.service_charge_type || 'percentage';
+    if (valEl) valEl.value = appSettings.service_charge_value || '';
+    if (shipEl) shipEl.value = appSettings.default_shipping || '';
+    if (gstEnEl) gstEnEl.checked = appSettings.gst_enabled || false;
+    if (gstRateEl) gstRateEl.value = appSettings.gst_rate || 5;
+}
+
+function renderDeliveryRates() {
+    const tbody = document.getElementById('deliveryRatesTableBody');
+    if (!tbody) return;
+    tbody.innerHTML = '';
+    if (deliveryRates.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="3" style="text-align:center;padding:1.5rem;color:#888;">No rates configured. Add one below.</td></tr>';
+        return;
+    }
+    deliveryRates.forEach(r => addDeliveryRateRow(r.dzongkhag, r.rate));
+}
+
+window.addDeliveryRateRow = function(dzongkhag = '', rate = '') {
+    const tbody = document.getElementById('deliveryRatesTableBody');
+    // Remove empty placeholder if present
+    if (tbody.children.length === 1 && tbody.children[0].textContent.includes('No rates configured')) {
+        tbody.innerHTML = '';
+    }
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+        <td style="padding:0.35rem 0.5rem;"><input type="text" class="rate-dzong" value="${escapeHtml(dzongkhag)}" placeholder="e.g. Thimphu" style="width:100%;padding:0.5rem;border:2px solid #e8e8e8;border-radius:6px;font-size:0.9rem;outline:none;"></td>
+        <td style="padding:0.35rem 0.5rem;"><input type="number" class="rate-value" value="${rate}" placeholder="0" style="width:100%;padding:0.5rem;border:2px solid #e8e8e8;border-radius:6px;font-size:0.9rem;outline:none;"></td>
+        <td style="padding:0.35rem 0.5rem;text-align:center;"><button onclick="this.closest('tr').remove()" style="background:#ffe0e5;color:#c0392b;border:none;width:28px;height:28px;border-radius:6px;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button></td>
+    `;
+    tbody.appendChild(tr);
+};
+
+function gatherDeliveryRateRows() {
+    const rows = [];
+    document.querySelectorAll('#deliveryRatesTableBody tr').forEach(tr => {
+        const dzong = tr.querySelector('.rate-dzong')?.value.trim();
+        const rate = parseFloat(tr.querySelector('.rate-value')?.value);
+        if (dzong && !isNaN(rate)) {
+            rows.push({ dzongkhag: dzong, rate: rate, updated_at: new Date().toISOString() });
+        }
+    });
+    return rows;
+}
+
+window.saveSettings = async function() {
+    const btn = document.getElementById('saveSettingsBtn');
+    btn.disabled = true; btn.textContent = 'Saving…';
+
+    const payload = {
+        id: 1,
+        service_charge_type: document.getElementById('settingServiceType').value,
+        service_charge_value: parseFloat(document.getElementById('settingServiceValue').value) || 0,
+        default_shipping: parseFloat(document.getElementById('settingShipping').value) || 0,
+        gst_enabled: document.getElementById('settingGstEnabled').checked,
+        gst_rate: parseFloat(document.getElementById('settingGstRate').value) || 5,
+        updated_at: new Date().toISOString()
+    };
+
+    const { error } = await supabase.from('app_settings').upsert(payload, { onConflict: 'id' });
+
+    btn.disabled = false; btn.textContent = 'Save Charge Settings';
+
+    if (error) {
+        toast('Error saving settings: ' + error.message, 'error');
+        return;
+    }
+
+    appSettings = payload;
+    toast('Charge settings saved', 'success');
+};
+
+window.saveDeliveryRates = async function() {
+    const btn = document.getElementById('saveDeliveryRatesBtn');
+    btn.disabled = true; btn.textContent = 'Saving…';
+
+    const rows = gatherDeliveryRateRows();
+
+    // Upsert all rows
+    const { error } = await supabase.from('delivery_rates').upsert(rows, { onConflict: 'dzongkhag' });
+
+    // Remove any dzongkhags that were deleted (optional — simple approach: delete all not in rows)
+    const keepDzongs = rows.map(r => r.dzongkhag);
+    if (keepDzongs.length > 0) {
+        await supabase.from('delivery_rates').delete().not('dzongkhag', 'in', `(${keepDzongs.join(',')})`);
+    } else {
+        await supabase.from('delivery_rates').delete().neq('dzongkhag', ''); // delete all
+    }
+
+    btn.disabled = false; btn.textContent = 'Save Delivery Rates';
+
+    if (error) {
+        toast('Error saving delivery rates: ' + error.message, 'error');
+        return;
+    }
+
+    await fetchDeliveryRates();
+    toast('Delivery rates saved', 'success');
+};
+
+// ===== QUOTATIONS =====
+let allQuotations = [];
+let currentQuotationId = null;
+
+async function fetchQuotations() {
+    const { data, error } = await supabase
+        .from('quotations')
+        .select(`*, order:orders(id, status, trip_date, customer:customers(*), items:order_items(*))`)
+        .order('created_at', { ascending: false });
+
+    if (error) {
+        console.error('Quotations fetch error:', error);
+        const tbody = document.getElementById('quotationsTableBody');
+        if (tbody) {
+            tbody.innerHTML = `<tr><td colspan="8" style="text-align:center;color:#e94560;padding:2rem">Error loading quotations: ${escapeHtml(error.message)}</td></tr>`;
+        }
+        return;
+    }
+
+    allQuotations = data || [];
+    updateQuotationStats();
+    populateQuotationDzongkhagFilter();
+    if (currentSection === 'quotations') {
+        renderQuotations();
+    }
+}
+
+function updateQuotationStats() {
+    const draft = allQuotations.filter(q => q.status === 'draft').length;
+    const sent = allQuotations.filter(q => q.status === 'sent').length;
+    const accepted = allQuotations.filter(q => q.status === 'accepted').length;
+    const totalValue = allQuotations
+        .filter(q => q.status !== 'rejected' && q.status !== 'expired')
+        .reduce((sum, q) => sum + (parseFloat(q.total_amount) || 0), 0);
+
+    const elDraft = document.getElementById('statQuotationDraft');
+    const elSent = document.getElementById('statQuotationSent');
+    const elAccepted = document.getElementById('statQuotationAccepted');
+    const elValue = document.getElementById('statQuotationValue');
+
+    if (elDraft) elDraft.textContent = draft;
+    if (elSent) elSent.textContent = sent;
+    if (elAccepted) elAccepted.textContent = accepted;
+    if (elValue) elValue.textContent = 'Nu. ' + totalValue.toLocaleString();
+}
+
+function populateQuotationDzongkhagFilter() {
+    const dzongs = [...new Set(allQuotations.map(q => q.order?.customer?.dzongkhag).filter(Boolean))].sort();
+    const select = document.getElementById('quotationFilterDzongkhag');
+    if (!select) return;
+    while (select.options.length > 1) select.remove(1);
+    dzongs.forEach(d => {
+        const opt = document.createElement('option');
+        opt.value = d; opt.textContent = d;
+        select.appendChild(opt);
+    });
+}
+
+window.renderQuotations = function() {
+    const search = document.getElementById('quotationFilterSearch')?.value.toLowerCase() || '';
+    const status = document.getElementById('quotationFilterStatus')?.value || '';
+    const dzong = document.getElementById('quotationFilterDzongkhag')?.value || '';
+
+    let filtered = allQuotations.filter(q => {
+        const c = q.order?.customer || {};
+        const matchesSearch = !search ||
+            (c.name && c.name.toLowerCase().includes(search)) ||
+            (c.phone && c.phone.includes(search)) ||
+            (q.id && String(q.id).toLowerCase().includes(search)) ||
+            (q.order_id && String(q.order_id).toLowerCase().includes(search)) ||
+            (q.items && q.items.some(i => i.name && i.name.toLowerCase().includes(search)));
+        const matchesStatus = !status || q.status === status;
+        const matchesDzong = !dzong || c.dzongkhag === dzong;
+        return matchesSearch && matchesStatus && matchesDzong;
+    });
+
+    const tbody = document.getElementById('quotationsTableBody');
+    if (!tbody) return;
+
+    if (filtered.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="8" style="text-align:center;padding:2rem;color:#888">No quotations found</td></tr>`;
+        return;
+    }
+
+    tbody.innerHTML = filtered.map(q => {
+        const c = q.order?.customer || {};
+        const orderIdShort = q.order_id ? String(q.order_id).slice(0, 8).toUpperCase() : '-';
+        const items = q.items || [];
+        const itemCount = items.length;
+        const itemSummary = items.slice(0, 2).map(i => i.name).join(', ') + (itemCount > 2 ? ` +${itemCount - 2} more` : '');
+        const dateStr = q.created_at ? new Date(q.created_at).toLocaleDateString() : '-';
+        const validUntil = q.valid_until ? new Date(q.valid_until).toLocaleDateString() : '-';
+        const statusClass = `badge-${q.status || 'draft'}`;
+        const statusText = (q.status || 'draft').replace(/_/g, ' ');
+
+        const sendBtn = q.status === 'draft'
+            ? `<button class="btn-icon btn-verify" onclick="sendQuotation('${q.id}')" title="Send to customer"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg></button>`
+            : `<button class="btn-icon btn-verify" style="opacity:0.3;cursor:not-allowed;" disabled title="Already sent"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg></button>`;
+
+        return `
+        <tr>
+            <td>
+                <span class="token">${String(q.id).slice(0, 8).toUpperCase()}</span>
+                <div style="font-size:0.75rem;color:#888;margin-top:2px;">For order ${orderIdShort}</div>
+            </td>
+            <td>
+                <div style="font-size:0.9rem;color:#1a1a2e;font-weight:500;">${dateStr}</div>
+                <small style="color:#888">${q.created_at ? new Date(q.created_at).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}) : ''}</small>
+            </td>
+            <td>
+                <div class="customer-info">
+                    <strong>${c.name || 'N/A'}</strong>
+                    <small>${c.phone || ''}</small>
+                    <small>${c.dzongkhag || ''}</small>
+                </div>
+            </td>
+            <td>
+                <div style="font-size:0.85rem;color:#555;max-width:200px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" title="${escapeHtml(itemSummary)}">${itemCount > 0 ? escapeHtml(itemSummary) : 'No items'}</div>
+                <small style="color:#888">${itemCount} item(s)</small>
+            </td>
+            <td>${q.total_amount ? 'Nu. ' + q.total_amount : '-'}</td>
+            <td><span class="badge ${statusClass}">${statusText}</span></td>
+            <td>${validUntil}</td>
+            <td>
+                <div class="actions">
+                    <button class="btn-icon btn-view" onclick="openQuotationDetail('${q.id}')" title="View"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button>
+                    <button class="btn-icon btn-edit" onclick="openQuotationModal('${q.id}')" title="Edit"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>
+                    ${sendBtn}
+                    <button class="btn-icon btn-delete" onclick="confirmDeleteQuotation('${q.id}')" title="Delete"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button>
+                </div>
+            </td>
+        </tr>
+    `}).join('');
+};
+
+// ===== ORDER PREVIEW =====
+function renderOrderPreview(order) {
+    const panel = document.getElementById('orderPreviewPanel');
+    const content = document.getElementById('orderPreviewContent');
+    if (!order) { panel.style.display = 'none'; return; }
+
+    const c = order.customer || {};
+    const items = order.items || [];
+
+    content.innerHTML = `
+        <div style="display:flex;gap:1.5rem;flex-wrap:wrap;margin-bottom:0.75rem;">
+            <div><strong style="color:#1a1a2e;">${c.name || 'N/A'}</strong><br><small style="color:#666">${c.phone || ''}</small></div>
+            <div><small style="color:#888">Dzongkhag</small><br><strong style="color:#1a1a2e;">${c.dzongkhag || '-'}</strong></div>
+            <div><small style="color:#888">Trip Date</small><br><strong style="color:#1a1a2e;">${order.trip_date ? new Date(order.trip_date).toLocaleDateString() : '-'}</strong></div>
+        </div>
+        <div style="display:flex;gap:0.5rem;flex-wrap:wrap;">
+            ${items.map(item => `
+                <div style="background:#fff;padding:0.5rem;border-radius:8px;border:1px solid #e0e0e0;width:120px;">
+                    ${item.screenshot ? `<img src="${escapeHtml(item.screenshot)}" style="width:100%;height:80px;object-fit:cover;border-radius:4px;margin-bottom:0.35rem;cursor:pointer;" onclick="window.open('${escapeHtml(item.screenshot)}','_blank')">` : '<div style="width:100%;height:80px;background:#f0f0f0;border-radius:4px;display:flex;align-items:center;justify-content:center;color:#aaa;font-size:0.7rem;">No image</div>'}
+                    <div style="font-size:0.75rem;color:#1a1a2e;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" title="${escapeHtml(item.product_name || '')}">${escapeHtml(item.product_name || 'Item')}</div>
+                    <div style="font-size:0.7rem;color:#888;">Qty: ${item.quantity || 1}</div>
+                    ${item.product_link && !item.product_link.startsWith('search://') ? `<a href="${escapeHtml(item.product_link)}" target="_blank" style="font-size:0.7rem;color:var(--accent);">Link ↗</a>` : ''}
+                </div>
+            `).join('')}
+        </div>
+    `;
+    panel.style.display = 'block';
+}
+
+window.onOrderSelected = function(orderId) {
+    const preview = document.getElementById('orderPreviewPanel');
+    const itemsList = document.getElementById('quotationItemsList');
+    if (!orderId) { preview.style.display = 'none'; return; }
+
+    const order = allOrders.find(o => o.id === orderId);
+    if (!order) { preview.style.display = 'none'; return; }
+
+    renderOrderPreview(order);
+
+    // Pre-fill quotation items from order items
+    itemsList.innerHTML = '';
+    (order.items || []).forEach((item, idx) => {
+        addQuotationItemRow({
+            name: item.product_name || 'Item',
+            quantity: item.quantity || 1,
+            unit_price: '',
+            base_cost: ''
+        }, idx);
+    });
+    if ((order.items || []).length === 0) addQuotationItemRow();
+
+    // Auto-fill delivery charge by Dzongkhag from saved rates
+    const dzong = order.customer?.dzongkhag;
+    const deliveryInput = document.getElementById('quotationDelivery');
+    const rate = deliveryRates.find(r => r.dzongkhag === dzong);
+    if (rate) {
+        deliveryInput.value = rate.rate;
+    } else {
+        deliveryInput.value = '';
+    }
+
+    recalculateQuotation();
+};
+
+// ===== QUOTATION MODAL =====
+window.openQuotationModal = async function(quotationId = null) {
+    currentQuotationId = quotationId;
+    const isEdit = !!quotationId;
+    const q = isEdit ? allQuotations.find(x => x.id === quotationId) : null;
+    const order = q?.order || null;
+
+    const modalBody = document.getElementById('modalBody');
+    modalBody.innerHTML = `
+        <div class="detail-grid">
+            <div class="detail-group" style="grid-column:1 / -1;">
+                <label>Linked Order</label>
+                <select id="quotationOrderId" onchange="onOrderSelected(this.value)" style="width:100%;padding:0.75rem;border:2px solid #e8e8e8;border-radius:8px;font-size:0.9rem;outline:none;">
+                    <option value="">Select an order…</option>
+                </select>
+            </div>
+        </div>
+
+        <!-- Order Preview -->
+        <div id="orderPreviewPanel" style="display:none; margin:1rem 0; padding:1rem; background:#f0f4ff; border-radius:10px; border:1px solid #d1e0ff;">
+            <label style="font-size:0.8rem;color:#4a6cf7;text-transform:uppercase;font-weight:600;display:block;margin-bottom:0.75rem">Order Details</label>
+            <div id="orderPreviewContent"></div>
+        </div>
+
+        <!-- Quotation Items -->
+        <div style="margin:1.5rem 0;padding:1rem;background:#f8f9fc;border-radius:10px;">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.75rem;">
+                <label style="font-size:0.8rem;color:#888;text-transform:uppercase;font-weight:600;">Quotation Items</label>
+                <button type="button" onclick="addQuotationItemRow()" style="background:var(--accent);color:#fff;border:none;padding:0.4rem 0.8rem;border-radius:6px;font-size:0.8rem;font-weight:600;cursor:pointer;">+ Add Item</button>
+            </div>
+            <div id="quotationItemsList" style="display:flex;flex-direction:column;gap:0.5rem;"></div>
+            <div style="text-align:right;margin-top:0.75rem;font-size:0.9rem;font-weight:600;color:#1a1a2e;">
+                Subtotal: Nu. <span id="quotationSubtotalDisplay">0</span>
+            </div>
+        </div>
+
+        <!-- Charges & Profit -->
+        <div style="margin:1.5rem 0; padding:1.25rem; background:#fff; border:1px solid #e8e8e8; border-radius:12px;">
+            <label style="font-size:0.8rem;color:#888;text-transform:uppercase;font-weight:600;display:block;margin-bottom:1rem">Charges & Profit Calculator</label>
+
+            <div class="form-row" style="margin-bottom:0.75rem;">
+                <div>
+                    <label>Service Charge</label>
+                    <div style="display:flex;gap:0.5rem;">
+                        <select id="quotationServiceType" onchange="recalculateQuotation()" style="width:auto;min-width:130px;padding:0.65rem;border:2px solid #e8e8e8;border-radius:8px;font-size:0.9rem;outline:none;">
+                            <option value="percentage">% of subtotal</option>
+                            <option value="fixed">Fixed amount</option>
+                        </select>
+                        <input type="number" id="quotationServiceValue" oninput="recalculateQuotation()" placeholder="e.g. 10" style="flex:1;padding:0.65rem;border:2px solid #e8e8e8;border-radius:8px;font-size:0.9rem;outline:none;">
+                    </div>
+                    <small style="color:#888;display:block;margin-top:0.25rem;">Applied: Nu. <span id="serviceChargeApplied">0</span></small>
+                </div>
+                <div>
+                    <label>Shipping Charge</label>
+                    <input type="number" id="quotationShipping" oninput="recalculateQuotation()" placeholder="0" style="width:100%;padding:0.65rem;border:2px solid #e8e8e8;border-radius:8px;font-size:0.9rem;outline:none;">
+                </div>
+            </div>
+
+            <div class="form-row" style="margin-bottom:0.75rem;">
+                <div>
+                    <label>Delivery Charge <small style="color:#888;font-weight:400;">(auto-filled by location)</small></label>
+                    <input type="number" id="quotationDelivery" oninput="recalculateQuotation()" placeholder="0" style="width:100%;padding:0.65rem;border:2px solid #e8e8e8;border-radius:8px;font-size:0.9rem;outline:none;">
+                </div>
+                <div style="display:flex;align-items:flex-end;padding-bottom:0.5rem;">
+                    <label style="display:flex;align-items:center;gap:0.5rem;cursor:pointer;font-size:0.9rem;color:#555;">
+                        <input type="checkbox" id="quotationGstApplicable" onchange="recalculateQuotation()" style="width:18px;height:18px;accent-color:var(--accent);">
+                        <span>Apply GST (5%)</span>
+                    </label>
+                </div>
+            </div>
+
+            <div style="border-top:2px solid #f0f0f0; margin-top:1rem; padding-top:1rem;">
+                <div style="display:flex;justify-content:space-between;font-size:0.9rem;color:#666;margin-bottom:0.4rem;">
+                    <span>Subtotal</span><span>Nu. <span id="calcSubtotal">0</span></span>
+                </div>
+                <div style="display:flex;justify-content:space-between;font-size:0.9rem;color:#666;margin-bottom:0.4rem;">
+                    <span>Service Charge</span><span>Nu. <span id="calcService">0</span></span>
+                </div>
+                <div style="display:flex;justify-content:space-between;font-size:0.9rem;color:#666;margin-bottom:0.4rem;">
+                    <span>Shipping</span><span>Nu. <span id="calcShipping">0</span></span>
+                </div>
+                <div style="display:flex;justify-content:space-between;font-size:0.9rem;color:#666;margin-bottom:0.4rem;">
+                    <span>Delivery</span><span>Nu. <span id="calcDelivery">0</span></span>
+                </div>
+                <div style="display:flex;justify-content:space-between;font-size:0.9rem;color:#666;margin-bottom:0.4rem;">
+                    <span>GST (5%)</span><span>Nu. <span id="calcGst">0</span></span>
+                </div>
+                <div style="display:flex;justify-content:space-between;font-size:1.15rem;font-weight:700;color:#1a1a2e;margin-top:0.75rem;border-top:1px dashed #ddd;padding-top:0.75rem;">
+                    <span>Total Amount</span><span>Nu. <span id="calcTotal">0</span></span>
+                </div>
+                <div style="display:flex;justify-content:space-between;font-size:0.9rem;color:#666;margin-top:0.75rem;">
+                    <span>Total Base Cost</span><span style="color:#c0392b;">Nu. <span id="calcBaseCost">0</span></span>
+                </div>
+                <div style="display:flex;justify-content:space-between;font-size:1.15rem;font-weight:700;color:var(--success);margin-top:0.35rem;">
+                    <span>Profit</span><span>Nu. <span id="calcProfit">0</span> (<span id="calcMargin">0</span>%)</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="admin-form">
+            <div>
+                <label>Notes (visible to customer)</label>
+                <textarea id="quotationNotes" placeholder="Delivery terms, conditions, special instructions…" style="min-height:80px;">${q?.notes || ''}</textarea>
+            </div>
+            <div class="form-row" style="margin-top:1rem;">
+                <div>
+                    <label>Status</label>
+                    <select id="quotationStatus" style="width:100%;padding:0.75rem;border:2px solid #e8e8e8;border-radius:8px;font-size:0.9rem;outline:none;">
+                        <option value="draft" ${q?.status==='draft'?'selected':''}>Draft</option>
+                        <option value="sent" ${q?.status==='sent'?'selected':''}>Sent</option>
+                        <option value="accepted" ${q?.status==='accepted'?'selected':''}>Accepted</option>
+                        <option value="rejected" ${q?.status==='rejected'?'selected':''}>Rejected</option>
+                        <option value="expired" ${q?.status==='expired'?'selected':''}>Expired</option>
+                    </select>
+                </div>
+                <div>
+                    <label>Valid Until</label>
+                    <input type="date" id="quotationValidUntil" value="${q?.valid_until || ''}" style="width:100%;padding:0.75rem;border:2px solid #e8e8e8;border-radius:8px;font-size:0.9rem;outline:none;">
+                </div>
+            </div>
+            <div class="form-row" style="margin-top:1rem;">
+                <div>
+                    <label>Total Amount (Nu.)</label>
+                    <input type="number" id="quotationTotalAmount" value="${q?.total_amount || ''}" placeholder="Auto-calculated" readonly style="background:#f8f9fc;padding:0.75rem;border:2px solid #e8e8e8;border-radius:8px;font-size:0.9rem;">
+                </div>
+            </div>
+        </div>
+    `;
+
+    await loadOrderDropdown(q?.order_id || '');
+
+    if (isEdit && q) {
+        if (q.order) renderOrderPreview(q.order);
+        document.getElementById('quotationItemsList').innerHTML = '';
+        (q.items || []).forEach((item, idx) => addQuotationItemRow(item, idx));
+        if ((q.items || []).length === 0) addQuotationItemRow();
+
+        document.getElementById('quotationServiceType').value = q.service_charge_type || 'percentage';
+        document.getElementById('quotationServiceValue').value = q.service_charge_value || '';
+        document.getElementById('quotationShipping').value = q.shipping_charge || '';
+        document.getElementById('quotationDelivery').value = q.delivery_charge || '';
+        document.getElementById('quotationGstApplicable').checked = q.gst_applicable || false;
+        recalculateQuotation();
+    } else {
+        // New quotation — apply saved defaults from Settings
+        addQuotationItemRow();
+        if (appSettings) {
+            document.getElementById('quotationServiceType').value = appSettings.service_charge_type || 'percentage';
+            document.getElementById('quotationServiceValue').value = appSettings.service_charge_value || '';
+            document.getElementById('quotationShipping').value = appSettings.default_shipping || '';
+            document.getElementById('quotationGstApplicable').checked = appSettings.gst_enabled || false;
+        }
+        recalculateQuotation();
+    }
+
+    document.getElementById('modalSaveBtn').style.display = '';
+    document.getElementById('modalSaveBtn').onclick = () => confirmSaveQuotation();
+    document.getElementById('orderModal').classList.add('active');
+};
+
+async function loadOrderDropdown(selectedId) {
+    const { data: orders } = await supabase
+        .from('orders')
+        .select('id, customer:customers(name, phone)')
+        .order('created_at', { ascending: false })
+        .limit(100);
+
+    const select = document.getElementById('quotationOrderId');
+    if (!select) return;
+
+    (orders || []).forEach(o => {
+        const c = o.customer || {};
+        const opt = document.createElement('option');
+        opt.value = o.id;
+        opt.textContent = `${String(o.id).slice(0, 8).toUpperCase()} — ${c.name || 'Unknown'} (${c.phone || 'no phone'})`;
+        if (o.id === selectedId) opt.selected = true;
+        select.appendChild(opt);
+    });
+}
+
+window.addQuotationItemRow = function(item = null, idx = null) {
+    const container = document.getElementById('quotationItemsList');
+    const rowId = 'qitem-' + (idx !== null ? idx : Date.now());
+    const div = document.createElement('div');
+    div.className = 'quotation-item-row';
+    div.id = rowId;
+    div.style.cssText = 'display:grid;grid-template-columns:1fr 70px 90px 90px 40px;gap:0.5rem;align-items:center;';
+    div.innerHTML = `
+        <input type="text" class="qitem-name" placeholder="Item name" value="${escapeHtml(item?.name || '')}" style="padding:0.5rem;border:2px solid #e8e8e8;border-radius:8px;font-size:0.9rem;outline:none;">
+        <input type="number" class="qitem-qty" placeholder="Qty" value="${item?.quantity || 1}" min="1" style="padding:0.5rem;border:2px solid #e8e8e8;border-radius:8px;font-size:0.9rem;outline:none;">
+        <input type="number" class="qitem-price" placeholder="Price" value="${item?.unit_price || ''}" min="0" step="0.01" style="padding:0.5rem;border:2px solid #e8e8e8;border-radius:8px;font-size:0.9rem;outline:none;">
+        <input type="number" class="qitem-cost" placeholder="Cost" value="${item?.base_cost || ''}" min="0" step="0.01" style="padding:0.5rem;border:2px solid #e8e8e8;border-radius:8px;font-size:0.9rem;outline:none;background:#fff8f8;" title="Your procurement cost">
+        <button type="button" onclick="removeQuotationItemRow('${rowId}')" style="background:#ffe0e5;color:#c0392b;border:none;width:32px;height:32px;border-radius:6px;cursor:pointer;display:flex;align-items:center;justify-content:center;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+    `;
+    container.appendChild(div);
+    div.querySelectorAll('input').forEach(inp => {
+        inp.addEventListener('input', recalculateQuotation);
+    });
+};
+
+window.removeQuotationItemRow = function(rowId) {
+    const row = document.getElementById(rowId);
+    if (row) row.remove();
+    recalculateQuotation();
+};
+
+function recalculateQuotation() {
+    const rows = document.querySelectorAll('.quotation-item-row');
+    let subtotal = 0;
+    let totalBaseCost = 0;
+
+    rows.forEach(row => {
+        const qty = parseFloat(row.querySelector('.qitem-qty')?.value) || 0;
+        const price = parseFloat(row.querySelector('.qitem-price')?.value) || 0;
+        const cost = parseFloat(row.querySelector('.qitem-cost')?.value) || 0;
+        subtotal += qty * price;
+        totalBaseCost += qty * cost;
+    });
+
+    // Service charge
+    const svcType = document.getElementById('quotationServiceType')?.value || 'percentage';
+    const svcVal = parseFloat(document.getElementById('quotationServiceValue')?.value) || 0;
+    let serviceAmount = 0;
+    if (svcType === 'percentage') {
+        serviceAmount = subtotal * (svcVal / 100);
+    } else {
+        serviceAmount = svcVal;
+    }
+
+    // Shipping & Delivery
+    const shipping = parseFloat(document.getElementById('quotationShipping')?.value) || 0;
+    const delivery = parseFloat(document.getElementById('quotationDelivery')?.value) || 0;
+
+    // GST (5% on taxable amount)
+    const gstApplicable = document.getElementById('quotationGstApplicable')?.checked || false;
+    const taxableAmount = subtotal + serviceAmount + shipping + delivery;
+    const gstAmount = gstApplicable ? taxableAmount * 0.05 : 0;
+
+    const total = taxableAmount + gstAmount;
+    const profit = total - totalBaseCost;
+    const margin = total > 0 ? ((profit / total) * 100).toFixed(1) : '0.0';
+
+    const setText = (id, val) => {
+        const el = document.getElementById(id);
+        if (el) el.textContent = val;
+    };
+    const setValue = (id, val) => {
+        const el = document.getElementById(id);
+        if (el) el.value = val;
+    };
+
+    setText('quotationSubtotalDisplay', subtotal.toLocaleString());
+    setText('serviceChargeApplied', serviceAmount.toLocaleString());
+    setText('calcSubtotal', subtotal.toLocaleString());
+    setText('calcService', serviceAmount.toLocaleString());
+    setText('calcShipping', shipping.toLocaleString());
+    setText('calcDelivery', delivery.toLocaleString());
+    setText('calcGst', gstAmount.toLocaleString());
+    setText('calcTotal', total.toLocaleString());
+    setText('calcBaseCost', totalBaseCost.toLocaleString());
+    setText('calcProfit', profit.toLocaleString());
+    setText('calcMargin', margin);
+
+    setValue('quotationTotalAmount', total > 0 ? total.toFixed(2) : '');
+}
+
+function gatherQuotationItems() {
+    const rows = document.querySelectorAll('.quotation-item-row');
+    const items = [];
+    rows.forEach(row => {
+        const name = row.querySelector('.qitem-name')?.value.trim();
+        const qty = parseFloat(row.querySelector('.qitem-qty')?.value) || 1;
+        const price = parseFloat(row.querySelector('.qitem-price')?.value) || 0;
+        const cost = parseFloat(row.querySelector('.qitem-cost')?.value) || 0;
+        if (name) items.push({ name, quantity: qty, unit_price: price, base_cost: cost, total: qty * price });
+    });
+    return items;
+}
+
+window.confirmSaveQuotation = function() {
+    const confirmModal = document.getElementById('confirmModal');
+    const isEdit = !!currentQuotationId;
+    document.getElementById('confirmTitle').textContent = isEdit ? 'Update Quotation?' : 'Create Quotation?';
+    document.getElementById('confirmMessage').textContent = isEdit ? 'Save changes to this quotation?' : 'Create a new quotation for this order?';
+    document.getElementById('confirmActionBtn').className = 'btn-primary';
+    document.getElementById('confirmActionBtn').textContent = isEdit ? 'Save' : 'Create';
+    document.getElementById('confirmActionBtn').onclick = async function() {
+        closeConfirmModal();
+        await saveQuotation();
+    };
+    confirmModal.classList.add('active');
+};
+
+async function saveQuotation() {
+    const orderId = document.getElementById('quotationOrderId')?.value;
+    const validUntil = document.getElementById('quotationValidUntil')?.value || null;
+    const notes = document.getElementById('quotationNotes')?.value || null;
+    const status = document.getElementById('quotationStatus')?.value || 'draft';
+    const items = gatherQuotationItems();
+
+    if (!orderId) { toast('Please select an order', 'error'); return; }
+    if (items.length === 0) { toast('Please add at least one item', 'error'); return; }
+
+    recalculateQuotation();
+
+    const subtotal = parseFloat(document.getElementById('calcSubtotal')?.textContent.replace(/,/g, '')) || 0;
+    const serviceType = document.getElementById('quotationServiceType')?.value || 'percentage';
+    const serviceValue = parseFloat(document.getElementById('quotationServiceValue')?.value) || 0;
+    const serviceAmount = parseFloat(document.getElementById('calcService')?.textContent.replace(/,/g, '')) || 0;
+    const shipping = parseFloat(document.getElementById('quotationShipping')?.value) || 0;
+    const delivery = parseFloat(document.getElementById('quotationDelivery')?.value) || 0;
+    const gstApplicable = document.getElementById('quotationGstApplicable')?.checked || false;
+    const gstAmount = parseFloat(document.getElementById('calcGst')?.textContent.replace(/,/g, '')) || 0;
+    const totalAmount = parseFloat(document.getElementById('calcTotal')?.textContent.replace(/,/g, '')) || 0;
+    const totalBaseCost = parseFloat(document.getElementById('calcBaseCost')?.textContent.replace(/,/g, '')) || 0;
+    const profit = parseFloat(document.getElementById('calcProfit')?.textContent.replace(/,/g, '')) || 0;
+
+    const payload = {
+        order_id: orderId,
+        items: items,
+        subtotal: subtotal,
+        service_charge_type: serviceType,
+        service_charge_value: serviceValue,
+        service_charge_amount: serviceAmount,
+        shipping_charge: shipping,
+        delivery_charge: delivery,
+        gst_applicable: gstApplicable,
+        gst_amount: gstAmount,
+        total_amount: totalAmount,
+        total_base_cost: totalBaseCost,
+        profit: profit,
+        valid_until: validUntil,
+        notes: notes,
+        status: status,
+        updated_at: new Date().toISOString()
+    };
+
+    let result;
+    if (currentQuotationId) {
+        result = await supabase.from('quotations').update(payload).eq('id', currentQuotationId).select();
+    } else {
+        result = await supabase.from('quotations').insert({ ...payload, created_at: new Date().toISOString() }).select();
+    }
+
+    if (result.error) {
+        toast('Error saving quotation: ' + result.error.message, 'error');
+        return;
+    }
+
+    toast(currentQuotationId ? 'Quotation updated' : 'Quotation created', 'success');
+    closeOrderModal();
+    await fetchQuotations();
+}
+
+window.openQuotationDetail = function(id) {
+    const q = allQuotations.find(x => x.id === id);
+    if (!q) return;
+
+    const c = q.order?.customer || {};
+    const orderIdShort = q.order_id ? String(q.order_id).slice(0, 8).toUpperCase() : '-';
+    const items = q.items || [];
+    const validUntil = q.valid_until ? new Date(q.valid_until).toLocaleDateString() : '-';
+    const statusClass = `badge-${q.status || 'draft'}`;
+    const statusText = (q.status || 'draft').replace(/_/g, ' ');
+
+    const modalBody = document.getElementById('modalBody');
+    modalBody.innerHTML = `
+        <div class="detail-grid">
+            <div class="detail-group"><label>Quotation ID</label><span class="token">${String(q.id).slice(0, 8).toUpperCase()}</span></div>
+            <div class="detail-group"><label>Linked Order</label><span class="token">${orderIdShort}</span></div>
+            <div class="detail-group"><label>Customer</label><span>${c.name || '-'}</span></div>
+            <div class="detail-group"><label>Phone</label><span>${c.phone || '-'}</span></div>
+            <div class="detail-group"><label>Dzongkhag</label><span>${c.dzongkhag || '-'}</span></div>
+            <div class="detail-group"><label>Valid Until</label><span>${validUntil}</span></div>
+            <div class="detail-group"><label>Status</label><span class="badge ${statusClass}">${statusText}</span></div>
+            <div class="detail-group"><label>Created</label><span>${q.created_at ? new Date(q.created_at).toLocaleString() : '-'}</span></div>
+        </div>
+
+        <div style="margin:1.5rem 0;padding:1rem;background:#f8f9fc;border-radius:10px;">
+            <label style="font-size:0.8rem;color:#888;text-transform:uppercase;font-weight:600;display:block;margin-bottom:0.75rem">Items (${items.length})</label>
+            ${items.length === 0 ? '<p style="color:#888;font-size:0.9rem;">No items</p>' : `
+            <table style="width:100%;font-size:0.85rem;border-collapse:collapse;">
+                <thead><tr style="border-bottom:2px solid #e8e8e8;"><th style="text-align:left;padding:0.5rem;">Item</th><th style="text-align:center;padding:0.5rem;">Qty</th><th style="text-align:right;padding:0.5rem;">Unit</th><th style="text-align:right;padding:0.5rem;">Cost</th><th style="text-align:right;padding:0.5rem;">Total</th></tr></thead>
+                <tbody>
+                    ${items.map(i => `
+                        <tr style="border-bottom:1px solid #f0f0f0;">
+                            <td style="padding:0.5rem;">${escapeHtml(i.name)}</td>
+                            <td style="padding:0.5rem;text-align:center;">${i.quantity}</td>
+                            <td style="padding:0.5rem;text-align:right;">Nu. ${i.unit_price}</td>
+                            <td style="padding:0.5rem;text-align:right;color:#c0392b;">Nu. ${i.base_cost || 0}</td>
+                            <td style="padding:0.5rem;text-align:right;font-weight:600;">Nu. ${i.total}</td>
+                        </tr>
+                    `).join('')}
+                </tbody>
+            </table>
+            `}
+        </div>
+
+        <div style="margin:1.5rem 0;padding:1.25rem;background:#fff;border:1px solid #e8e8e8;border-radius:12px;">
+            <label style="font-size:0.8rem;color:#888;text-transform:uppercase;font-weight:600;display:block;margin-bottom:0.75rem">Charge Breakdown</label>
+            <div style="display:flex;justify-content:space-between;font-size:0.9rem;color:#666;margin-bottom:0.35rem;">
+                <span>Subtotal</span><span>Nu. ${(q.subtotal || 0).toLocaleString()}</span>
+            </div>
+            <div style="display:flex;justify-content:space-between;font-size:0.9rem;color:#666;margin-bottom:0.35rem;">
+                <span>Service Charge ${q.service_charge_type === 'percentage' ? '(' + q.service_charge_value + '%)' : ''}</span><span>Nu. ${(q.service_charge_amount || 0).toLocaleString()}</span>
+            </div>
+            <div style="display:flex;justify-content:space-between;font-size:0.9rem;color:#666;margin-bottom:0.35rem;">
+                <span>Shipping</span><span>Nu. ${(q.shipping_charge || 0).toLocaleString()}</span>
+            </div>
+            <div style="display:flex;justify-content:space-between;font-size:0.9rem;color:#666;margin-bottom:0.35rem;">
+                <span>Delivery</span><span>Nu. ${(q.delivery_charge || 0).toLocaleString()}</span>
+            </div>
+            ${q.gst_applicable ? `
+            <div style="display:flex;justify-content:space-between;font-size:0.9rem;color:#666;margin-bottom:0.35rem;">
+                <span>GST (5%)</span><span>Nu. ${(q.gst_amount || 0).toLocaleString()}</span>
+            </div>
+            ` : ''}
+            <div style="display:flex;justify-content:space-between;font-size:1.1rem;font-weight:700;color:#1a1a2e;margin-top:0.5rem;border-top:1px dashed #ddd;padding-top:0.5rem;">
+                <span>Total Amount</span><span>Nu. ${(q.total_amount || 0).toLocaleString()}</span>
+            </div>
+            <div style="display:flex;justify-content:space-between;font-size:0.9rem;color:#666;margin-top:0.5rem;">
+                <span>Total Base Cost</span><span style="color:#c0392b;">Nu. ${(q.total_base_cost || 0).toLocaleString()}</span>
+            </div>
+            <div style="display:flex;justify-content:space-between;font-size:1.1rem;font-weight:700;color:var(--success);margin-top:0.35rem;">
+                <span>Profit</span><span>Nu. ${(q.profit || 0).toLocaleString()} (${q.total_amount > 0 ? ((q.profit / q.total_amount) * 100).toFixed(1) : 0}%)</span>
+            </div>
+        </div>
+
+        ${q.notes ? `
+        <div style="margin-bottom:1.5rem;padding:1.25rem;background:#f8f9fc;border-radius:12px;">
+            <label style="font-size:0.8rem;color:#888;text-transform:uppercase;font-weight:600;display:block;margin-bottom:0.75rem">Notes</label>
+            <p style="font-size:0.95rem;color:#1a1a2e;line-height:1.7;margin:0;">${escapeHtml(q.notes)}</p>
+        </div>
+        ` : ''}
+
+        ${q.status === 'draft' ? `
+        <div style="display:flex;gap:0.75rem;justify-content:center;margin-top:1rem;">
+            <button class="btn-primary" onclick="sendQuotation('${q.id}'); closeOrderModal();" style="background:var(--accent);">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:6px;"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+                Send Quotation
+            </button>
+        </div>
+        ` : ''}
+    `;
+    document.getElementById('modalSaveBtn').style.display = 'none';
+    document.getElementById('orderModal').classList.add('active');
+};
+
+window.sendQuotation = async function(id) {
+    const quotation = allQuotations.find(q => q.id === id);
+    if (!quotation) {
+        toast('Quotation not found', 'error');
+        return;
+    }
+
+    // Generate token if not exists
+    const { data: existing } = await supabase
+        .from('quotations')
+        .select('customer_token')
+        .eq('id', id)
+        .single();
+
+    const token = existing?.customer_token || crypto.randomUUID();
+
+    // Update status to sent and save token
+    const { data, error } = await supabase
+        .from('quotations')
+        .update({ 
+            status: 'sent', 
+            customer_token: token,
+            updated_at: new Date().toISOString() 
+        })
+        .eq('id', id)
+        .eq('status', 'draft')
+        .select();
+
+    if (error) {
+        toast('Error sending quotation: ' + error.message, 'error');
+        return;
+    }
+    if (!data || data.length === 0) {
+        toast('Could not send — already sent or check RLS', 'error');
+        return;
+    }
+
+    // Build the customer link
+    const baseUrl = window.location.origin.replace('/admin', '').replace('/admin.html', '');
+    const customerLink = `${baseUrl}/quotation.html?token=${token}`;
+
+    // Copy to clipboard
+    try {
+        await navigator.clipboard.writeText(customerLink);
+        toast('✓ Quotation sent! Link copied to clipboard', 'success');
+    } catch (e) {
+        toast('Link: ' + customerLink, 'info');
+        console.log('Customer link:', customerLink);
+    }
+
+    // Open WhatsApp in new tab (not redirect)
+    const phone = quotation.order?.customer?.phone;
+    const cname = quotation.order?.customer?.name || 'there';
+    if (phone) {
+        const waMsg = `Hi ${cname}! 👋\n\nYour quotation is ready for review. Please click the link below to view and accept:\n\n${customerLink}\n\nThis link is valid until ${quotation.valid_until ? new Date(quotation.valid_until).toLocaleDateString() : '7 days from now'}.\n\n- Shop2Bhutan`;
+        window.open(`https://wa.me/975${phone.replace(/\D/g, '')}?text=${encodeURIComponent(waMsg)}`, '_blank');
+    }
+
+    await fetchQuotations();
+};
+
+window.confirmDeleteQuotation = function(id) {
+    const confirmModal = document.getElementById('confirmModal');
+    document.getElementById('confirmTitle').textContent = 'Delete Quotation?';
+    document.getElementById('confirmMessage').textContent = 'This quotation will be permanently deleted.';
+    document.getElementById('confirmActionBtn').className = 'btn-danger';
+    document.getElementById('confirmActionBtn').textContent = 'Delete';
+    document.getElementById('confirmActionBtn').onclick = async function() {
+        closeConfirmModal();
+        await deleteQuotation(id);
+    };
+    confirmModal.classList.add('active');
+};
+
+window.deleteQuotation = async function(id) {
+    const { data, error } = await supabase.from('quotations').delete().eq('id', id).select();
+    if (error) {
+        toast('Error deleting quotation: ' + error.message, 'error');
+        return;
+    }
+    if (!data || data.length === 0) {
+        toast('Delete blocked — check RLS policies', 'error');
+        return;
+    }
+    toast('Quotation deleted', 'success');
+    await fetchQuotations();
+};
+
+window.exportQuotationsCSV = function() {
+    const headers = ['QuotationID','OrderID','Status','Customer','Phone','Dzongkhag','Items','Subtotal','ServiceCharge','Shipping','Delivery','GST','TotalAmount','BaseCost','Profit','ValidUntil','Notes','CreatedAt'];
+    const rows = allQuotations.map(q => {
+        const c = q.order?.customer || {};
+        const items = (q.items || []).map(i => `${i.name} x${i.quantity}`).join('; ');
+        return [
+            q.id, q.order_id, q.status, c.name, c.phone, c.dzongkhag,
+            `"${items.replace(/"/g,'""')}"`,
+            q.subtotal || '', q.service_charge_amount || '', q.shipping_charge || '',
+            q.delivery_charge || '', q.gst_amount || '', q.total_amount || '',
+            q.total_base_cost || '', q.profit || '',
+            q.valid_until || '', `"${(q.notes||'').replace(/"/g,'""')}"`, q.created_at
+        ];
+    });
+
+    const csv = [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `shop2bhutan_quotations_${new Date().toISOString().split('T')[0]}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+};
 // ===== FILTER LISTENERS =====
 function setupFilters() {
     const ids = ['filterSearch', 'filterStatus', 'filterDzongkhag', 'filterDate'];
@@ -839,6 +1765,13 @@ function setupFilters() {
     reviewIds.forEach(id => {
         const el = document.getElementById(id);
         if (el) { el.addEventListener('input', renderReviews); el.addEventListener('change', renderReviews); }
+    });
+
+    // Quotation filters
+    const quotationIds = ['quotationFilterSearch', 'quotationFilterStatus', 'quotationFilterDzongkhag'];
+    quotationIds.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) { el.addEventListener('input', renderQuotations); el.addEventListener('change', renderQuotations); }
     });
 }
 

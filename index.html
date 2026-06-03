@@ -77,6 +77,12 @@
     border: 1px solid #ffd6dc;
   }
 
+  .detected-badge.custom-request {
+    color: #047BD5;
+    background: #e6f2ff;
+    border-color: #b3d7ff;
+  }
+
   .detected-url {
     font-size: 13px;
     color: #666;
@@ -108,6 +114,15 @@
     background: #d63a54;
     transform: translateY(-1px);
     box-shadow: 0 6px 20px rgba(233,69,96,0.35);
+  }
+
+  .btn-detected-add.custom-request-btn {
+    background: linear-gradient(135deg, #047BD5, #0968C0);
+    box-shadow: 0 4px 14px rgba(4,123,213,0.25);
+  }
+  .btn-detected-add.custom-request-btn:hover {
+    background: linear-gradient(135deg, #0968C0, #0559a8);
+    box-shadow: 0 6px 20px rgba(4,123,213,0.35);
   }
 
   /* --- Screenshot Row --- */
@@ -183,6 +198,39 @@
   .detected-preview-remove:hover {
     background: #c0392b;
     transform: scale(1.1);
+  }
+
+  /* Custom Request specific styles */
+  .custom-request-desc {
+    font-size: 13px;
+    color: #555;
+    line-height: 1.6;
+    margin-top: 4px;
+  }
+  .custom-request-desc strong {
+    color: #047BD5;
+  }
+  .custom-request-features {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 10px;
+  }
+  .custom-request-feature {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 11px;
+    color: #666;
+    background: #f5f7fa;
+    padding: 4px 10px;
+    border-radius: 6px;
+    border: 1px solid #e8ecf1;
+  }
+  .custom-request-feature svg {
+    width: 14px;
+    height: 14px;
+    color: #047BD5;
   }
 
   /* Auto-fill highlight animation */
@@ -264,6 +312,7 @@
     margin: 0;
   }
 </style>
+<base target="_blank">
 </head>
 <body>
   <a href="#main" class="skip-link">Skip to main content</a>
@@ -282,6 +331,12 @@
           <span class="btn-text">Cart</span>
           <span class="cart-count" id="cartCount" aria-live="polite" aria-atomic="true" hidden>0</span>
         </button>
+
+        <!-- From your main site -->
+<a href="track.html?order=ORD-12345678">Track your order</a>
+
+<!-- Or let customers enter manually at -->
+<!-- /track.html -->
 
         <a href="/local-store" class="btn btn-local">
           <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24" aria-hidden="true">
@@ -305,10 +360,10 @@
     <section class="search-section" aria-label="Product search">
       <div class="search-container">
         <h1>Find Anything from India & Beyond</h1>
-        <p class="search-subtitle">Paste a product link, search by name, or browse categories</p>
+        <p class="search-subtitle">Paste a product link to order instantly — or type what you want and we'll find the best deal for you</p>
 
         <div class="search-box">
-          <input type="text" id="searchInput" placeholder="Paste Amazon/Flipkart link or type product name..." autocomplete="off" aria-label="Search products or paste link" aria-describedby="searchHint">
+          <input type="text" id="searchInput" placeholder="Paste Amazon/Flipkart link or type what you're looking for..." autocomplete="off" aria-label="Search products or paste link" aria-describedby="searchHint">
           <button class="search-btn" type="button" id="searchBtn" aria-label="Search or add to cart">
             <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true">
               <circle cx="11" cy="11" r="8"/>
@@ -332,6 +387,70 @@
           <button class="tag" data-search="Sports" type="button">Sports</button>
           <button class="tag" data-search="Toys" type="button">Toys</button>
         </div>
+      </div>
+    </section>
+
+        <section class="trending-section" aria-labelledby="trendingHeading">
+      <div class="section-header">
+        <h2 id="trendingHeading">Trending Now</h2>
+        <p>Popular picks you can order instantly — or paste any custom link above</p>
+      </div>
+
+      <div class="trending-filters" id="trendingFilters" role="tablist" aria-label="Filter trending products">
+        <button class="trending-filter active" data-filter="all" type="button" role="tab" aria-selected="true">All</button>
+        <button class="trending-filter" data-filter="Electronics" type="button" role="tab" aria-selected="false">Electronics</button>
+        <button class="trending-filter" data-filter="Fashion" type="button" role="tab" aria-selected="false">Fashion</button>
+        <button class="trending-filter" data-filter="Home & Kitchen" type="button" role="tab" aria-selected="false">Home & Kitchen</button>
+        <button class="trending-filter" data-filter="Beauty" type="button" role="tab" aria-selected="false">Beauty</button>
+      </div>
+
+      <div class="trending-grid" id="trendingGrid">
+        <!-- Populated by JS -->
+      </div>
+
+      <div class="trending-empty" id="trendingEmpty" hidden>
+        <p>No matching items. Try a different search or <a href="#searchInput">paste a product link</a>.</p>
+      </div>
+    </section>
+
+        <section class="stores-section" aria-labelledby="storesHeading">
+      <div class="section-header">
+        <h2 id="storesHeading">Order From India's Best Stores</h2>
+        <p>Paste links from these sites — we handle shipping, customs & delivery to Bhutan</p>
+      </div>
+      <div class="stores-grid">
+        <a href="https://www.amazon.in" target="_blank" rel="noopener noreferrer" class="store-card">
+          <div class="store-logo" style="background: linear-gradient(135deg, #FF9900, #FF8C00);">A</div>
+          <div class="store-info">
+            <h3>Amazon.in</h3>
+            <span>amazon.in</span>
+          </div>
+          <svg class="store-arrow" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M7 17L17 7M17 7H7M17 7v10"/>
+          </svg>
+        </a>
+
+        <a href="https://www.flipkart.com" target="_blank" rel="noopener noreferrer" class="store-card">
+          <div class="store-logo" style="background: linear-gradient(135deg, #047BD5, #0968C0);">F</div>
+          <div class="store-info">
+            <h3>Flipkart</h3>
+            <span>flipkart.com</span>
+          </div>
+          <svg class="store-arrow" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M7 17L17 7M17 7H7M17 7v10"/>
+          </svg>
+        </a>
+
+        <a href="https://www.myntra.com" target="_blank" rel="noopener noreferrer" class="store-card">
+          <div class="store-logo" style="background: linear-gradient(135deg, #FF3F6C, #E31B53);">M</div>
+          <div class="store-info">
+            <h3>Myntra</h3>
+            <span>myntra.com</span>
+          </div>
+          <svg class="store-arrow" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M7 17L17 7M17 7H7M17 7v10"/>
+          </svg>
+        </a>
       </div>
     </section>
 
@@ -489,42 +608,37 @@
 
         <div class="form-group">
           <label for="orderPhone">Phone Number *</label>
-          <input type="tel" id="orderPhone" placeholder="e.g. 17XXXXXX or 77XXXXXX" required pattern="(17|77)\d{6}" inputmode="tel" autocomplete="tel">
-          <small class="hint">Bhutan number starting with 17 or 77</small>
+          <input type="tel" id="orderPhone" placeholder="Enter valid Phone Number" required pattern="(17|77)\d{6}" inputmode="tel" autocomplete="tel">
           <small class="hint hint-success" id="phoneHint" hidden></small>
         </div>
 
         <div class="form-group">
           <label for="orderName">Your Name *</label>
-          <input type="text" id="orderName" placeholder="e.g. Karma Dorji" required autocomplete="name">
+          <input type="text" id="orderName" placeholder="Full Name.." required autocomplete="name">
         </div>
 
-        <div class="form-group">
-          <label for="orderDzongkhag">Dzongkhag / Location *</label>
-          <select id="orderDzongkhag" required>
-            <option value="" disabled selected>Select your dzongkhag</option>
-            <option value="Bumthang">Bumthang</option>
-            <option value="Chukha">Chukha</option>
-            <option value="Dagana">Dagana</option>
-            <option value="Gasa">Gasa</option>
-            <option value="Haa">Haa</option>
-            <option value="Lhuntse">Lhuntse</option>
-            <option value="Mongar">Mongar</option>
-            <option value="Paro">Paro</option>
-            <option value="Pemagatshel">Pemagatshel</option>
-            <option value="Punakha">Punakha</option>
-            <option value="Samdrup Jongkhar">Samdrup Jongkhar</option>
-            <option value="Samtse">Samtse</option>
-            <option value="Sarpang">Sarpang</option>
-            <option value="Thimphu">Thimphu</option>
-            <option value="Trashigang">Trashigang</option>
-            <option value="Trashiyangtse">Trashiyangtse</option>
-            <option value="Trongsa">Trongsa</option>
-            <option value="Tsirang">Tsirang</option>
-            <option value="Wangdue Phodrang">Wangdue Phodrang</option>
-            <option value="Zhemgang">Zhemgang</option>
-          </select>
-        </div>
+       <div class="form-group">
+  <label>Delivery Location *</label>
+  <div class="dzongkhag-cards" id="dzongkhagCards">
+    <button type="button" class="dz-card" data-value="Thimphu">
+      <div class="dz-card-icon">🏔️</div>
+      <div class="dz-card-name">Thimphu</div>
+      <div class="dz-card-hint">Capital City</div>
+    </button>
+    <button type="button" class="dz-card" data-value="Chukha">
+      <div class="dz-card-icon">🛣️</div>
+      <div class="dz-card-name">Phuntsholing</div>
+      <div class="dz-card-hint">Chukha</div>
+    </button>
+    <button type="button" class="dz-card" data-value="Paro">
+      <div class="dz-card-icon">✈️</div>
+      <div class="dz-card-name">Paro</div>
+      <div class="dz-card-hint">Airport Town</div>
+    </button>
+  </div>
+  <input type="hidden" id="orderDzongkhag" required>
+  <small class="field-error" id="dzongkhagError" hidden style="color:#e94560;font-size:12px;margin-top:6px;display:block;">Please select a delivery location</small>
+</div>
 
         <div class="form-group">
           <label for="orderAddress">Delivery Address *</label>
@@ -557,9 +671,19 @@
         </div>
 
         <div class="form-group">
-          <label for="orderTripDate">Preferred Trip Date *</label>
-          <input type="date" id="orderTripDate" required>
-          <small class="hint">Next Saturday is our regular trip</small>
+          <label>Estimated Delivery</label>
+          <div class="delivery-estimate" id="deliveryEstimateBox">
+            <div class="delivery-estimate-icon">
+              <svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+              </svg>
+            </div>
+            <div class="delivery-estimate-info">
+              <strong id="deliveryEstimateDate">Calculating...</strong>
+              <span>We collect orders throughout the week and bring them from Phuntsholing every Saturday. You'll receive your items by Sunday.</span>
+            </div>
+          </div>
+          <input type="hidden" id="orderTripDate" value="">
         </div>
 
         <div class="form-group">

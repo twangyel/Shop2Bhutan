@@ -1,0 +1,574 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quotation — Shop2Bhutan</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #e94560;
+            --primary-dark: #c73a52;
+            --secondary: #1a1a2e;
+            --accent: #6bffba;
+            --success: #25d366;
+            --warning: #ff9f43;
+            --danger: #c0392b;
+            --surface: #ffffff;
+            --bg: #f4f6f8;
+            --text: #1a1a2e;
+            --muted: #6b7280;
+            --border: #e5e7eb;
+            --radius: 16px;
+            --shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+            --shadow-lg: 0 20px 25px -5px rgb(0 0 0 / 0.1);
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            line-height: 1.6;
+        }
+
+        /* Header */
+        .header {
+            background: linear-gradient(135deg, var(--secondary), #16213e);
+            padding: 2rem 1.5rem 4rem;
+            text-align: center;
+            position: relative;
+        }
+        .logo {
+            width: 140px; height: 48px;
+            background: linear-gradient(135deg, var(--primary), var(--accent));
+            border-radius: 10px;
+            display: inline-flex; align-items: center; justify-content: center;
+            color: #fff; font-weight: 700; font-size: 0.9rem;
+            margin-bottom: 1.5rem;
+        }
+        .header h1 { color: #fff; font-size: 1.75rem; font-weight: 800; }
+        .header p { color: rgba(255,255,255,0.7); margin-top: 0.5rem; }
+
+        /* Card */
+        .card {
+            max-width: 640px;
+            margin: -2.5rem auto 2rem;
+            background: var(--surface);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow-lg);
+            overflow: hidden;
+            position: relative;
+            z-index: 2;
+            animation: slideUp 0.5s ease-out;
+        }
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Status Banner */
+        .status-banner {
+            padding: 1rem 1.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+        .status-banner.sent { background: #fffbeb; color: #92400e; }
+        .status-banner.accepted { background: #ecfdf5; color: #065f46; }
+        .status-banner.declined { background: #fef2f2; color: var(--danger); }
+        .status-banner.expired { background: #f3f4f6; color: var(--muted); }
+
+        /* Sections */
+        .section { padding: 1.5rem; border-bottom: 1px solid var(--border); }
+        .section:last-child { border-bottom: none; }
+
+        .section-title {
+            font-size: 0.7rem; font-weight: 700;
+            text-transform: uppercase; letter-spacing: 0.1em;
+            color: var(--muted); margin-bottom: 1rem;
+        }
+
+        /* Customer Info */
+        .customer-grid {
+            display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;
+        }
+        .info-row { display: flex; flex-direction: column; gap: 0.25rem; }
+        .info-row .label { font-size: 0.8rem; color: var(--muted); font-weight: 500; }
+        .info-row .value { font-size: 0.95rem; font-weight: 600; }
+
+        /* Items Table */
+        .items-table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+        .items-table th {
+            text-align: left; padding: 0.75rem 0;
+            font-size: 0.7rem; font-weight: 700;
+            text-transform: uppercase; letter-spacing: 0.05em;
+            color: var(--muted); border-bottom: 2px solid var(--border);
+        }
+        .items-table td { padding: 0.875rem 0; border-bottom: 1px solid var(--border); }
+        .items-table tr:last-child td { border-bottom: none; }
+        .item-name { font-weight: 600; }
+        .item-meta { font-size: 0.8rem; color: var(--muted); margin-top: 0.15rem; }
+        .text-right { text-align: right; }
+        .text-center { text-align: center; }
+
+        /* Breakdown */
+        .breakdown-row {
+            display: flex; justify-content: space-between;
+            padding: 0.5rem 0; font-size: 0.9rem; color: var(--muted);
+        }
+        .breakdown-row.total {
+            font-size: 1.15rem; font-weight: 700; color: var(--text);
+            border-top: 2px dashed var(--border); padding-top: 1rem; margin-top: 0.5rem;
+        }
+        .breakdown-row.profit {
+            font-size: 0.85rem; color: var(--success); font-weight: 600;
+        }
+
+        /* Validity */
+        .validity {
+            display: flex; align-items: center; gap: 0.5rem;
+            padding: 0.875rem 1rem;
+            background: #f0f9ff; border-radius: 10px;
+            font-size: 0.85rem; color: #0369a1;
+        }
+        .validity.expired { background: #fef2f2; color: var(--danger); }
+
+        /* Action Buttons */
+        .actions {
+            padding: 1.5rem;
+            display: flex; gap: 1rem;
+            flex-direction: column;
+        }
+        .btn {
+            width: 100%; padding: 1rem;
+            border: none; border-radius: 12px;
+            font-size: 1rem; font-weight: 700;
+            cursor: pointer; transition: all 0.2s;
+            display: flex; align-items: center; justify-content: center; gap: 0.5rem;
+        }
+        .btn-accept {
+            background: var(--success); color: #fff;
+            box-shadow: 0 4px 15px rgba(37, 211, 102, 0.3);
+        }
+        .btn-accept:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(37, 211, 102, 0.4); }
+        .btn-decline {
+            background: #f3f4f6; color: var(--muted);
+        }
+        .btn-decline:hover { background: #e5e7eb; }
+        .btn:disabled { opacity: 0.6; cursor: not-allowed; transform: none !important; }
+
+        /* Decline Form */
+        .decline-form {
+            display: none;
+            padding: 0 1.5rem 1.5rem;
+            animation: slideDown 0.3s ease-out;
+        }
+        @keyframes slideDown {
+            from { opacity: 0; max-height: 0; }
+            to { opacity: 1; max-height: 300px; }
+        }
+        .decline-form textarea {
+            width: 100%; padding: 0.875rem;
+            border: 2px solid var(--border); border-radius: 10px;
+            font-family: inherit; font-size: 0.9rem;
+            resize: vertical; min-height: 80px;
+            outline: none;
+        }
+        .decline-form textarea:focus { border-color: var(--primary); }
+
+        /* Payment Section */
+        .payment-section {
+            padding: 1.5rem;
+            background: linear-gradient(135deg, #f0fdf4, #ecfdf5);
+            text-align: center;
+        }
+        .payment-section h3 { font-size: 1.1rem; margin-bottom: 0.5rem; }
+        .payment-section p { color: var(--muted); font-size: 0.9rem; margin-bottom: 1rem; }
+        .payment-methods {
+            display: flex; gap: 0.75rem; justify-content: center; flex-wrap: wrap;
+        }
+        .pay-btn {
+            padding: 0.75rem 1.5rem;
+            border-radius: 10px; border: none;
+            font-weight: 600; font-size: 0.9rem;
+            cursor: pointer; transition: all 0.2s;
+        }
+        .pay-bnb { background: #f0b90b; color: #1a1a2e; }
+        .pay-bnb:hover { transform: translateY(-2px); }
+        .pay-bank { background: var(--secondary); color: #fff; }
+        .pay-bank:hover { transform: translateY(-2px); }
+
+        /* Already Responded */
+        .responded-state {
+            padding: 2rem; text-align: center;
+        }
+        .responded-state .icon {
+            width: 64px; height: 64px;
+            border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            margin: 0 auto 1rem;
+            font-size: 1.75rem;
+        }
+        .responded-state.accepted .icon { background: #d1fae5; }
+        .responded-state.declined .icon { background: #fee2e2; }
+
+        /* Footer */
+        .footer {
+            text-align: center; padding: 2rem;
+            color: var(--muted); font-size: 0.85rem;
+        }
+        .footer a { color: var(--primary); text-decoration: none; font-weight: 600; }
+
+        /* Toast */
+        .toast {
+            position: fixed; bottom: 2rem; left: 50%;
+            transform: translateX(-50%) translateY(100px);
+            background: var(--secondary); color: #fff;
+            padding: 1rem 1.5rem; border-radius: 12px;
+            font-weight: 600; box-shadow: var(--shadow-lg);
+            z-index: 1000; opacity: 0;
+            transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        .toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
+        .toast.error { background: var(--danger); }
+
+        @media (max-width: 480px) {
+            .customer-grid { grid-template-columns: 1fr; }
+            .header h1 { font-size: 1.4rem; }
+        }
+    </style>
+</head>
+<body>
+
+    <header class="header">
+        <div class="logo">Shop2Bhutan</div>
+        <h1>Your Quotation</h1>
+        <p>Review the details below and accept to proceed with your order</p>
+    </header>
+
+    <main class="card" id="quotationCard">
+        <div class="loading" style="padding:3rem;text-align:center;color:var(--muted);">
+            <div style="width:40px;height:40px;border:3px solid var(--border);border-top-color:var(--primary);border-radius:50%;animation:spin 1s linear infinite;margin:0 auto 1rem;"></div>
+            Loading your quotation...
+        </div>
+    </main>
+
+    <footer class="footer">
+        <p>Questions? <a href="https://wa.me/97517123456" target="_blank">Chat with us on WhatsApp</a></p>
+        <p style="margin-top:0.5rem;opacity:0.6;">Valid for 7 days from issue date</p>
+    </footer>
+
+    <div class="toast" id="toast"></div>
+
+    <script type="module">
+        import { supabase } from './assets/js/supabase.js';
+
+        const TOKEN = new URLSearchParams(window.location.search).get('token');
+        const CARD = document.getElementById('quotationCard');
+        const TOAST = document.getElementById('toast');
+
+        function showToast(msg, isError = false) {
+            TOAST.textContent = msg;
+            TOAST.className = 'toast' + (isError ? ' error' : '') + ' show';
+            setTimeout(() => TOAST.classList.remove('show'), 3500);
+        }
+
+        function escapeHtml(text) {
+            if (!text) return '';
+            const d = document.createElement('div');
+            d.textContent = text;
+            return d.innerHTML;
+        }
+
+        function formatNu(amount) {
+            return 'Nu. ' + (parseFloat(amount) || 0).toLocaleString();
+        }
+
+        function isExpired(validUntil) {
+            if (!validUntil) return false;
+            return new Date(validUntil) < new Date().setHours(0,0,0,0);
+        }
+
+        async function loadQuotation() {
+            if (!TOKEN) {
+                CARD.innerHTML = errorState('Invalid Link', 'This quotation link appears to be broken. Please contact us for assistance.');
+                return;
+            }
+
+            const { data: q, error } = await supabase
+                .from('quotations')
+                .select(`*, order:orders(id, trip_date, customer:customers(*), items:order_items(*))`)
+                .eq('customer_token', TOKEN)
+                .single();
+
+            if (error || !q) {
+                CARD.innerHTML = errorState('Quotation Not Found', 'This link may have expired or is invalid. Please contact Shop2Bhutan for a new quotation.');
+                return;
+            }
+
+            // Log view (fire and forget)
+            supabase.from('quotation_views').insert({ quotation_id: q.id }).then(() => {});
+
+            renderQuotation(q);
+        }
+
+        function errorState(title, message) {
+            return `
+                <div class="responded-state">
+                    <div class="icon" style="background:#fee2e2;color:var(--danger);font-size:2rem;">!</div>
+                    <h3 style="margin-bottom:0.5rem;">${escapeHtml(title)}</h3>
+                    <p style="color:var(--muted);">${escapeHtml(message)}</p>
+                </div>
+            `;
+        }
+
+        function renderQuotation(q) {
+            const c = q.order?.customer || {};
+            const items = q.items || [];
+            const expired = isExpired(q.valid_until);
+            const status = expired ? 'expired' : q.status;
+            const responded = q.customer_response && q.customer_response !== 'pending';
+
+            // Determine what to show
+            if (responded) {
+                renderRespondedState(q);
+                return;
+            }
+
+            if (q.status !== 'sent' && q.status !== 'draft') {
+                renderRespondedState(q);
+                return;
+            }
+
+            const bannerClass = expired ? 'expired' : 'sent';
+            const bannerText = expired ? 'Expired' : 'Awaiting Your Response';
+            const bannerIcon = expired ? '⏰' : '📋';
+
+            let itemsHtml = items.map((item, i) => `
+                <tr>
+                    <td>
+                        <div class="item-name">${escapeHtml(item.name)}</div>
+                        ${item.base_cost ? `<div class="item-meta">Our cost: ${formatNu(item.base_cost)}</div>` : ''}
+                    </td>
+                    <td class="text-center">${item.quantity}</td>
+                    <td class="text-right">${formatNu(item.unit_price)}</td>
+                    <td class="text-right" style="font-weight:700;">${formatNu(item.total)}</td>
+                </tr>
+            `).join('');
+
+            const validityText = q.valid_until
+                ? (expired ? `Expired on ${new Date(q.valid_until).toLocaleDateString()}` : `Valid until ${new Date(q.valid_until).toLocaleDateString()}`)
+                : 'Valid for 7 days';
+
+            CARD.innerHTML = `
+                <div class="status-banner ${bannerClass}">
+                    <span>${bannerIcon} ${bannerText}</span>
+                    <span style="font-family:monospace;font-size:0.85rem;">${String(q.id).slice(0,8).toUpperCase()}</span>
+                </div>
+
+                <!-- Customer -->
+                <div class="section">
+                    <div class="section-title">Customer Details</div>
+                    <div class="customer-grid">
+                        <div class="info-row">
+                            <span class="label">Name</span>
+                            <span class="value">${escapeHtml(c.name || 'N/A')}</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="label">Phone</span>
+                            <span class="value">${escapeHtml(c.phone || 'N/A')}</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="label">Dzongkhag</span>
+                            <span class="value">${escapeHtml(c.dzongkhag || 'N/A')}</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="label">Trip Date</span>
+                            <span class="value">${q.order?.trip_date ? new Date(q.order.trip_date).toLocaleDateString() : 'To be confirmed'}</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Items -->
+                <div class="section">
+                    <div class="section-title">Quotation Items</div>
+                    <table class="items-table">
+                        <thead>
+                            <tr><th>Item</th><th class="text-center">Qty</th><th class="text-right">Unit</th><th class="text-right">Total</th></tr>
+                        </thead>
+                        <tbody>${itemsHtml}</tbody>
+                    </table>
+                </div>
+
+                <!-- Breakdown -->
+                <div class="section">
+                    <div class="section-title">Price Breakdown</div>
+                    <div class="breakdown-row"><span>Subtotal</span><span>${formatNu(q.subtotal)}</span></div>
+                    <div class="breakdown-row"><span>Service Charge ${q.service_charge_type === 'percentage' ? `(${q.service_charge_value}%)` : ''}</span><span>${formatNu(q.service_charge_amount)}</span></div>
+                    <div class="breakdown-row"><span>Shipping</span><span>${formatNu(q.shipping_charge)}</span></div>
+                    <div class="breakdown-row"><span>Delivery</span><span>${formatNu(q.delivery_charge)}</span></div>
+                    ${q.gst_applicable ? `<div class="breakdown-row"><span>GST (${q.gst_amount > 0 ? '5%' : '0%'})</span><span>${formatNu(q.gst_amount)}</span></div>` : ''}
+                    <div class="breakdown-row total"><span>Total Amount</span><span style="color:var(--primary);">${formatNu(q.total_amount)}</span></div>
+                </div>
+
+                ${q.notes ? `
+                <div class="section">
+                    <div class="section-title">Notes</div>
+                    <p style="font-size:0.9rem;color:var(--muted);line-height:1.7;">${escapeHtml(q.notes)}</p>
+                </div>
+                ` : ''}
+
+                <div class="section" style="padding-bottom:0;">
+                    <div class="validity ${expired ? 'expired' : ''}">
+                        <span>${expired ? '⚠️' : '✓'}</span>
+                        <span>${validityText}</span>
+                    </div>
+                </div>
+
+                ${!expired ? `
+                <div class="actions">
+                    <button class="btn btn-accept" onclick="acceptQuotation()" id="acceptBtn">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                        Accept Quotation & Proceed to Payment
+                    </button>
+                    <button class="btn btn-decline" onclick="showDeclineForm()" id="declineBtn">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                        Decline
+                    </button>
+                </div>
+
+                <div class="decline-form" id="declineForm">
+                    <textarea id="declineReason" placeholder="Please let us know why you're declining (optional)..."></textarea>
+                    <div style="display:flex;gap:0.75rem;margin-top:0.75rem;">
+                        <button class="btn btn-decline" onclick="hideDeclineForm()" style="flex:1;">Cancel</button>
+                        <button class="btn" onclick="declineQuotation()" style="flex:1;background:var(--danger);color:#fff;" id="confirmDeclineBtn">Confirm Decline</button>
+                    </div>
+                </div>
+                ` : `
+                <div class="actions">
+                    <a href="https://wa.me/97517123456?text=Hi%2C%20my%20quotation%20${encodeURIComponent(String(q.id).slice(0,8).toUpperCase())}%20has%20expired.%20Can%20you%20send%20a%20new%20one%3F" 
+                       target="_blank" class="btn btn-accept" style="text-decoration:none;background:var(--primary);">
+                        Request New Quotation
+                    </a>
+                </div>
+                `}
+            `;
+        }
+
+        function renderRespondedState(q) {
+            const isAccepted = q.customer_response === 'accepted';
+            const icon = isAccepted ? '✓' : '✕';
+            const title = isAccepted ? 'Quotation Accepted' : 'Quotation Declined';
+            const message = isAccepted
+                ? 'Thank you! We have received your acceptance. Please complete your payment to confirm the order.'
+                : 'You have declined this quotation. Feel free to contact us if you change your mind.';
+
+            CARD.innerHTML = `
+                <div class="responded-state ${q.customer_response}">
+                    <div class="icon">${icon}</div>
+                    <h3>${title}</h3>
+                    <p>${message}</p>
+                    ${isAccepted ? `
+                    <div style="margin-top:1.5rem;padding:1.25rem;background:#f0fdf4;border-radius:12px;">
+                        <div style="font-size:0.85rem;color:var(--muted);margin-bottom:0.5rem;">Amount Due</div>
+                        <div style="font-size:1.75rem;font-weight:800;color:var(--text);">${formatNu(q.total_amount)}</div>
+                    </div>
+                    <div class="payment-section" style="margin-top:1.5rem;">
+                        <h3>Complete Your Payment</h3>
+                        <p>Choose your preferred payment method</p>
+                        <div class="payment-methods">
+                            <button class="pay-btn pay-bnb" onclick="payWithBNB()">Pay with BNB</button>
+                            <button class="pay-btn pay-bank" onclick="payWithBank()">Bank Transfer</button>
+                        </div>
+                    </div>
+                    ` : ''}
+                </div>
+            `;
+        }
+
+        // ===== ACTIONS =====
+        window.showDeclineForm = function() {
+            document.getElementById('declineForm').style.display = 'block';
+            document.getElementById('acceptBtn').disabled = true;
+        };
+
+        window.hideDeclineForm = function() {
+            document.getElementById('declineForm').style.display = 'none';
+            document.getElementById('acceptBtn').disabled = false;
+        };
+
+        window.acceptQuotation = async function() {
+            const btn = document.getElementById('acceptBtn');
+            btn.disabled = true;
+            btn.innerHTML = '<div style="width:20px;height:20px;border:2px solid #fff;border-top-color:transparent;border-radius:50%;animation:spin 1s linear infinite;display:inline-block;vertical-align:middle;margin-right:0.5rem;"></div> Processing...';
+
+            const { error } = await supabase
+                .from('quotations')
+                .update({
+                    customer_response: 'accepted',
+                    responded_at: new Date().toISOString(),
+                    status: 'accepted'
+                })
+                .eq('customer_token', TOKEN)
+                .eq('status', 'sent'); // only if still sent
+
+            if (error) {
+                showToast('Error: ' + error.message, true);
+                btn.disabled = false;
+                btn.innerHTML = 'Accept Quotation & Proceed to Payment';
+                return;
+            }
+
+            showToast('Quotation accepted! Redirecting to payment...');
+            setTimeout(() => loadQuotation(), 800);
+        };
+
+        window.declineQuotation = async function() {
+            const reason = document.getElementById('declineReason')?.value || '';
+            const btn = document.getElementById('confirmDeclineBtn');
+            btn.disabled = true;
+            btn.textContent = 'Processing...';
+
+            const { error } = await supabase
+                .from('quotations')
+                .update({
+                    customer_response: 'declined',
+                    responded_at: new Date().toISOString(),
+                    decline_reason: reason || null,
+                    status: 'rejected'
+                })
+                .eq('customer_token', TOKEN)
+                .eq('status', 'sent');
+
+            if (error) {
+                showToast('Error: ' + error.message, true);
+                btn.disabled = false;
+                btn.textContent = 'Confirm Decline';
+                return;
+            }
+
+            showToast('Quotation declined');
+            setTimeout(() => loadQuotation(), 600);
+        };
+
+        window.payWithBNB = function() {
+            // Integrate with your BNB payment gateway
+            showToast('Redirecting to BNB payment...');
+            // window.location.href = `/payment/bnb?token=${TOKEN}`;
+        };
+
+        window.payWithBank = function() {
+            // Show bank details or redirect
+            showToast('Bank transfer instructions sent to your phone');
+            // Or: window.location.href = `/payment/bank?token=${TOKEN}`;
+        };
+
+        // Init
+        loadQuotation();
+    </script>
+</body>
+</html>

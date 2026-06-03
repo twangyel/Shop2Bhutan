@@ -4,287 +4,456 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Shop2Bhutan — Admin</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300..800;1,9..40,300..800&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
     <style>
-        :root{
-            --sidebar:#1a1a2e;
-            --accent:#e94560;
-            --success:#25d366;
-            --warning:#ff9f43;
-            --info:#2980b9;
-            --danger:#c0392b;
-            --surface:#ffffff;
-            --text:#1a1a2e;
-            --muted:#888;
-            --border:#e8e8e8;
-            --sidebar-width:260px;
-            --sidebar-collapsed:64px;
-        }
-        *{margin:0;padding:0;box-sizing:border-box;font-family:'Segoe UI',system-ui,-apple-system,sans-serif}
-        body{background:#f4f6f8;color:var(--text);min-height:100vh}
-
-        /* Login */
-        .login-screen{position:fixed;inset:0;background:linear-gradient(135deg,#1a1a2e,#16213e);display:none;align-items:center;justify-content:center;z-index:9999;padding:1rem}
-        .login-box{background:#fff;padding:2.5rem;border-radius:16px;width:100%;max-width:400px;box-shadow:0 20px 60px rgba(0,0,0,.3)}
-        .login-logo{width:140px;height:60px;background:linear-gradient(135deg,var(--accent),#6bffba);border-radius:10px;margin:0 auto 1.5rem;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:0.9rem;letter-spacing:0.5px;box-shadow:0 4px 15px rgba(233,69,96,.3)}
-        .login-box h2{margin-bottom:0.25rem;color:#1a1a2e;text-align:center;font-size:1.5rem}
-        .login-box .subtitle{color:#888;margin-bottom:1.75rem;font-size:0.9rem;text-align:center}
-        .login-box input{width:100%;padding:0.85rem 1rem;border:2px solid #e8e8e8;border-radius:10px;margin-bottom:0.25rem;font-size:1rem;outline:none;transition:border-color .2s}
-        .login-box input:focus{border-color:var(--accent)}
-        .input-group{margin-bottom:1rem}
-        .input-group label{display:block;font-size:0.8rem;color:#666;font-weight:600;margin-bottom:0.35rem;text-transform:uppercase;letter-spacing:0.5px}
-        .password-wrap{position:relative}
-        .password-wrap input{padding-right:2.75rem;margin-bottom:0}
-        .btn-preview{position:absolute;right:0.6rem;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:#888;font-size:1.1rem;padding:0.25rem;display:flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:6px;transition:all .2s}
-        .btn-preview:hover{background:#f0f0f0;color:#1a1a2e}
-        .remember-row{display:flex;align-items:center;justify-content:space-between;margin:1.25rem 0 1.5rem}
-        .remember-label{display:flex;align-items:center;gap:0.5rem;cursor:pointer;font-size:0.9rem;color:#555;user-select:none}
-        .remember-label input[type="checkbox"]{width:18px;height:18px;accent-color:var(--accent);cursor:pointer}
-        .forgot-link{font-size:0.85rem;color:var(--accent);text-decoration:none;font-weight:600}
-        .forgot-link:hover{text-decoration:underline}
-        .login-box > button{width:100%;padding:1rem;background:var(--accent);color:#fff;border:none;border-radius:10px;font-weight:700;cursor:pointer;font-size:1rem;transition:all .2s;box-shadow:0 4px 15px rgba(233,69,96,.3)}
-        .login-box > button:hover{opacity:.9;transform:translateY(-1px);box-shadow:0 6px 20px rgba(233,69,96,.4)}
-        .login-box > button:disabled{opacity:.5;cursor:not-allowed;transform:none;box-shadow:none}
-        .login-error{color:#e94560;font-size:0.85rem;margin-top:0.75rem;text-align:center;display:none;align-items:center;justify-content:center;gap:0.35rem;background:#fff0f2;padding:0.65rem 1rem;border-radius:8px;border:1px solid #ffe0e5}
-        .login-error.visible{display:flex}
-
-        /* Layout */
-        .admin-layout{display:none;grid-template-columns:var(--sidebar-width) 1fr;min-height:100vh;transition:grid-template-columns 0.3s ease}
-        .admin-layout.sidebar-collapsed{grid-template-columns:var(--sidebar-collapsed) 1fr}
-
-        /* Sidebar */
-        aside{background:var(--sidebar);color:#fff;position:sticky;top:0;height:100vh;overflow-y:auto;display:flex;flex-direction:column;transition:width 0.3s ease;z-index:100}
-        .admin-layout.sidebar-collapsed aside{width:var(--sidebar-collapsed)}
-
-        .sidebar-logo-area{padding:1.25rem 1rem;display:flex;align-items:center;justify-content:space-between;gap:0.5rem;border-bottom:1px solid rgba(255,255,255,0.06)}
-        .sidebar-logo{display:flex;align-items:center;gap:0.6rem;overflow:hidden;white-space:nowrap}
-        .sidebar-logo img{width:36px;height:36px;flex-shrink:0;border-radius:8px;object-fit:contain}
-        .sidebar-logo-text{font-size:1.1rem;font-weight:700;opacity:1;transition:opacity 0.2s}
-        .admin-layout.sidebar-collapsed .sidebar-logo-text{opacity:0;width:0}
-
-        .sidebar-controls{display:flex;align-items:center;gap:0.35rem}
-        .sidebar-btn{width:28px;height:28px;border-radius:6px;border:none;background:rgba(255,255,255,0.08);color:#b8b8b8;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:0.85rem;transition:all .2s;flex-shrink:0}
-        .sidebar-btn:hover{background:rgba(255,255,255,0.15);color:#fff}
-        .sidebar-btn.active{background:var(--accent);color:#fff}
-
-        aside nav{display:flex;flex-direction:column;gap:0.35rem;padding:0.75rem 0.75rem 1rem;flex:1}
-        .admin-layout.sidebar-collapsed aside nav{padding:0.75rem 0.5rem 1rem}
-
-        aside nav a{color:#b8b8b8;text-decoration:none;padding:0.75rem 0.85rem;border-radius:10px;font-size:0.92rem;transition:all .2s;display:flex;align-items:center;gap:0.85rem;font-weight:500;white-space:nowrap;overflow:hidden}
-        .admin-layout.sidebar-collapsed aside nav a{padding:0.75rem;justify-content:center;gap:0}
-        aside nav a:hover,aside nav a.active{background:rgba(255,255,255,.08);color:#fff}
-        aside nav a.active{box-shadow:inset 3px 0 0 var(--accent)}
-        aside nav a .nav-icon{width:22px;height:22px;display:flex;align-items:center;justify-content:center;font-size:1.05rem;flex-shrink:0}
-        aside nav a .nav-label{opacity:1;transition:opacity 0.2s}
-        .admin-layout.sidebar-collapsed aside nav a .nav-label{opacity:0;width:0;display:none}
-        aside .nav-divider{height:1px;background:rgba(255,255,255,.08);margin:0.5rem 0.75rem}
-        .admin-layout.sidebar-collapsed aside .nav-divider{margin:0.5rem 0.5rem}
-        aside .nav-section-label{color:rgba(255,255,255,.35);font-size:0.7rem;text-transform:uppercase;letter-spacing:1px;padding:0 0.85rem;margin-bottom:0.4rem;font-weight:600;white-space:nowrap;overflow:hidden}
-        .admin-layout.sidebar-collapsed aside .nav-section-label{opacity:0;height:0;margin:0;padding:0}
-
-        .admin-layout.sidebar-collapsed aside nav a{position:relative}
-        .admin-layout.sidebar-collapsed aside nav a:hover::after{
-            content:attr(data-label);position:absolute;left:calc(100% + 8px);top:50%;transform:translateY(-50%);
-            background:#1a1a2e;color:#fff;padding:0.4rem 0.75rem;border-radius:6px;
-            font-size:0.8rem;white-space:nowrap;z-index:200;box-shadow:0 4px 12px rgba(0,0,0,0.3);
-            pointer-events:none;font-weight:500
-        }
-        .admin-layout.sidebar-collapsed aside nav a:hover::before{
-            content:'';position:absolute;left:calc(100% + 2px);top:50%;transform:translateY(-50%);
-            border:6px solid transparent;border-right-color:#1a1a2e;z-index:200
+        :root {
+            --sidebar: #1c1917;
+            --sidebar-hover: rgba(255,255,255,.06);
+            --accent: #c2410c;
+            --accent-light: #fed7aa;
+            --accent-glow: rgba(194,65,12,.15);
+            --success: #15803d;
+            --success-light: #dcfce7;
+            --warning: #a16207;
+            --warning-light: #fef9c3;
+            --info: #1d4ed8;
+            --info-light: #dbeafe;
+            --danger: #b91c1c;
+            --danger-light: #fee2e2;
+            --surface: #ffffff;
+            --surface-raised: #fafaf9;
+            --text: #1c1917;
+            --text-secondary: #78716c;
+            --text-muted: #a8a29e;
+            --border: #e7e5e4;
+            --border-light: #f5f5f4;
+            --sidebar-width: 264px;
+            --sidebar-collapsed: 68px;
+            --radius: 10px;
+            --radius-lg: 14px;
+            --shadow-sm: 0 1px 3px rgba(28,25,23,.04), 0 1px 2px rgba(28,25,23,.02);
+            --shadow-md: 0 4px 16px rgba(28,25,23,.06), 0 1px 3px rgba(28,25,23,.04);
+            --shadow-lg: 0 12px 40px rgba(28,25,23,.1), 0 4px 12px rgba(28,25,23,.04);
+            --font-body: 'DM Sans', system-ui, sans-serif;
+            --font-display: 'Instrument Serif', Georgia, serif;
         }
 
-        .admin-main{padding:2rem;overflow-x:auto;transition:padding 0.3s}
-        .admin-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:1.5rem;flex-wrap:wrap;gap:1rem}
-        .admin-header h1{font-size:1.5rem;font-weight:700}
-        .admin-header-actions{display:flex;align-items:center;gap:1rem}
-        .notification-btn{position:relative;width:40px;height:40px;border-radius:10px;border:none;background:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:1.15rem;box-shadow:0 2px 8px rgba(0,0,0,.06);transition:all .2s}
-        .notification-btn:hover{background:#f8f9fc;transform:translateY(-1px)}
-        .notification-badge{position:absolute;top:-2px;right:-2px;background:var(--accent);color:#fff;font-size:0.65rem;font-weight:700;width:18px;height:18px;border-radius:50%;display:flex;align-items:center;justify-content:center;border:2px solid #fff}
-        .admin-profile{display:flex;align-items:center;gap:0.75rem;font-size:0.9rem;color:#666;background:#fff;padding:0.5rem 0.75rem 0.5rem 0.5rem;border-radius:10px;box-shadow:0 2px 8px rgba(0,0,0,.06)}
-        .admin-profile .avatar{width:32px;height:32px;background:linear-gradient(135deg,var(--accent),#ff6b81);border-radius:8px;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:0.8rem}
-        .admin-profile .badge-role{background:var(--accent);color:#fff;padding:0.25rem 0.6rem;border-radius:20px;font-size:0.7rem;font-weight:700;text-transform:uppercase}
+        * { margin:0; padding:0; box-sizing:border-box; }
+        body { font-family: var(--font-body); background: #f5f5f4; color: var(--text); min-height: 100vh; font-size: 14px; -webkit-font-smoothing: antialiased; }
 
-        /* Stats */
-        .stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:1rem;margin-bottom:1.5rem}
-        .stat-card{background:#fff;padding:1rem 1.25rem;border-radius:12px;box-shadow:0 2px 12px rgba(0,0,0,.04);transition:transform .2s,box-shadow .2s}
-        .stat-card:hover{transform:translateY(-2px);box-shadow:0 8px 24px rgba(0,0,0,.08)}
-        .stat-card h4{font-size:0.75rem;color:#888;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:0.35rem;display:flex;align-items:center;gap:0.4rem}
-        .stat-card .value{font-size:1.5rem;font-weight:700;color:#1a1a2e}
-        .stat-card .stat-icon{width:28px;height:28px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:0.9rem;margin-bottom:0.5rem}
-        .stat-card.submitted{border-left:3px solid var(--accent)}
-        .stat-card.submitted .stat-icon{background:#ffe0e5;color:var(--accent)}
-        .stat-card.confirmed{border-left:3px solid var(--success)}
-        .stat-card.confirmed .stat-icon{background:#d4edda;color:var(--success)}
-        .stat-card.pending{border-left:3px solid var(--warning)}
-        .stat-card.pending .stat-icon{background:#fff3cd;color:var(--warning)}
-        .stat-card.revenue{border-left:3px solid var(--info)}
-        .stat-card.revenue .stat-icon{background:#d1ecf1;color:var(--info)}
-        /* Review stats */
-        .stat-card.review-pending{border-left:3px solid var(--warning)}
-        .stat-card.review-pending .stat-icon{background:#fff3cd;color:var(--warning)}
-        .stat-card.review-verified{border-left:3px solid var(--success)}
-        .stat-card.review-verified .stat-icon{background:#d4edda;color:var(--success)}
-        .stat-card.review-rejected{border-left:3px solid var(--danger)}
-        .stat-card.review-rejected .stat-icon{background:#f8d7da;color:var(--danger)}
-        .stat-card.avg-rating{border-left:3px solid #9b59b6}
-        .stat-card.avg-rating .stat-icon{background:#f3e5f5;color:#9b59b6}
+        /* ═══════════════ LOGIN ═══════════════ */
+        .login-screen {
+            position: fixed; inset: 0; z-index: 9999; display: none;
+            align-items: center; justify-content: center; padding: 1.5rem;
+            background: var(--sidebar);
+            overflow: hidden;
+        }
+        .login-screen::before {
+            content: ''; position: absolute; inset: 0;
+            background:
+                radial-gradient(ellipse 80% 50% at 20% 80%, rgba(194,65,12,.12) 0%, transparent 60%),
+                radial-gradient(ellipse 60% 40% at 80% 20%, rgba(217,119,6,.08) 0%, transparent 50%);
+            pointer-events: none;
+        }
+        .login-box {
+            background: #fff; padding: 2.75rem 2.5rem; border-radius: 20px; width: 100%; max-width: 400px;
+            box-shadow: 0 30px 80px rgba(0,0,0,.35); position: relative; z-index: 1;
+            border: 1px solid rgba(255,255,255,.08);
+        }
+        .login-logo {
+            width: 140px; height: 56px; margin: 0 auto 2rem;
+            display: flex; align-items: center; justify-content: center;
+        }
+        .login-logo img { max-width: 100%; max-height: 100%; object-fit: contain; }
+        .login-box h2 { margin-bottom: .25rem; color: var(--text); text-align: center; font-family: var(--font-display); font-size: 1.65rem; font-weight: 400; }
+        .login-box .subtitle { color: var(--text-muted); margin-bottom: 2rem; font-size: .88rem; text-align: center; }
+        .login-box input {
+            width: 100%; padding: .8rem 1rem; border: 1.5px solid var(--border); border-radius: var(--radius);
+            font-size: .92rem; outline: none; transition: border-color .2s, box-shadow .2s;
+            font-family: var(--font-body); background: var(--surface-raised);
+        }
+        .login-box input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-glow); background: #fff; }
+        .input-group { margin-bottom: 1.1rem; }
+        .input-group label { display: block; font-size: .72rem; color: var(--text-secondary); font-weight: 600; margin-bottom: .4rem; text-transform: uppercase; letter-spacing: .8px; }
+        .password-wrap { position: relative; }
+        .password-wrap input { padding-right: 2.75rem; margin-bottom: 0; }
+        .btn-preview { position: absolute; right: .6rem; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; color: var(--text-muted); font-size: 1.1rem; padding: .25rem; display: flex; align-items: center; justify-content: center; width: 30px; height: 30px; border-radius: 6px; transition: all .2s; }
+        .btn-preview:hover { background: var(--border-light); color: var(--text); }
+        .remember-row { display: flex; align-items: center; justify-content: space-between; margin: 1.5rem 0 1.75rem; }
+        .remember-label { display: flex; align-items: center; gap: .5rem; cursor: pointer; font-size: .88rem; color: var(--text-secondary); user-select: none; }
+        .remember-label input[type="checkbox"] { width: 16px; height: 16px; accent-color: var(--accent); cursor: pointer; }
+        .forgot-link { font-size: .82rem; color: var(--accent); text-decoration: none; font-weight: 600; }
+        .forgot-link:hover { text-decoration: underline; }
+        .login-box > button {
+            width: 100%; padding: .9rem; background: var(--accent); color: #fff; border: none;
+            border-radius: var(--radius); font-weight: 700; cursor: pointer; font-size: .95rem;
+            transition: all .2s; font-family: var(--font-body); letter-spacing: .3px;
+        }
+        .login-box > button:hover { background: #9a3412; transform: translateY(-1px); box-shadow: 0 6px 20px rgba(194,65,12,.25); }
+        .login-box > button:disabled { opacity: .5; cursor: not-allowed; transform: none; box-shadow: none; }
+        .login-error { color: var(--danger); font-size: .82rem; margin-top: .85rem; text-align: center; display: none; align-items: center; justify-content: center; gap: .35rem; background: var(--danger-light); padding: .65rem 1rem; border-radius: 8px; border: 1px solid #fecaca; }
+        .login-error.visible { display: flex; }
 
-        /* Filters */
-        .filters{background:#fff;padding:1.25rem;border-radius:14px;margin-bottom:1.25rem;display:flex;gap:1rem;flex-wrap:wrap;align-items:end;box-shadow:0 2px 12px rgba(0,0,0,.04)}
-        .filters input,.filters select{padding:0.65rem 0.9rem;border:2px solid #e8e8e8;border-radius:10px;font-size:0.9rem;outline:none;min-width:160px;background:#fff}
-        .filters input:focus,.filters select:focus{border-color:var(--accent)}
-        .filters button{background:#1a1a2e;color:#fff;border:none;padding:0.65rem 1.25rem;border-radius:10px;font-weight:600;cursor:pointer;transition:all .2s}
-        .filters button:hover{background:var(--accent)}
-        .filters button:disabled{opacity:.5;cursor:not-allowed}
+        /* ═══════════════ LAYOUT ═══════════════ */
+        .admin-layout { display: none; grid-template-columns: var(--sidebar-width) 1fr; min-height: 100vh; transition: grid-template-columns .3s ease; }
+        .admin-layout.sidebar-collapsed { grid-template-columns: var(--sidebar-collapsed) 1fr; }
 
-        /* Table */
-        .table-wrap{background:#fff;border-radius:14px;box-shadow:0 2px 12px rgba(0,0,0,.04);overflow:hidden}
-        table{width:100%;border-collapse:collapse;font-size:0.9rem;min-width:700px}
-        thead{background:#f8f9fc}
-        th{padding:0.85rem 1rem;text-align:left;font-weight:600;color:#666;font-size:0.78rem;text-transform:uppercase;letter-spacing:0.5px;border-bottom:2px solid #e8e8e8;white-space:nowrap}
-        td{padding:0.85rem 1rem;border-bottom:1px solid #f0f0f0;vertical-align:top}
-        tr:hover{background:#fafafa}
-        .badge{display:inline-block;padding:3px 10px;border-radius:20px;font-size:0.72rem;font-weight:700;text-transform:uppercase;letter-spacing:0.3px}
-        .badge-submitted{background:#ffe0e5;color:#c0392b}
-        .badge-price_sent{background:#fff3cd;color:#856404}
-        .badge-confirmed{background:#d4edda;color:#155724}
-        .badge-purchased{background:#d1ecf1;color:#0c5460}
-        .badge-in_transit{background:#cce5ff;color:#004085}
-        .badge-delivered{background:#d4edda;color:#155724}
-        .badge-cancelled{background:#f8d7da;color:#721c24}
-        /* Review badges */
-        .badge-pending{background:#fff3cd;color:#856404}
-        .badge-verified{background:#d4edda;color:#155724}
-        .badge-rejected{background:#f8d7da;color:#721c24}
-        .customer-info{line-height:1.4}
-        .customer-info small{display:block;color:#888;font-size:0.78rem}
-        .token{font-family:'Courier New',monospace;font-size:0.78rem;background:#f4f4f4;padding:2px 6px;border-radius:4px}
-        .actions{display:flex;gap:0.4rem;flex-wrap:wrap}
-        .btn-icon{width:30px;height:30px;border:none;border-radius:6px;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;transition:all .2s;font-size:0.85rem}
-        .btn-view{background:#f3e8ff;color:#7c3aed}
-        .btn-view:hover{background:#7c3aed;color:#fff}
-        .btn-edit{background:#e8f4fd;color:#2980b9}
-        .btn-edit:hover{background:#2980b9;color:#fff}
-        .btn-wa{background:#dcf8e6;color:#128c7e}
-        .btn-wa:hover{background:#25d366;color:#fff}
-        .btn-link{background:#f0f0f0;color:#666}
-        .btn-link:hover{background:#666;color:#fff}
-        .btn-verify{background:#d4edda;color:#155724}
-        .btn-verify:hover{background:#25d366;color:#fff}
-        .btn-reject{background:#f8d7da;color:#721c24}
-        .btn-reject:hover{background:#c0392b;color:#fff}
-        .btn-delete{background:#ffe0e5;color:#c0392b}
-        .btn-delete:hover{background:#c0392b;color:#fff}
+        /* ═══════════════ SIDEBAR ═══════════════ */
+        aside {
+            background: var(--sidebar); color: #fff; position: sticky; top: 0; height: 100vh;
+            overflow-y: auto; display: flex; flex-direction: column; transition: width .3s ease; z-index: 100;
+            border-right: 1px solid rgba(255,255,255,.04);
+        }
+        aside::-webkit-scrollbar { width: 4px; }
+        aside::-webkit-scrollbar-thumb { background: rgba(255,255,255,.1); border-radius: 4px; }
+        .admin-layout.sidebar-collapsed aside { width: var(--sidebar-collapsed); }
 
-        /* Review specific */
-        .review-stars-inline{color:#ff9f43;font-size:0.95rem;letter-spacing:1px}
-        .review-comment-cell{max-width:300px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:0.85rem;color:#555}
+        .sidebar-logo-area { padding: 1.25rem 1.15rem; display: flex; align-items: center; justify-content: space-between; gap: .5rem; border-bottom: 1px solid rgba(255,255,255,.06); }
+        .sidebar-logo { display: flex; align-items: center; gap: .65rem; overflow: hidden; white-space: nowrap; }
+        .sidebar-logo img { width: 34px; height: 34px; flex-shrink: 0; border-radius: 8px; object-fit: contain; }
+        .sidebar-logo-text { font-size: 1.05rem; font-weight: 700; opacity: 1; transition: opacity .2s; letter-spacing: -.3px; }
+        .admin-layout.sidebar-collapsed .sidebar-logo-text { opacity: 0; width: 0; }
 
-        /* Checkbox for bulk */
-        .select-all{cursor:pointer;width:18px;height:18px}
+        .sidebar-controls { display: flex; align-items: center; gap: .3rem; }
+        .sidebar-btn { width: 26px; height: 26px; border-radius: 6px; border: none; background: rgba(255,255,255,.06); color: rgba(255,255,255,.4); cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: .8rem; transition: all .2s; flex-shrink: 0; }
+        .sidebar-btn:hover { background: rgba(255,255,255,.12); color: #fff; }
+        .sidebar-btn.active { background: var(--accent); color: #fff; }
 
-        /* Pagination */
-        .pagination{display:flex;justify-content:space-between;align-items:center;margin-top:1.25rem;padding:0 0.5rem}
-        .page-info{font-size:0.9rem;color:#666}
-        .page-buttons{display:flex;gap:0.5rem}
-        .page-btn{padding:0.5rem 1rem;border:1px solid #e8e8e8;background:#fff;border-radius:8px;cursor:pointer;font-weight:600;transition:all .2s}
-        .page-btn:hover{background:#f8f9fc}
-        .page-btn:disabled{opacity:.5;cursor:not-allowed}
-        .page-btn.active{background:var(--accent);color:#fff;border-color:var(--accent)}
+        aside nav { display: flex; flex-direction: column; gap: 2px; padding: .75rem .65rem 1rem; flex: 1; }
+        .admin-layout.sidebar-collapsed aside nav { padding: .75rem .45rem 1rem; }
 
-        /* Toast */
-        .toast{position:fixed;top:1.5rem;right:1.5rem;color:#fff;padding:0;border-radius:14px;box-shadow:0 12px 40px rgba(0,0,0,.2);transform:translateX(calc(100% + 2rem));transition:transform .4s cubic-bezier(.22,.68,0,1.1),opacity .3s;z-index:3000;font-weight:500;display:flex;align-items:stretch;overflow:hidden;max-width:380px;min-width:280px;opacity:0;backdrop-filter:blur(10px)}
-        .toast.show{transform:translateX(0);opacity:1}
-        .toast-icon{display:flex;align-items:center;justify-content:center;padding:0 14px;flex-shrink:0}
-        .toast-icon svg{width:22px;height:22px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
-        .toast-content{padding:14px 18px 14px 0;flex:1;display:flex;flex-direction:column;gap:2px}
-        .toast-title{font-size:0.75rem;font-weight:700;text-transform:uppercase;letter-spacing:0.4px;opacity:0.85}
-        .toast-message{font-size:0.92rem;font-weight:500;line-height:1.3}
-        .toast-close{background:none;border:none;color:rgba(255,255,255,0.6);cursor:pointer;padding:8px 12px;font-size:1.2rem;align-self:flex-start;transition:color .2s;line-height:1}
-        .toast-close:hover{color:#fff}
-        .toast-progress{position:absolute;bottom:0;left:0;height:3px;background:rgba(255,255,255,.35);border-radius:0 0 14px 14px;animation:toastProgress 3.5s linear forwards}
-        @keyframes toastProgress{from{width:100%}to{width:0}}
-        .toast.toast-success{background:linear-gradient(135deg,#1db954,#25d366)}
-        .toast.toast-error{background:linear-gradient(135deg,#c0392b,#e74c3c)}
-        .toast.toast-info{background:linear-gradient(135deg,#2471a3,#3498db)}
-        .toast.toast-warning{background:linear-gradient(135deg,#d4830a,#f39c12)}
-        .toast.toast-default{background:linear-gradient(135deg,#1a1a2e,#2c3e50)}
+        aside nav a {
+            color: rgba(255,255,255,.5); text-decoration: none; padding: .65rem .85rem; border-radius: 8px;
+            font-size: .87rem; transition: all .15s; display: flex; align-items: center; gap: .75rem;
+            font-weight: 500; white-space: nowrap; overflow: hidden; position: relative;
+        }
+        .admin-layout.sidebar-collapsed aside nav a { padding: .65rem; justify-content: center; gap: 0; }
+        aside nav a:hover { background: var(--sidebar-hover); color: rgba(255,255,255,.85); }
+        aside nav a.active { background: rgba(194,65,12,.15); color: #fff; }
+        aside nav a.active::before { content: ''; position: absolute; left: 0; top: 50%; transform: translateY(-50%); width: 3px; height: 20px; background: var(--accent); border-radius: 0 3px 3px 0; }
+        aside nav a .nav-icon { width: 20px; height: 20px; display: flex; align-items: center; justify-content: center; font-size: 1rem; flex-shrink: 0; }
+        aside nav a .nav-label { opacity: 1; transition: opacity .2s; }
+        .admin-layout.sidebar-collapsed aside nav a .nav-label { opacity: 0; width: 0; display: none; }
+        aside .nav-divider { height: 1px; background: rgba(255,255,255,.06); margin: .6rem .5rem; }
+        .admin-layout.sidebar-collapsed aside .nav-divider { margin: .5rem .35rem; }
+        aside .nav-section-label { color: rgba(255,255,255,.2); font-size: .65rem; text-transform: uppercase; letter-spacing: 1.2px; padding: 0 .85rem; margin-bottom: .35rem; margin-top: .25rem; font-weight: 700; white-space: nowrap; overflow: hidden; }
+        .admin-layout.sidebar-collapsed aside .nav-section-label { opacity: 0; height: 0; margin: 0; padding: 0; }
 
-        /* Order Detail Modal */
-        .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);backdrop-filter:blur(4px);z-index:2000;display:none;align-items:center;justify-content:center;padding:1rem}
-        .modal-overlay.active{display:flex}
-        .modal-panel{background:#fff;border-radius:16px;width:100%;max-width:640px;max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.3)}
-        .modal-header{padding:1.25rem 1.5rem;border-bottom:1px solid #f0f0f0;display:flex;justify-content:space-between;align-items:center}
-        .modal-header h3{margin:0;font-size:1.2rem}
-        .modal-body{padding:1.5rem}
-        .detail-grid{display:grid;grid-template-columns:1fr 1fr;gap:1.25rem;margin-bottom:1.5rem}
-        .detail-group{display:flex;flex-direction:column;gap:0.35rem}
-        .detail-group label{font-size:0.8rem;color:#888;text-transform:uppercase;letter-spacing:0.5px;font-weight:600}
-        .detail-group span{font-size:0.95rem;color:#1a1a2e;font-weight:500}
-        .detail-group a{color:var(--accent);text-decoration:none;word-break:break-all}
-        .detail-group a:hover{text-decoration:underline}
-        .admin-form{display:grid;gap:1rem;margin-top:1rem;padding-top:1.5rem;border-top:2px solid #f0f0f0}
-        .admin-form label{font-weight:600;font-size:0.85rem}
-        .admin-form input,.admin-form select,.admin-form textarea{width:100%;padding:0.75rem;border:2px solid #e8e8e8;border-radius:8px;font-family:inherit;font-size:0.9rem;outline:none}
-        .admin-form input:focus,.admin-form select:focus,.admin-form textarea:focus{border-color:var(--accent)}
-        .admin-form textarea{resize:vertical;min-height:80px}
-        .form-row{display:grid;grid-template-columns:1fr 1fr;gap:1rem}
-        .modal-footer{padding:1rem 1.5rem 1.5rem;display:flex;gap:0.75rem;justify-content:flex-end}
-        .btn-primary{background:var(--accent);color:#fff;border:none;padding:0.75rem 1.5rem;border-radius:8px;font-weight:700;cursor:pointer;transition:opacity .2s}
-        .btn-secondary{background:#f0f0f0;color:#1a1a2e;border:none;padding:0.75rem 1.5rem;border-radius:8px;font-weight:600;cursor:pointer;transition:background .2s}
-        .btn-danger{background:#c0392b;color:#fff;border:none;padding:0.75rem 1.5rem;border-radius:8px;font-weight:600;cursor:pointer;transition:opacity .2s}
-        .btn-primary:hover,.btn-danger:hover{opacity:.9}
-        .btn-secondary:hover{background:#e0e0e0}
+        /* Collapsed tooltips */
+        .admin-layout.sidebar-collapsed aside nav a { position: relative; }
+        .admin-layout.sidebar-collapsed aside nav a:hover::after {
+            content: attr(data-label); position: absolute; left: calc(100% + 10px); top: 50%; transform: translateY(-50%);
+            background: var(--text); color: #fff; padding: .4rem .7rem; border-radius: 6px;
+            font-size: .78rem; white-space: nowrap; z-index: 200; box-shadow: var(--shadow-lg);
+            pointer-events: none; font-weight: 500;
+        }
+        .admin-layout.sidebar-collapsed aside nav a:hover::before {
+            content: ''; position: absolute; left: calc(100% + 4px); top: 50%; transform: translateY(-50%);
+            border: 5px solid transparent; border-right-color: var(--text); z-index: 200;
+        }
 
-        /* Confirmation modal */
-        .confirm-modal .modal-panel{max-width:420px;text-align:center}
-        .confirm-modal .modal-body{padding:2rem}
-        .confirm-modal h4{margin-bottom:0.5rem;font-size:1.1rem}
-        .confirm-modal p{color:#666;margin-bottom:1.5rem;font-size:0.95rem}
+        /* ═══════════════ MAIN ═══════════════ */
+        .admin-main { padding: 1.75rem 2rem; overflow-x: auto; transition: padding .3s; background: #f5f5f4; }
+        .admin-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.75rem; flex-wrap: wrap; gap: 1rem; }
+        .admin-header h1 { font-size: 1.5rem; font-weight: 700; font-family: var(--font-display); color: var(--text); letter-spacing: -.3px; }
+        .admin-header-actions { display: flex; align-items: center; gap: .75rem; }
+        .notification-btn {
+            position: relative; width: 38px; height: 38px; border-radius: var(--radius); border: 1.5px solid var(--border);
+            background: #fff; cursor: pointer; display: flex; align-items: center; justify-content: center;
+            font-size: 1.1rem; transition: all .15s;
+        }
+        .notification-btn:hover { background: var(--surface-raised); border-color: var(--text-muted); }
+        .notification-badge {
+            position: absolute; top: -4px; right: -4px; background: var(--accent); color: #fff;
+            font-size: .6rem; font-weight: 700; width: 17px; height: 17px; border-radius: 50%;
+            display: flex; align-items: center; justify-content: center; border: 2px solid #f5f5f4;
+        }
+        .admin-profile {
+            display: flex; align-items: center; gap: .6rem; font-size: .88rem; color: var(--text-secondary);
+            background: #fff; padding: .4rem .65rem .4rem .4rem; border-radius: var(--radius);
+            border: 1.5px solid var(--border); transition: border-color .15s;
+        }
+        .admin-profile:hover { border-color: var(--text-muted); }
+        .admin-profile .avatar {
+            width: 30px; height: 30px; background: var(--accent); border-radius: 8px;
+            display: flex; align-items: center; justify-content: center;
+            color: #fff; font-weight: 700; font-size: .75rem;
+        }
+        .admin-profile .badge-role {
+            background: var(--accent-light); color: var(--accent); padding: .2rem .5rem;
+            border-radius: 5px; font-size: .62rem; font-weight: 700; text-transform: uppercase; letter-spacing: .5px;
+        }
 
-        /* Notification dropdown */
-        .notification-dropdown{position:absolute;top:50px;right:0;background:#fff;border-radius:14px;box-shadow:0 10px 40px rgba(0,0,0,.15);width:320px;max-height:400px;overflow-y:auto;z-index:100;display:none;padding:0.5rem 0}
-        .notification-dropdown.active{display:block}
-        .notification-dropdown .notif-header{padding:0.75rem 1rem;font-weight:700;font-size:0.9rem;border-bottom:1px solid #f0f0f0;display:flex;justify-content:space-between;align-items:center}
-        .notification-dropdown .notif-item{padding:0.75rem 1rem;border-bottom:1px solid #f8f9fc;cursor:pointer;transition:background .15s}
-        .notification-dropdown .notif-item:hover{background:#f8f9fc}
-        .notification-dropdown .notif-item .notif-title{font-size:0.85rem;font-weight:600;margin-bottom:0.15rem}
-        .notification-dropdown .notif-item .notif-time{font-size:0.75rem;color:#aaa}
-        .notification-dropdown .notif-empty{text-align:center;padding:2rem;color:#aaa;font-size:0.85rem}
-        .notif-dot{width:8px;height:8px;background:var(--accent);border-radius:50%;display:inline-block;margin-right:0.5rem}
+        /* ═══════════════ STAT CARDS ═══════════════ */
+        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: .85rem; margin-bottom: 1.5rem; }
+        .stat-card {
+            background: #fff; padding: 1.15rem 1.25rem; border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-sm); transition: transform .2s, box-shadow .2s;
+            border: 1px solid var(--border-light); position: relative; overflow: hidden;
+        }
+        .stat-card::after {
+            content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
+            background: var(--border); border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+        }
+        .stat-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); }
+        .stat-card h4 { font-size: .68rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: .7px; margin-bottom: .35rem; font-weight: 600; }
+        .stat-card .value { font-size: 1.6rem; font-weight: 700; color: var(--text); font-family: var(--font-display); }
+        .stat-card .stat-icon { width: 32px; height: 32px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: .9rem; margin-bottom: .6rem; }
 
-        /* Section containers */
-        .section-content{display:none}
-        .section-content.active{display:block}
+        .stat-card.submitted::after { background: var(--accent); }
+        .stat-card.submitted .stat-icon { background: var(--accent-light); color: var(--accent); }
+        .stat-card.confirmed::after { background: var(--success); }
+        .stat-card.confirmed .stat-icon { background: var(--success-light); color: var(--success); }
+        .stat-card.pending::after { background: var(--warning); }
+        .stat-card.pending .stat-icon { background: var(--warning-light); color: var(--warning); }
+        .stat-card.revenue::after { background: var(--info); }
+        .stat-card.revenue .stat-icon { background: var(--info-light); color: var(--info); }
+        .stat-card.review-pending::after { background: var(--warning); }
+        .stat-card.review-pending .stat-icon { background: var(--warning-light); color: var(--warning); }
+        .stat-card.review-verified::after { background: var(--success); }
+        .stat-card.review-verified .stat-icon { background: var(--success-light); color: var(--success); }
+        .stat-card.review-rejected::after { background: var(--danger); }
+        .stat-card.review-rejected .stat-icon { background: var(--danger-light); color: var(--danger); }
+        .stat-card.avg-rating::after { background: #7c3aed; }
+        .stat-card.avg-rating .stat-icon { background: #f3e8ff; color: #7c3aed; }
 
-        /* Placeholder cards */
-        .placeholder-card{background:#fff;border-radius:14px;padding:3rem;text-align:center;box-shadow:0 2px 12px rgba(0,0,0,.04)}
-        .placeholder-card .placeholder-icon{font-size:3rem;margin-bottom:1rem;opacity:.3}
-        .placeholder-card h3{color:#1a1a2e;margin-bottom:0.5rem}
-        .placeholder-card p{color:#888;font-size:0.95rem}
+        /* ═══════════════ FILTERS ═══════════════ */
+        .filters {
+            background: #fff; padding: 1.15rem 1.25rem; border-radius: var(--radius-lg); margin-bottom: 1rem;
+            display: flex; gap: .85rem; flex-wrap: wrap; align-items: end;
+            box-shadow: var(--shadow-sm); border: 1px solid var(--border-light);
+        }
+        .filters input, .filters select {
+            padding: .6rem .85rem; border: 1.5px solid var(--border); border-radius: 8px;
+            font-size: .88rem; outline: none; min-width: 155px; background: var(--surface-raised);
+            font-family: var(--font-body); transition: border-color .15s, box-shadow .15s;
+        }
+        .filters input:focus, .filters select:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-glow); background: #fff; }
+        .filters button {
+            background: var(--text); color: #fff; border: none; padding: .6rem 1.15rem;
+            border-radius: 8px; font-weight: 600; cursor: pointer; transition: all .15s;
+            font-family: var(--font-body); font-size: .85rem; display: inline-flex; align-items: center; gap: .35rem;
+        }
+        .filters button:hover { background: var(--accent); }
+        .filters button:disabled { opacity: .5; cursor: not-allowed; }
+
+        /* ═══════════════ TABLE ═══════════════ */
+        .table-wrap {
+            background: #fff; border-radius: var(--radius-lg); box-shadow: var(--shadow-sm);
+            overflow: hidden; border: 1px solid var(--border-light);
+        }
+        table { width: 100%; border-collapse: collapse; font-size: .88rem; min-width: 700px; }
+        thead { background: var(--surface-raised); }
+        th {
+            padding: .75rem 1rem; text-align: left; font-weight: 600; color: var(--text-muted);
+            font-size: .7rem; text-transform: uppercase; letter-spacing: .7px;
+            border-bottom: 1.5px solid var(--border);
+        }
+        td { padding: .8rem 1rem; border-bottom: 1px solid var(--border-light); vertical-align: top; }
+        tr { transition: background .1s; }
+        tr:hover { background: #fafaf9; }
+        .badge {
+            display: inline-flex; align-items: center; padding: 3px 10px; border-radius: 6px;
+            font-size: .68rem; font-weight: 700; text-transform: uppercase; letter-spacing: .3px;
+        }
+        .badge-submitted { background: var(--accent-light); color: var(--accent); }
+        .badge-price_sent { background: var(--warning-light); color: var(--warning); }
+        .badge-confirmed { background: var(--success-light); color: var(--success); }
+        .badge-purchased { background: var(--info-light); color: var(--info); }
+        .badge-in_transit { background: #e0e7ff; color: #3730a3; }
+        .badge-delivered { background: var(--success-light); color: var(--success); }
+        .badge-cancelled { background: var(--danger-light); color: var(--danger); }
+        .badge-pending { background: var(--warning-light); color: var(--warning); }
+        .badge-verified { background: var(--success-light); color: var(--success); }
+        .badge-rejected { background: var(--danger-light); color: var(--danger); }
+        .badge-draft { background: #f5f5f4; color: var(--text-secondary); }
+        .badge-sent { background: var(--info-light); color: var(--info); }
+        .badge-accepted { background: var(--success-light); color: var(--success); }
+        .badge-expired { background: #f5f5f4; color: var(--text-muted); }
+        .badge-50_50 { background: #fef3c7; color: #92400e; }
+
+        .customer-info { line-height: 1.45; }
+        .customer-info small { display: block; color: var(--text-muted); font-size: .78rem; }
+        .token { font-family: 'SF Mono', 'Cascadia Code', 'Consolas', monospace; font-size: .76rem; background: var(--surface-raised); padding: 2px 7px; border-radius: 5px; border: 1px solid var(--border-light); color: var(--text-secondary); }
+
+        .actions { display: flex; gap: .3rem; flex-wrap: wrap; }
+        .btn-icon {
+            width: 30px; height: 30px; border: 1.5px solid var(--border); border-radius: 7px;
+            cursor: pointer; display: inline-flex; align-items: center; justify-content: center;
+            transition: all .15s; font-size: .85rem; background: #fff;
+        }
+        .btn-view { color: #7c3aed; border-color: #ede9fe; background: #faf5ff; }
+        .btn-view:hover { background: #7c3aed; color: #fff; border-color: #7c3aed; }
+        .btn-edit { color: var(--info); border-color: #dbeafe; background: #eff6ff; }
+        .btn-edit:hover { background: var(--info); color: #fff; border-color: var(--info); }
+        .btn-wa { color: #15803d; border-color: #dcfce7; background: #f0fdf4; }
+        .btn-wa:hover { background: #16a34a; color: #fff; border-color: #16a34a; }
+        .btn-link { color: var(--text-secondary); border-color: var(--border); background: var(--surface-raised); }
+        .btn-link:hover { background: var(--text-secondary); color: #fff; }
+        .btn-verify { color: var(--success); border-color: #dcfce7; background: #f0fdf4; }
+        .btn-verify:hover { background: var(--success); color: #fff; border-color: var(--success); }
+        .btn-reject { color: var(--danger); border-color: #fee2e2; background: #fef2f2; }
+        .btn-reject:hover { background: var(--danger); color: #fff; border-color: var(--danger); }
+        .btn-delete { color: var(--danger); border-color: #fee2e2; background: #fef2f2; }
+        .btn-delete:hover { background: var(--danger); color: #fff; border-color: var(--danger); }
+
+        /* Reviews */
+        .review-stars-inline { color: #f59e0b; font-size: .95rem; letter-spacing: 1px; }
+        .review-comment-cell { max-width: 300px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: .85rem; color: var(--text-secondary); }
+
+        /* Checkbox */
+        .select-all { cursor: pointer; width: 16px; height: 16px; accent-color: var(--accent); }
+
+        /* ═══════════════ PAGINATION ═══════════════ */
+        .pagination { display: flex; justify-content: space-between; align-items: center; margin-top: 1rem; padding: 0 .25rem; }
+        .page-info { font-size: .85rem; color: var(--text-muted); }
+        .page-buttons { display: flex; gap: .35rem; }
+        .page-btn {
+            padding: .45rem .85rem; border: 1.5px solid var(--border); background: #fff;
+            border-radius: 7px; cursor: pointer; font-weight: 600; transition: all .15s;
+            font-family: var(--font-body); font-size: .82rem; color: var(--text-secondary);
+        }
+        .page-btn:hover { background: var(--surface-raised); border-color: var(--text-muted); }
+        .page-btn:disabled { opacity: .4; cursor: not-allowed; }
+        .page-btn.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+
+        /* ═══════════════ TOAST ═══════════════ */
+        .toast {
+            position: fixed; top: 1.25rem; right: 1.25rem; color: #fff; padding: 0;
+            border-radius: var(--radius-lg); box-shadow: var(--shadow-lg);
+            transform: translateX(calc(100% + 2rem)); transition: transform .4s cubic-bezier(.22,.68,0,1.1), opacity .3s;
+            z-index: 3000; font-weight: 500; display: flex; align-items: stretch; overflow: hidden;
+            max-width: 360px; min-width: 260px; opacity: 0;
+        }
+        .toast.show { transform: translateX(0); opacity: 1; }
+        .toast-icon { display: flex; align-items: center; justify-content: center; padding: 0 14px; flex-shrink: 0; }
+        .toast-icon svg { width: 20px; height: 20px; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+        .toast-content { padding: 12px 16px 12px 0; flex: 1; display: flex; flex-direction: column; gap: 1px; }
+        .toast-title { font-size: .68rem; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; opacity: .8; }
+        .toast-message { font-size: .88rem; font-weight: 500; line-height: 1.35; }
+        .toast-close { background: none; border: none; color: rgba(255,255,255,.5); cursor: pointer; padding: 8px 10px; font-size: 1.1rem; align-self: flex-start; transition: color .2s; line-height: 1; }
+        .toast-close:hover { color: #fff; }
+        .toast-progress { position: absolute; bottom: 0; left: 0; height: 3px; background: rgba(255,255,255,.3); border-radius: 0 0 var(--radius-lg) var(--radius-lg); animation: toastProgress 3.5s linear forwards; }
+        @keyframes toastProgress { from { width: 100% } to { width: 0 } }
+        .toast.toast-success { background: linear-gradient(135deg, #15803d, #16a34a); }
+        .toast.toast-error { background: linear-gradient(135deg, #991b1b, #dc2626); }
+        .toast.toast-info { background: linear-gradient(135deg, #1e40af, #3b82f6); }
+        .toast.toast-warning { background: linear-gradient(135deg, #92400e, #d97706); }
+        .toast.toast-default { background: linear-gradient(135deg, var(--sidebar), #44403c); }
+
+        /* ═══════════════ MODAL ═══════════════ */
+        .modal-overlay {
+            position: fixed; inset: 0; background: rgba(28,25,23,.5); backdrop-filter: blur(6px);
+            z-index: 2000; display: none; align-items: center; justify-content: center; padding: 1.25rem;
+        }
+        .modal-overlay.active { display: flex; }
+        .modal-panel {
+            background: #fff; border-radius: 18px; width: 100%; max-width: 640px; max-height: 90vh;
+            overflow-y: auto; box-shadow: 0 25px 60px rgba(0,0,0,.2);
+        }
+        .modal-header {
+            padding: 1.15rem 1.5rem; border-bottom: 1px solid var(--border-light);
+            display: flex; justify-content: space-between; align-items: center;
+        }
+        .modal-header h3 { margin: 0; font-size: 1.15rem; font-family: var(--font-display); font-weight: 400; }
+        .modal-body { padding: 1.5rem; }
+        .detail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.15rem; margin-bottom: 1.5rem; }
+        .detail-group { display: flex; flex-direction: column; gap: .3rem; }
+        .detail-group label { font-size: .7rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: .6px; font-weight: 600; }
+        .detail-group span { font-size: .92rem; color: var(--text); font-weight: 500; }
+        .detail-group a { color: var(--accent); text-decoration: none; word-break: break-all; }
+        .detail-group a:hover { text-decoration: underline; }
+        .admin-form { display: grid; gap: 1rem; margin-top: 1rem; padding-top: 1.5rem; border-top: 1.5px solid var(--border-light); }
+        .admin-form label { font-weight: 600; font-size: .82rem; color: var(--text-secondary); }
+        .admin-form input, .admin-form select, .admin-form textarea {
+            width: 100%; padding: .7rem .85rem; border: 1.5px solid var(--border); border-radius: 8px;
+            font-family: var(--font-body); font-size: .88rem; outline: none; background: var(--surface-raised);
+            transition: border-color .15s, box-shadow .15s;
+        }
+        .admin-form input:focus, .admin-form select:focus, .admin-form textarea:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-glow); background: #fff; }
+        .admin-form textarea { resize: vertical; min-height: 80px; }
+        .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+        .modal-footer { padding: 1rem 1.5rem 1.5rem; display: flex; gap: .65rem; justify-content: flex-end; }
+        .btn-primary {
+            background: var(--accent); color: #fff; border: none; padding: .7rem 1.35rem;
+            border-radius: 8px; font-weight: 700; cursor: pointer; transition: all .15s;
+            font-family: var(--font-body); font-size: .88rem;
+        }
+        .btn-secondary {
+            background: var(--surface-raised); color: var(--text); border: 1.5px solid var(--border);
+            padding: .7rem 1.35rem; border-radius: 8px; font-weight: 600; cursor: pointer;
+            transition: all .15s; font-family: var(--font-body); font-size: .88rem;
+        }
+        .btn-danger {
+            background: var(--danger); color: #fff; border: none; padding: .7rem 1.35rem;
+            border-radius: 8px; font-weight: 600; cursor: pointer; transition: all .15s;
+            font-family: var(--font-body); font-size: .88rem;
+        }
+        .btn-primary:hover { background: #9a3412; }
+        .btn-danger:hover { background: #991b1b; }
+        .btn-secondary:hover { background: var(--border-light); border-color: var(--text-muted); }
+
+        /* Confirm Modal */
+        .confirm-modal .modal-panel { max-width: 400px; text-align: center; }
+        .confirm-modal .modal-body { padding: 2rem 2rem 1.5rem; }
+        .confirm-modal h4 { margin-bottom: .5rem; font-size: 1.1rem; font-family: var(--font-display); font-weight: 400; }
+        .confirm-modal p { color: var(--text-secondary); margin-bottom: 1.5rem; font-size: .92rem; }
+
+        /* ═══════════════ NOTIFICATIONS ═══════════════ */
+        .notification-dropdown {
+            position: absolute; top: 48px; right: 0; background: #fff; border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-lg); width: 320px; max-height: 380px; overflow-y: auto;
+            z-index: 100; display: none; padding: .35rem 0; border: 1px solid var(--border-light);
+        }
+        .notification-dropdown.active { display: block; }
+        .notification-dropdown .notif-header {
+            padding: .7rem 1rem; font-weight: 700; font-size: .85rem; border-bottom: 1px solid var(--border-light);
+            display: flex; justify-content: space-between; align-items: center;
+        }
+        .notification-dropdown .notif-item { padding: .7rem 1rem; border-bottom: 1px solid var(--border-light); cursor: pointer; transition: background .1s; }
+        .notification-dropdown .notif-item:hover { background: var(--surface-raised); }
+        .notification-dropdown .notif-item .notif-title { font-size: .82rem; font-weight: 600; margin-bottom: .1rem; }
+        .notification-dropdown .notif-item .notif-time { font-size: .72rem; color: var(--text-muted); }
+        .notification-dropdown .notif-empty { text-align: center; padding: 2rem; color: var(--text-muted); font-size: .85rem; }
+        .notif-dot { width: 7px; height: 7px; background: var(--accent); border-radius: 50%; display: inline-block; margin-right: .5rem; }
+
+        /* ═══════════════ SECTIONS ═══════════════ */
+        .section-content { display: none; }
+        .section-content.active { display: block; }
+
+        .placeholder-card {
+            background: #fff; border-radius: var(--radius-lg); padding: 4rem 2rem; text-align: center;
+            box-shadow: var(--shadow-sm); border: 1px solid var(--border-light);
+        }
+        .placeholder-card .placeholder-icon { font-size: 3rem; margin-bottom: 1.25rem; opacity: .2; }
+        .placeholder-card h3 { color: var(--text); margin-bottom: .5rem; font-family: var(--font-display); font-weight: 400; font-size: 1.35rem; }
+        .placeholder-card p { color: var(--text-muted); font-size: .92rem; max-width: 400px; margin: 0 auto; line-height: 1.6; }
 
         /* Skeleton */
-        .skeleton{background:linear-gradient(90deg,#f0f0f0 25%,#e0e0e0 50%,#f0f0f0 75%);background-size:200% 100%;animation:skeleton 1.5s infinite;border-radius:4px}
-        @keyframes skeleton{0%{background-position:200% 0}100%{background-position:-200% 0}}
+        .skeleton { background: linear-gradient(90deg, #f5f5f4 25%, #e7e5e4 50%, #f5f5f4 75%); background-size: 200% 100%; animation: skeleton 1.5s infinite; border-radius: 4px; }
+        @keyframes skeleton { 0% { background-position: 200% 0 } 100% { background-position: -200% 0 } }
 
-        /* Review section specific */
-        .review-filters .filters select{min-width:140px}
+        .review-filters .filters select { min-width: 140px; }
 
-        @media(max-width:768px){
-            .admin-layout{grid-template-columns:1fr !important}
-            aside{height:auto;position:relative;width:100% !important}
-            .admin-layout.sidebar-collapsed aside{width:100% !important}
-            .sidebar-logo-text{display:block !important;opacity:1 !important}
-            aside nav a .nav-label{display:block !important;opacity:1 !important}
-            .admin-layout.sidebar-collapsed aside nav a::after,.admin-layout.sidebar-collapsed aside nav a::before{display:none !important}
-            .detail-grid{grid-template-columns:1fr}
-            .form-row{grid-template-columns:1fr}
-            .filters{flex-direction:column;align-items:stretch}
-            .login-box{padding:2rem 1.5rem}
-            .notification-dropdown{width:280px;right:-60px}
+        /* ═══════════════ RESPONSIVE ═══════════════ */
+        @media (max-width: 768px) {
+            .admin-layout { grid-template-columns: 1fr !important; }
+            aside { height: auto; position: relative; width: 100% !important; }
+            .admin-layout.sidebar-collapsed aside { width: 100% !important; }
+            .sidebar-logo-text { display: block !important; opacity: 1 !important; }
+            aside nav a .nav-label { display: block !important; opacity: 1 !important; }
+            .admin-layout.sidebar-collapsed aside nav a::after, .admin-layout.sidebar-collapsed aside nav a::before { display: none !important; }
+            .detail-grid { grid-template-columns: 1fr; }
+            .form-row { grid-template-columns: 1fr; }
+            .filters { flex-direction: column; align-items: stretch; }
+            .login-box { padding: 2rem 1.5rem; }
+            .notification-dropdown { width: 280px; right: -60px; }
+            .admin-main { padding: 1.25rem 1rem; }
+            .stats-grid { grid-template-columns: 1fr 1fr; }
         }
     </style>
-<base target="_blank">
 <base target="_blank">
 </head>
 <body>
@@ -325,49 +494,49 @@
     <aside>
         <div class="sidebar-logo-area">
             <div class="sidebar-logo">
-                <img src="/image/logo.svg" alt="Shop2Bhutan" width="36" height="36">
+                <img src="/image/logo.svg" alt="Shop2Bhutan" width="34" height="34">
                 <span class="sidebar-logo-text">Shop2Bhutan</span>
             </div>
             <div class="sidebar-controls">
-                <button type="button" class="sidebar-btn" id="pinSidebarBtn" onclick="togglePinSidebar()" title="Pin sidebar"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="17" x2="12" y2="3"/><path d="M5 17h14"/><path d="M15 3l-3-3-3 3"/></svg></button>
-                <button type="button" class="sidebar-btn" id="toggleSidebarBtn" onclick="toggleSidebar()" title="Collapse sidebar"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg></button>
+                <button type="button" class="sidebar-btn" id="pinSidebarBtn" onclick="togglePinSidebar()" title="Pin sidebar"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="17" x2="12" y2="3"/><path d="M5 17h14"/><path d="M15 3l-3-3-3 3"/></svg></button>
+                <button type="button" class="sidebar-btn" id="toggleSidebarBtn" onclick="toggleSidebar()" title="Collapse sidebar"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg></button>
             </div>
         </div>
         <nav>
             <a href="#" class="active" data-section="orders" data-label="Orders" onclick="showSection('orders');return false">
-                <span class="nav-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg></span>
+                <span class="nav-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg></span>
                 <span class="nav-label">Orders</span>
             </a>
             <a href="#" data-section="quotations" data-label="Quotations" onclick="showSection('quotations');return false">
-                <span class="nav-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg></span>
+                <span class="nav-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg></span>
                 <span class="nav-label">Quotations</span>
             </a>
             <a href="#" data-section="reviews" data-label="Reviews" onclick="showSection('reviews');return false">
-                <span class="nav-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg></span>
+                <span class="nav-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg></span>
                 <span class="nav-label">Reviews</span>
             </a>
             <a href="#" data-section="payments" data-label="Payments" onclick="showSection('payments');return false">
-                <span class="nav-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg></span>
+                <span class="nav-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg></span>
                 <span class="nav-label">Payments</span>
             </a>
             <div class="nav-divider"></div>
             <div class="nav-section-label">Analytics</div>
             <a href="#" data-label="Reports" onclick="alert('Coming soon');return false">
-                <span class="nav-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="20" x2="12" y2="10"/><line x1="18" y1="20" x2="18" y2="4"/><line x1="6" y1="20" x2="6" y2="16"/></svg></span>
+                <span class="nav-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="20" x2="12" y2="10"/><line x1="18" y1="20" x2="18" y2="4"/><line x1="6" y1="20" x2="6" y2="16"/></svg></span>
                 <span class="nav-label">Reports</span>
             </a>
             <div class="nav-divider"></div>
             <div class="nav-section-label">System</div>
-            <a href="#" data-label="Settings" onclick="alert('Coming soon');return false">
-                <span class="nav-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></span>
+            <a href="#" data-section="settings" data-label="Settings" onclick="showSection('settings');return false">
+                <span class="nav-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></span>
                 <span class="nav-label">Settings</span>
             </a>
             <a href="index.html" data-label="Back to Site">
-                <span class="nav-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg></span>
+                <span class="nav-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg></span>
                 <span class="nav-label">Back to Site</span>
             </a>
-            <a href="#" data-label="Logout" onclick="logout();return false" style="margin-top:auto;color:#e94560">
-                <span class="nav-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg></span>
+            <a href="#" data-label="Logout" onclick="logout();return false" style="margin-top:auto;color:#ef4444;">
+                <span class="nav-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg></span>
                 <span class="nav-label">Logout</span>
             </a>
         </nav>
@@ -379,13 +548,13 @@
             <div class="admin-header-actions">
                 <div style="position:relative;">
                     <button class="notification-btn" onclick="toggleNotifications(event)" title="Notifications">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
                         <span class="notification-badge" id="notifBadge" style="display:none">0</span>
                     </button>
                     <div class="notification-dropdown" id="notifDropdown">
                         <div class="notif-header">
                             <span>Notifications</span>
-                            <a href="#" onclick="clearNotifications(event);return false" style="font-size:0.75rem;color:var(--accent);text-decoration:none;">Clear all</a>
+                            <a href="#" onclick="clearNotifications(event);return false" style="font-size:.72rem;color:var(--accent);text-decoration:none;font-weight:600;">Clear all</a>
                         </div>
                         <div id="notifList">
                             <div class="notif-empty">No new notifications</div>
@@ -395,45 +564,45 @@
                 <div class="admin-profile">
                     <div class="avatar" id="adminAvatar">A</div>
                     <div>
-                        <div id="adminName" style="font-weight:600;color:#1a1a2e;font-size:0.85rem">Admin</div>
+                        <div id="adminName" style="font-weight:600;color:var(--text);font-size:.82rem">Admin</div>
                         <span class="badge-role" id="adminRole">ADMIN</span>
                     </div>
                 </div>
             </div>
         </div>
 
-        <!-- ORDERS SECTION -->
+        <!-- ═══ ORDERS SECTION ═══ -->
         <div class="section-content active" id="section-orders">
             <div class="stats-grid" id="statsGrid">
                 <div class="stat-card submitted">
-                    <div class="stat-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/></svg></div>
+                    <div class="stat-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/></svg></div>
                     <h4>New Orders</h4>
-                    <div class="value" id="statSubmitted"><div class="skeleton" style="height:18px;width:60%;"></div></div>
+                    <div class="value" id="statSubmitted"><div class="skeleton" style="height:20px;width:50%;"></div></div>
                 </div>
                 <div class="stat-card confirmed">
-                    <div class="stat-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg></div>
+                    <div class="stat-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg></div>
                     <h4>Confirmed</h4>
-                    <div class="value" id="statConfirmed"><div class="skeleton" style="height:18px;width:60%;"></div></div>
+                    <div class="value" id="statConfirmed"><div class="skeleton" style="height:20px;width:50%;"></div></div>
                 </div>
                 <div class="stat-card pending">
-                    <div class="stat-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></div>
+                    <div class="stat-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></div>
                     <h4>This Week</h4>
-                    <div class="value" id="statWeek"><div class="skeleton" style="height:18px;width:60%;"></div></div>
+                    <div class="value" id="statWeek"><div class="skeleton" style="height:20px;width:50%;"></div></div>
                 </div>
                 <div class="stat-card revenue">
-                    <div class="stat-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="20" height="12" rx="2"/><circle cx="12" cy="12" r="2"/><path d="M6 12h.01"/><path d="M18 12h.01"/></svg></div>
+                    <div class="stat-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="20" height="12" rx="2"/><circle cx="12" cy="12" r="2"/><path d="M6 12h.01"/><path d="M18 12h.01"/></svg></div>
                     <h4>Total Revenue</h4>
-                    <div class="value" id="statRevenue"><div class="skeleton" style="height:18px;width:60%;"></div></div>
+                    <div class="value" id="statRevenue"><div class="skeleton" style="height:20px;width:50%;"></div></div>
                 </div>
             </div>
 
             <div class="filters">
                 <div>
-                    <label style="display:block;font-size:0.8rem;color:#888;margin-bottom:0.35rem">Search</label>
+                    <label style="display:block;font-size:.68rem;color:var(--text-muted);margin-bottom:.35rem;font-weight:600;text-transform:uppercase;letter-spacing:.6px">Search</label>
                     <input type="text" id="filterSearch" placeholder="Name, phone, order ID…">
                 </div>
                 <div>
-                    <label style="display:block;font-size:0.8rem;color:#888;margin-bottom:0.35rem">Status</label>
+                    <label style="display:block;font-size:.68rem;color:var(--text-muted);margin-bottom:.35rem;font-weight:600;text-transform:uppercase;letter-spacing:.6px">Status</label>
                     <select id="filterStatus">
                         <option value="">All Status</option>
                         <option value="submitted">Submitted</option>
@@ -446,24 +615,24 @@
                     </select>
                 </div>
                 <div>
-                    <label style="display:block;font-size:0.8rem;color:#888;margin-bottom:0.35rem">Dzongkhag</label>
+                    <label style="display:block;font-size:.68rem;color:var(--text-muted);margin-bottom:.35rem;font-weight:600;text-transform:uppercase;letter-spacing:.6px">Dzongkhag</label>
                     <select id="filterDzongkhag"><option value="">All</option></select>
                 </div>
                 <div>
-                    <label style="display:block;font-size:0.8rem;color:#888;margin-bottom:0.35rem">Trip Date</label>
+                    <label style="display:block;font-size:.68rem;color:var(--text-muted);margin-bottom:.35rem;font-weight:600;text-transform:uppercase;letter-spacing:.6px">Trip Date</label>
                     <input type="date" id="filterDate">
                 </div>
-                <div style="margin-left:auto;display:flex;gap:0.5rem">
-                    <button onclick="exportCSV()" id="exportBtn"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:4px"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> Export CSV</button>
+                <div style="margin-left:auto;display:flex;gap:.5rem">
+                    <button onclick="exportCSV()" id="exportBtn"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:4px"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>Export</button>
                 </div>
             </div>
 
-            <div id="bulkBar" style="display:none;background:#1a1a2e;color:#fff;padding:0.75rem 1rem;border-radius:10px;margin-bottom:1rem;align-items:center;justify-content:space-between;">
-                <span id="bulkCount">0 selected</span>
-                <div style="display:flex;gap:0.5rem">
-                    <button onclick="bulkUpdateStatus('confirmed')" style="background:#25d366;color:#fff;border:none;padding:0.4rem 0.8rem;border-radius:6px;cursor:pointer;font-weight:600;font-size:0.85rem">Mark Confirmed</button>
-                    <button onclick="bulkUpdateStatus('purchased')" style="background:#2980b9;color:#fff;border:none;padding:0.4rem 0.8rem;border-radius:6px;cursor:pointer;font-weight:600;font-size:0.85rem">Mark Purchased</button>
-                    <button onclick="clearSelection()" style="background:rgba(255,255,255,.15);color:#fff;border:none;padding:0.4rem 0.8rem;border-radius:6px;cursor:pointer;font-weight:600;font-size:0.85rem">Clear</button>
+            <div id="bulkBar" style="display:none;background:var(--text);color:#fff;padding:.7rem 1rem;border-radius:var(--radius);margin-bottom:.85rem;align-items:center;justify-content:space-between;">
+                <span id="bulkCount" style="font-size:.88rem;font-weight:600;">0 selected</span>
+                <div style="display:flex;gap:.4rem">
+                    <button onclick="bulkUpdateStatus('confirmed')" style="background:var(--success);color:#fff;border:none;padding:.35rem .7rem;border-radius:6px;cursor:pointer;font-weight:600;font-size:.8rem;font-family:var(--font-body)">Confirm</button>
+                    <button onclick="bulkUpdateStatus('purchased')" style="background:var(--info);color:#fff;border:none;padding:.35rem .7rem;border-radius:6px;cursor:pointer;font-weight:600;font-size:.8rem;font-family:var(--font-body)">Purchased</button>
+                    <button onclick="clearSelection()" style="background:rgba(255,255,255,.12);color:#fff;border:none;padding:.35rem .7rem;border-radius:6px;cursor:pointer;font-weight:600;font-size:.8rem;font-family:var(--font-body)">Clear</button>
                 </div>
             </div>
 
@@ -471,7 +640,7 @@
                 <table>
                     <thead>
                         <tr>
-                            <th><input type="checkbox" class="select-all" id="selectAll" onchange="toggleSelectAll()"></th>
+                            <th style="width:36px"><input type="checkbox" class="select-all" id="selectAll" onchange="toggleSelectAll()"></th>
                             <th>Order ID</th>
                             <th>Submitted</th>
                             <th>Customer</th>
@@ -483,7 +652,7 @@
                         </tr>
                     </thead>
                     <tbody id="ordersTableBody">
-                        <tr><td colspan="9" style="text-align:center;padding:2rem;color:#888">Loading orders…</td></tr>
+                        <tr><td colspan="9" style="text-align:center;padding:2.5rem;color:var(--text-muted)">Loading orders…</td></tr>
                     </tbody>
                 </table>
             </div>
@@ -494,49 +663,113 @@
             </div>
         </div>
 
-        <!-- QUOTATIONS SECTION -->
+        <!-- ═══ QUOTATIONS SECTION ═══ -->
         <div class="section-content" id="section-quotations">
-            <div class="placeholder-card">
-                <div class="placeholder-icon"><svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg></div>
-                <h3>Quotations</h3>
-                <p>Quotation management is coming soon. You'll be able to create, send, and track price quotes for customers here.</p>
+            <div class="stats-grid" id="quotationStatsGrid">
+                <div class="stat-card submitted">
+                    <div class="stat-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg></div>
+                    <h4>Draft</h4>
+                    <div class="value" id="statQuotationDraft"><div class="skeleton" style="height:20px;width:50%;"></div></div>
+                </div>
+                <div class="stat-card confirmed">
+                    <div class="stat-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg></div>
+                    <h4>Sent</h4>
+                    <div class="value" id="statQuotationSent"><div class="skeleton" style="height:20px;width:50%;"></div></div>
+                </div>
+                <div class="stat-card pending">
+                    <div class="stat-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></div>
+                    <h4>Accepted</h4>
+                    <div class="value" id="statQuotationAccepted"><div class="skeleton" style="height:20px;width:50%;"></div></div>
+                </div>
+                <div class="stat-card revenue">
+                    <div class="stat-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="20" height="12" rx="2"/><circle cx="12" cy="12" r="2"/></svg></div>
+                    <h4>Total Value</h4>
+                    <div class="value" id="statQuotationValue"><div class="skeleton" style="height:20px;width:50%;"></div></div>
+                </div>
+            </div>
+
+            <div class="filters">
+                <div>
+                    <label style="display:block;font-size:.68rem;color:var(--text-muted);margin-bottom:.35rem;font-weight:600;text-transform:uppercase;letter-spacing:.6px">Search</label>
+                    <input type="text" id="quotationFilterSearch" placeholder="Name, phone, item…">
+                </div>
+                <div>
+                    <label style="display:block;font-size:.68rem;color:var(--text-muted);margin-bottom:.35rem;font-weight:600;text-transform:uppercase;letter-spacing:.6px">Status</label>
+                    <select id="quotationFilterStatus">
+                        <option value="">All Status</option>
+                        <option value="draft">Draft</option>
+                        <option value="sent">Sent</option>
+                        <option value="accepted">Accepted</option>
+                        <option value="rejected">Rejected</option>
+                        <option value="expired">Expired</option>
+                    </select>
+                </div>
+                <div>
+                    <label style="display:block;font-size:.68rem;color:var(--text-muted);margin-bottom:.35rem;font-weight:600;text-transform:uppercase;letter-spacing:.6px">Dzongkhag</label>
+                    <select id="quotationFilterDzongkhag"><option value="">All</option></select>
+                </div>
+                <div style="margin-left:auto;display:flex;gap:.5rem">
+                    <button onclick="openQuotationModal()" id="createQuotationBtn" style="background:var(--accent);color:#fff;border:none;padding:.6rem 1.15rem;border-radius:8px;font-weight:600;cursor:pointer;transition:all .15s;display:flex;align-items:center;gap:.35rem;font-family:var(--font-body);font-size:.85rem">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                        New Quotation
+                    </button>
+                    <button onclick="exportQuotationsCSV()" id="exportQuotationBtn"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:4px"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>Export</button>
+                </div>
+            </div>
+
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Quotation ID</th>
+                            <th>Date</th>
+                            <th>Customer</th>
+                            <th>Items</th>
+                            <th>Amount</th>
+                            <th>Status</th>
+                            <th>Valid Until</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="quotationsTableBody">
+                        <tr><td colspan="8" style="text-align:center;padding:2.5rem;color:var(--text-muted)">Loading quotations…</td></tr>
+                    </tbody>
+                </table>
             </div>
         </div>
 
-        <!-- REVIEWS SECTION -->
+        <!-- ═══ REVIEWS SECTION ═══ -->
         <div class="section-content" id="section-reviews">
-            <!-- Review Stats -->
             <div class="stats-grid">
                 <div class="stat-card review-pending">
-                    <div class="stat-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div>
+                    <div class="stat-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div>
                     <h4>Pending Review</h4>
-                    <div class="value" id="statReviewPending"><div class="skeleton" style="height:18px;width:60%;"></div></div>
+                    <div class="value" id="statReviewPending"><div class="skeleton" style="height:20px;width:50%;"></div></div>
                 </div>
                 <div class="stat-card review-verified">
-                    <div class="stat-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg></div>
+                    <div class="stat-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg></div>
                     <h4>Verified</h4>
-                    <div class="value" id="statReviewVerified"><div class="skeleton" style="height:18px;width:60%;"></div></div>
+                    <div class="value" id="statReviewVerified"><div class="skeleton" style="height:20px;width:50%;"></div></div>
                 </div>
                 <div class="stat-card review-rejected">
-                    <div class="stat-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg></div>
+                    <div class="stat-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg></div>
                     <h4>Rejected</h4>
-                    <div class="value" id="statReviewRejected"><div class="skeleton" style="height:18px;width:60%;"></div></div>
+                    <div class="value" id="statReviewRejected"><div class="skeleton" style="height:20px;width:50%;"></div></div>
                 </div>
                 <div class="stat-card avg-rating">
-                    <div class="stat-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg></div>
+                    <div class="stat-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg></div>
                     <h4>Avg Rating</h4>
-                    <div class="value" id="statAvgRating"><div class="skeleton" style="height:18px;width:60%;"></div></div>
+                    <div class="value" id="statAvgRating"><div class="skeleton" style="height:20px;width:50%;"></div></div>
                 </div>
             </div>
 
-            <!-- Review Filters -->
             <div class="filters review-filters">
                 <div>
-                    <label style="display:block;font-size:0.8rem;color:#888;margin-bottom:0.35rem">Search</label>
+                    <label style="display:block;font-size:.68rem;color:var(--text-muted);margin-bottom:.35rem;font-weight:600;text-transform:uppercase;letter-spacing:.6px">Search</label>
                     <input type="text" id="reviewFilterSearch" placeholder="Name, phone, comment…">
                 </div>
                 <div>
-                    <label style="display:block;font-size:0.8rem;color:#888;margin-bottom:0.35rem">Status</label>
+                    <label style="display:block;font-size:.68rem;color:var(--text-muted);margin-bottom:.35rem;font-weight:600;text-transform:uppercase;letter-spacing:.6px">Status</label>
                     <select id="reviewFilterStatus">
                         <option value="">All Status</option>
                         <option value="pending">Pending</option>
@@ -545,7 +778,7 @@
                     </select>
                 </div>
                 <div>
-                    <label style="display:block;font-size:0.8rem;color:#888;margin-bottom:0.35rem">Rating</label>
+                    <label style="display:block;font-size:.68rem;color:var(--text-muted);margin-bottom:.35rem;font-weight:600;text-transform:uppercase;letter-spacing:.6px">Rating</label>
                     <select id="reviewFilterRating">
                         <option value="">All Ratings</option>
                         <option value="5">5 Stars</option>
@@ -557,7 +790,6 @@
                 </div>
             </div>
 
-            <!-- Reviews Table -->
             <div class="table-wrap">
                 <table>
                     <thead>
@@ -572,18 +804,74 @@
                         </tr>
                     </thead>
                     <tbody id="reviewsTableBody">
-                        <tr><td colspan="7" style="text-align:center;padding:2rem;color:#888">Loading reviews…</td></tr>
+                        <tr><td colspan="7" style="text-align:center;padding:2.5rem;color:var(--text-muted)">Loading reviews…</td></tr>
                     </tbody>
                 </table>
             </div>
         </div>
 
-        <!-- PAYMENTS SECTION -->
+        <!-- ═══ PAYMENTS SECTION ═══ -->
         <div class="section-content" id="section-payments">
             <div class="placeholder-card">
                 <div class="placeholder-icon"><svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg></div>
                 <h3>Payment Management</h3>
                 <p>Payment tracking, refund processing, and transaction history will be available here soon.</p>
+            </div>
+        </div>
+
+        <!-- ═══ SETTINGS SECTION ═══ -->
+        <div class="section-content" id="section-settings">
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.25rem;">
+                <div class="table-wrap" style="padding:1.5rem;">
+                    <h3 style="font-size:1.1rem;margin-bottom:1.25rem;color:var(--text);font-family:var(--font-display);font-weight:400;">Charge Configuration</h3>
+                    <div style="display:flex;flex-direction:column;gap:1rem;">
+                        <div>
+                            <label style="display:block;font-size:.68rem;color:var(--text-muted);margin-bottom:.35rem;font-weight:600;text-transform:uppercase;letter-spacing:.6px">Service Charge Type</label>
+                            <select id="settingServiceType" style="width:100%;padding:.65rem;border:1.5px solid var(--border);border-radius:8px;font-size:.88rem;outline:none;font-family:var(--font-body);background:var(--surface-raised);">
+                                <option value="percentage">Percentage (%)</option>
+                                <option value="fixed">Fixed Amount (Nu.)</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label style="display:block;font-size:.68rem;color:var(--text-muted);margin-bottom:.35rem;font-weight:600;text-transform:uppercase;letter-spacing:.6px">Service Charge Value</label>
+                            <input type="number" id="settingServiceValue" placeholder="e.g. 10" style="width:100%;padding:.65rem;border:1.5px solid var(--border);border-radius:8px;font-size:.88rem;outline:none;font-family:var(--font-body);background:var(--surface-raised);">
+                            <small style="color:var(--text-muted);font-size:.78rem;">If percentage, enter 10 for 10%. If fixed, enter amount.</small>
+                        </div>
+                        <div>
+                            <label style="display:block;font-size:.68rem;color:var(--text-muted);margin-bottom:.35rem;font-weight:600;text-transform:uppercase;letter-spacing:.6px">Default Shipping Charge (Nu.)</label>
+                            <input type="number" id="settingShipping" placeholder="0" style="width:100%;padding:.65rem;border:1.5px solid var(--border);border-radius:8px;font-size:.88rem;outline:none;font-family:var(--font-body);background:var(--surface-raised);">
+                        </div>
+                        <div style="display:flex;align-items:center;gap:1rem;flex-wrap:wrap;">
+                            <label style="display:flex;align-items:center;gap:.5rem;cursor:pointer;font-size:.88rem;color:var(--text-secondary);font-weight:500;">
+                                <input type="checkbox" id="settingGstEnabled" style="width:16px;height:16px;accent-color:var(--accent);">
+                                <span>Enable GST</span>
+                            </label>
+                            <div style="display:flex;align-items:center;gap:.35rem;">
+                                <input type="number" id="settingGstRate" value="5" style="width:65px;padding:.5rem;border:1.5px solid var(--border);border-radius:8px;font-size:.88rem;outline:none;font-family:var(--font-body);background:var(--surface-raised);">
+                                <span style="color:var(--text-muted);font-size:.88rem;">%</span>
+                            </div>
+                        </div>
+                        <button onclick="saveSettings()" id="saveSettingsBtn" class="btn-primary" style="margin-top:.5rem;">Save Charge Settings</button>
+                    </div>
+                </div>
+
+                <div class="table-wrap" style="padding:1.5rem;">
+                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.25rem;">
+                        <h3 style="font-size:1.1rem;color:var(--text);font-family:var(--font-display);font-weight:400;">Delivery Rates by Dzongkhag</h3>
+                        <button onclick="addDeliveryRateRow()" style="background:var(--text);color:#fff;border:none;padding:.35rem .7rem;border-radius:6px;font-size:.78rem;font-weight:600;cursor:pointer;transition:background .15s;font-family:var(--font-body);">+ Add Rate</button>
+                    </div>
+                    <div style="max-height:400px;overflow-y:auto;">
+                        <table style="font-size:.88rem;">
+                            <thead>
+                                <tr><th style="text-align:left;padding:.5rem;">Dzongkhag</th><th style="text-align:left;padding:.5rem;">Rate (Nu.)</th><th style="width:50px;"></th></tr>
+                            </thead>
+                            <tbody id="deliveryRatesTableBody">
+                                <tr><td colspan="3" style="text-align:center;padding:1.5rem;color:var(--text-muted);">Loading rates…</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <button onclick="saveDeliveryRates()" id="saveDeliveryRatesBtn" style="background:var(--success);color:#fff;border:none;padding:.7rem 1.35rem;border-radius:8px;font-weight:700;cursor:pointer;margin-top:1rem;width:100%;transition:opacity .15s;font-family:var(--font-body);font-size:.88rem;">Save Delivery Rates</button>
+                </div>
             </div>
         </div>
     </main>
@@ -594,7 +882,7 @@
     <div class="modal-panel">
         <div class="modal-header">
             <h3>Details</h3>
-            <button onclick="closeOrderModal()" style="background:none;border:none;font-size:1.5rem;cursor:pointer;color:#888">&times;</button>
+            <button onclick="closeOrderModal()" style="background:none;border:none;font-size:1.35rem;cursor:pointer;color:var(--text-muted);line-height:1;padding:4px;border-radius:6px;transition:background .1s;" onmouseover="this.style.background='var(--border-light)'" onmouseout="this.style.background='none'">&times;</button>
         </div>
         <div class="modal-body" id="modalBody"></div>
         <div class="modal-footer">
@@ -610,7 +898,7 @@
         <div class="modal-body">
             <h4 id="confirmTitle">Are you sure?</h4>
             <p id="confirmMessage">This action cannot be undone.</p>
-            <div style="display:flex;gap:0.75rem;justify-content:center">
+            <div style="display:flex;gap:.65rem;justify-content:center">
                 <button class="btn-secondary" onclick="closeConfirmModal()">Cancel</button>
                 <button class="btn-danger" id="confirmActionBtn" onclick="">Confirm</button>
             </div>
@@ -639,47 +927,26 @@ function togglePasswordPreview() {
     }
 }
 
-/* ============ SIDEBAR COLLAPSE & PIN ============ */
+/* ============ SIDEBAR ============ */
 let sidebarPinned = false;
-let sidebarCollapsed = false;
 
 function toggleSidebar() {
     const layout = document.getElementById('adminLayout');
-    const btn = document.getElementById('toggleSidebarBtn');
-    const chevronLeft = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>';
-    const chevronRight = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>';
-    sidebarCollapsed = !sidebarCollapsed;
-
-    if (sidebarCollapsed) {
-        layout.classList.add('sidebar-collapsed');
-        btn.innerHTML = chevronRight;
-        btn.title = 'Expand sidebar';
-    } else {
-        layout.classList.remove('sidebar-collapsed');
-        btn.innerHTML = chevronLeft;
-        btn.title = 'Collapse sidebar';
-    }
-    localStorage.setItem('s2b_sidebar_collapsed', sidebarCollapsed ? '1' : '0');
+    layout.classList.toggle('sidebar-collapsed');
+    localStorage.setItem('sidebarCollapsed', layout.classList.contains('sidebar-collapsed') ? '1' : '0');
 }
 
 function togglePinSidebar() {
-    const btn = document.getElementById('pinSidebarBtn');
     sidebarPinned = !sidebarPinned;
-
-    if (sidebarPinned) {
-        btn.classList.add('active');
-        btn.title = 'Unpin sidebar';
-    } else {
-        btn.classList.remove('active');
-        btn.title = 'Pin sidebar';
-    }
-    localStorage.setItem('s2b_sidebar_pinned', sidebarPinned ? '1' : '0');
+    const btn = document.getElementById('pinSidebarBtn');
+    btn.classList.toggle('active', sidebarPinned);
+    btn.title = sidebarPinned ? 'Unpin sidebar' : 'Pin sidebar';
+    localStorage.setItem('sidebarPinned', sidebarPinned ? '1' : '0');
 }
 
 function initSidebar() {
-    const pinned = localStorage.getItem('s2b_sidebar_pinned');
-    const collapsed = localStorage.getItem('s2b_sidebar_collapsed');
-
+    const collapsed = localStorage.getItem('sidebarCollapsed');
+    const pinned = localStorage.getItem('sidebarPinned');
     if (pinned === '1') {
         sidebarPinned = true;
         document.getElementById('pinSidebarBtn').classList.add('active');
@@ -688,7 +955,6 @@ function initSidebar() {
     if (collapsed === '1' && !sidebarPinned) {
         toggleSidebar();
     }
-
     if (window.innerWidth <= 1024 && !sidebarPinned) {
         const layout = document.getElementById('adminLayout');
         if (!layout.classList.contains('sidebar-collapsed')) {
@@ -712,11 +978,11 @@ function showSection(section) {
         orders: 'Orders Dashboard',
         quotations: 'Quotations',
         reviews: 'Review Moderation',
-        payments: 'Payment Management'
+        payments: 'Payment Management',
+        settings: 'Settings'
     };
     document.getElementById('pageTitle').textContent = titles[section] || 'Dashboard';
 
-    // Notify the module script about section change
     if (typeof window.onSectionChange === 'function') {
         window.onSectionChange(section);
     }
@@ -732,8 +998,6 @@ function clearNotifications(e) {
     document.getElementById('notifList').innerHTML = '<div class="notif-empty">No new notifications</div>';
     document.getElementById('notifBadge').style.display = 'none';
 }
-
-/* Close notification dropdown when clicking outside */
 document.addEventListener('click', function(e) {
     const dropdown = document.getElementById('notifDropdown');
     const btn = document.querySelector('.notification-btn');
@@ -758,7 +1022,6 @@ function toast(msg, type) {
     const t = type || 'default';
     const icon = icons[t] || icons.info;
     const title = titles[t] || '';
-
     el.innerHTML = `
         <div class="toast-icon">${icon}</div>
         <div class="toast-content">
@@ -787,17 +1050,11 @@ function closeOrderModal() {
 function closeConfirmModal() {
     document.getElementById('confirmModal').classList.remove('active');
 }
-
-/* Close modals when clicking overlay background */
 document.addEventListener('click', function(e) {
     const orderModal = document.getElementById('orderModal');
     const confirmModal = document.getElementById('confirmModal');
-    if (orderModal && orderModal.classList.contains('active') && e.target === orderModal) {
-        closeOrderModal();
-    }
-    if (confirmModal && confirmModal.classList.contains('active') && e.target === confirmModal) {
-        closeConfirmModal();
-    }
+    if (orderModal && orderModal.classList.contains('active') && e.target === orderModal) closeOrderModal();
+    if (confirmModal && confirmModal.classList.contains('active') && e.target === confirmModal) closeConfirmModal();
 });
 
 /* ============ INIT ============ */
