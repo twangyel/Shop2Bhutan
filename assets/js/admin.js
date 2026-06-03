@@ -117,6 +117,7 @@ let allReviews = [];
 let currentEditId = null;
 let currentReviewId = null;
 let currentSection = 'orders';
+let allPayments = [];
 window.__currentSection = currentSection;   // expose to global scope
 
 // ===== NOTIFICATION STATE =====
@@ -318,8 +319,9 @@ async function initDashboard() {
     await fetchOrders();
     await fetchReviews();
     await fetchQuotations();
-    await fetchSettings();       // <-- add
-    await fetchDeliveryRates();  // <-- add
+    await fetchPayments();       // ← add
+    await fetchSettings();
+    await fetchDeliveryRates();
     setupRealtime();
     populateDzongkhagFilter();
     updateReviewStats();
@@ -363,6 +365,280 @@ async function fetchOrders() {
         updateStats();
     }
 }
+
+// ===== PAYMENTS =====
+async function fetchPayments() {
+    const { data, error } = await supabase
+        .from('payments')
+        .select(`*, order:orders(id, order_code, customer:customers(name, phone, dzongkhag))`)
+        .order('created_at', { ascending: false });
+
+    if (error) {
+        console.error('Payments fetch error:', error);
+        const tbody = document.getElementById('paymentsTableBody');
+        if (tbody) {
+            tbody.innerHTML = `<tr><td colspan="9" style="text-align:center;color:#e94560;padding:2rem">Error loading payments: ${escapeHtml(error.message)}</td></tr>`;
+        }
+        return;
+    }
+
+    allPayments = data || [];
+    updatePaymentStats();
+    if (currentSection === 'payments') {
+        renderPayments();
+    }
+}
+
+function updatePaymentStats() {
+    const completed = allPayments.filter(p => p.status === 'completed');
+    const totalReceived = completed.reduce((s, p) => s + (parseFloat(p.amount) || 0), 0);
+    const pending = allPayments.filter(p => p.status === 'pending').length;
+    const refunded = allPayments.filter(p => p.status === 'refunded').length;
+
+    const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+    const thisWeek = allPayments
+        .filter(p => p.status === 'completed' && new Date(p.created_at) > weekAgo)
+        .reduce((s, p) => s + (parseFloat(p.amount) || 0), 0);
+
+    const elTotal = document.getElementById('statPaymentTotal');
+    const elPending = document.getElementById('statPaymentPending');
+    const elRefunded = document.getElementById('statPaymentRefunded');
+    const elWeek = document.getElementById('statPaymentWeek');
+
+    if (elTotal) elTotal.textContent = 'Nu. ' + totalReceived.toLocaleString();
+    if (elPending) elPending.textContent = pending;
+    if (elRefunded) elRefunded.textContent = refunded;
+    if (elWeek) elWeek.textContent = 'Nu. ' + thisWeek.toLocaleString();
+}
+
+window.renderPayments = function() {
+    const search = document.getElementById('paymentFilterSearch')?.value.toLowerCase() || '';
+    const status = document.getElementById('paymentFilterStatus')?.value || '';
+    const method = document.getElementById('paymentFilterMethod')?.value || '';
+    const date = document.getElementById('paymentFilterDate')?.value || '';
+
+    let filtered = allPayments.filter(p => {
+        const o = p.order || {};
+        const c = o.customer || {};
+        const matchesSearch = !search ||
+            (c.name && c.name.toLowerCase().includes(search)) ||
+            (c.phone && c.phone.includes(search)) ||
+            (o.order_code && o.order_code.toLowerCase().includes(search)) ||
+            (p.id && String(p.id).toLowerCase().includes(search)) ||
+            (p.transaction_reference && p.transaction_reference.toLowerCase().includes(search));
+        const matchesStatus = !status || p.status === status;
+        const matchesMethod = !method || p.payment_method === method;
+        const matchesDate = !date || (p.created_at && String(p.created_at).slice(0, 10) === date);
+        return matchesSearch && matchesStatus && matchesMethod && matchesDate;
+    });
+
+    const tbody = document.getElementById('paymentsTableBody');
+    if (!tbody) return;
+
+    if (filtered.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="9" style="text-align:center;padding:2rem;color:#888">No payments found</td></tr>`;
+        return;
+    }
+
+    tbody.innerHTML = filtered.map(p => {
+        const o = p.order || {};
+        const c = o.customer || {};
+        const statusClass = `badge-${p.status || 'pending'}`;
+        const statusText = (p.status || 'pending').replace(/_/g, ' ');
+        const dateStr = p.created_at ? new Date(p.created_at).toLocaleDateString() : '-';
+        const timeStr = p.created_at ? new Date(p.created_at).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}) : '';
+        const methodText = (p.payment_method || 'other').replace(/_/g, ' ');
+
+        const proofBtn = p.proof_url || p.proof_image
+            ? `<button class="btn-icon btn-link" onclick="openScreenshot('${escapeHtml(p.proof_url || p.proof_image)}')" title="View proof"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg></button>`
+            : '';
+
+        const verifyBtn = p.status === 'pending'
+            ? `<button class="btn-icon btn-verify" onclick="verifyPayment('${p.id}')" title="Verify"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg></button>`
+            : '';
+
+        const refundBtn = p.status === 'completed'
+            ? `<button class="btn-icon btn-reject" onclick="confirmRefundPayment('${p.id}')" title="Refund"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 14 4 9 9 4"/><path d="M4 9h10a4 4 0 0 1 4 4v4"/></svg></button>`
+            : '';
+
+        return `
+        <tr>
+            <td><span class="token">${escapeHtml(String(p.id).slice(0, 8).toUpperCase())}</span></td>
+            <td>
+                <span class="token">${escapeHtml(o.order_code || (o.id ? String(o.id).slice(0, 8).toUpperCase() : '-'))}</span>
+            </td>
+            <td>
+                <div class="customer-info">
+                    <strong>${escapeHtml(c.name || 'N/A')}</strong>
+                    <small>${escapeHtml(c.phone || '')}</small>
+                </div>
+            </td>
+            <td style="font-weight:600;">${p.amount ? 'Nu. ' + escapeHtml(p.amount) : '-'}</td>
+            <td><span class="badge badge-${escapeHtml(p.payment_method || 'other')}">${escapeHtml(methodText)}</span></td>
+            <td><span class="badge ${escapeHtml(statusClass)}">${escapeHtml(statusText)}</span></td>
+            <td><span style="font-family:monospace;font-size:0.8rem;color:var(--text-secondary);">${escapeHtml(p.transaction_reference || '-')}</span></td>
+            <td>
+                <div style="font-size:0.9rem;color:#1a1a2e;font-weight:500;">${escapeHtml(dateStr)}</div>
+                <small style="color:#888">${escapeHtml(timeStr)}</small>
+            </td>
+            <td>
+                <div class="actions">
+                    <button class="btn-icon btn-view" onclick="openPaymentDetail('${escapeHtml(p.id)}')" title="View"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button>
+                    ${proofBtn}
+                    ${verifyBtn}
+                    ${refundBtn}
+                </div>
+            </td>
+        </tr>
+    `}).join('');
+};
+
+window.openPaymentDetail = function(id) {
+    const payment = allPayments.find(p => p.id === id);
+    if (!payment) return;
+
+    const o = payment.order || {};
+    const c = o.customer || {};
+    const statusClass = `badge-${payment.status || 'pending'}`;
+    const statusText = (payment.status || 'pending').replace(/_/g, ' ');
+    const dateStr = payment.created_at ? new Date(payment.created_at).toLocaleString() : '-';
+    const verifiedDate = payment.verified_at ? new Date(payment.verified_at).toLocaleString() : '-';
+
+    const modalBody = document.getElementById('modalBody');
+    modalBody.innerHTML = `
+        <div class="detail-grid">
+            <div class="detail-group"><label>Payment ID</label><span class="token">${escapeHtml(String(payment.id).slice(0, 8).toUpperCase())}</span></div>
+            <div class="detail-group"><label>Order Code</label><span class="token">${escapeHtml(o.order_code || (o.id ? String(o.id).slice(0, 8).toUpperCase() : '-'))}</span></div>
+            <div class="detail-group"><label>Customer</label><span>${escapeHtml(c.name || '-')}</span></div>
+            <div class="detail-group"><label>Phone</label><span>${escapeHtml(c.phone || '-')}</span></div>
+            <div class="detail-group"><label>Amount</label><span style="font-weight:700;font-size:1.1rem;">Nu. ${escapeHtml(payment.amount)}</span></div>
+            <div class="detail-group"><label>Payment Method</label><span class="badge badge-${escapeHtml(payment.payment_method || 'other')}">${escapeHtml((payment.payment_method || 'other').replace(/_/g, ' '))}</span></div>
+            <div class="detail-group"><label>Status</label><span class="badge ${escapeHtml(statusClass)}">${escapeHtml(statusText)}</span></div>
+            <div class="detail-group"><label>Transaction Ref</label><span style="font-family:monospace;">${escapeHtml(payment.transaction_reference || '-')}</span></div>
+            <div class="detail-group"><label>Submitted</label><span>${escapeHtml(dateStr)}</span></div>
+            <div class="detail-group"><label>Verified At</label><span>${escapeHtml(verifiedDate)}</span></div>
+        </div>
+
+        ${payment.proof_url || payment.proof_image ? `
+        <div style="margin:1.5rem 0;padding:1rem;background:#f8f9fc;border-radius:10px;">
+            <label style="font-size:0.8rem;color:#888;text-transform:uppercase;font-weight:600;display:block;margin-bottom:0.75rem">Payment Proof</label>
+            <img src="${escapeHtml(payment.proof_url || payment.proof_image)}" style="max-width:100%;max-height:300px;object-fit:contain;border-radius:8px;border:1px solid #ddd;cursor:pointer;" onclick="openScreenshot('${escapeHtml(payment.proof_url || payment.proof_image)}')" title="Click to enlarge">
+        </div>
+        ` : ''}
+
+        ${payment.notes ? `
+        <div style="margin-bottom:1.5rem;padding:1.25rem;background:#f8f9fc;border-radius:12px;">
+            <label style="font-size:0.8rem;color:#888;text-transform:uppercase;font-weight:600;display:block;margin-bottom:0.75rem">Notes</label>
+            <p style="font-size:0.95rem;color:#1a1a2e;line-height:1.7;margin:0;">${escapeHtml(payment.notes)}</p>
+        </div>
+        ` : ''}
+
+        ${payment.status === 'pending' ? `
+        <div style="display:flex;gap:0.75rem;justify-content:center;margin-top:1rem;">
+            <button class="btn-primary" onclick="verifyPayment('${payment.id}'); closeOrderModal();" style="background:var(--success);">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:6px;"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+                Verify Payment
+            </button>
+            <button class="btn-danger" onclick="confirmRefundPayment('${payment.id}'); closeOrderModal();">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:6px;"><polyline points="9 14 4 9 9 4"/><path d="M4 9h10a4 4 0 0 1 4 4v4"/></svg>
+                Mark Refunded
+            </button>
+        </div>
+        ` : ''}
+    `;
+    document.getElementById('modalSaveBtn').style.display = 'none';
+    document.getElementById('orderModal').classList.add('active');
+};
+
+window.verifyPayment = async function(id) {
+    const { data: { session } } = await supabase.auth.getSession();
+    const verifierId = session?.user?.id || null;
+
+    const { data, error } = await supabase
+        .from('payments')
+        .update({ status: 'completed', verified_by: verifierId, verified_at: new Date().toISOString() })
+        .eq('id', id)
+        .select();
+
+    if (error) {
+        toast('Error verifying payment: ' + error.message, 'error');
+        return;
+    }
+    if (!data || data.length === 0) {
+        toast('Update blocked — check RLS policies on the payments table.', 'error');
+        return;
+    }
+
+    toast('Payment verified', 'success');
+    await fetchPayments();
+    await fetchOrders();
+};
+
+window.confirmRefundPayment = function(id) {
+    const confirmModal = document.getElementById('confirmModal');
+    document.getElementById('confirmTitle').textContent = 'Refund Payment?';
+    document.getElementById('confirmMessage').textContent = 'This will mark the payment as refunded and update the order balance.';
+    document.getElementById('confirmActionBtn').className = 'btn-danger';
+    document.getElementById('confirmActionBtn').textContent = 'Refund';
+    document.getElementById('confirmActionBtn').onclick = async function() {
+        closeConfirmModal();
+        await refundPayment(id);
+    };
+    confirmModal.classList.add('active');
+};
+
+window.refundPayment = async function(id) {
+    const { data, error } = await supabase
+        .from('payments')
+        .update({ status: 'refunded', updated_at: new Date().toISOString() })
+        .eq('id', id)
+        .select();
+
+    if (error) {
+        toast('Error refunding payment: ' + error.message, 'error');
+        return;
+    }
+    if (!data || data.length === 0) {
+        toast('Update blocked — check RLS policies.', 'error');
+        return;
+    }
+
+    toast('Payment marked as refunded', 'info');
+    await fetchPayments();
+    await fetchOrders();
+};
+
+window.exportPaymentsCSV = function() {
+    const headers = ['PaymentID','OrderID','OrderCode','Customer','Phone','Dzongkhag','Amount','Method','Status','TransactionRef','Notes','CreatedAt','VerifiedAt'];
+    const rows = allPayments.map(p => {
+        const o = p.order || {};
+        const c = o.customer || {};
+        return [
+            csvEscape(p.id),
+            csvEscape(o.id),
+            csvEscape(o.order_code),
+            csvEscape(c.name),
+            csvEscape(c.phone),
+            csvEscape(c.dzongkhag),
+            csvEscape(p.amount),
+            csvEscape(p.payment_method),
+            csvEscape(p.status),
+            csvEscape(p.transaction_reference),
+            csvEscape(p.notes),
+            csvEscape(p.created_at),
+            csvEscape(p.verified_at)
+        ];
+    });
+
+    const csv = [headers.map(csvEscape).join(','), ...rows.map(r => r.join(','))].join('\r\n');
+    const blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `shop2bhutan_payments_${new Date().toISOString().split('T')[0]}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+};
 
 // ===== REVIEWS =====
 async function fetchReviews() {
