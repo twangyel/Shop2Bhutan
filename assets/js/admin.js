@@ -644,9 +644,9 @@ function setupRealtime() {
             fetchOrders();
             if (payload.eventType === 'INSERT') {
                 playChime();
-                addNotification(
+                 addNotification(
                     'New Order Received',
-                    `Order ${payload.new.id?.slice(0, 8).toUpperCase() || ''}`,
+                    `Order ${payload.new.order_code || payload.new.id?.slice(0, 8).toUpperCase() || ''}`,
                     'order',
                     () => { showSection('orders'); }
                 );
@@ -723,6 +723,7 @@ window.renderOrders = function() {
         const matchesSearch = !search || 
             (c.name && c.name.toLowerCase().includes(search)) ||
             (c.phone && c.phone.includes(search)) ||
+            (o.order_code && o.order_code.toLowerCase().includes(search)) ||
             (o.id && o.id.toLowerCase().includes(search)) ||
             (o.items && o.items.some(i => i.product_name && i.product_name.toLowerCase().includes(search)));
         const matchesStatus = !status || o.status === status;
@@ -765,7 +766,7 @@ window.renderOrders = function() {
         <tr>
             <td><input type="checkbox" class="row-select" value="${escapeHtml(o.id)}" onchange="updateBulkBar()"></td>
             <td>
-                <span class="token">${escapeHtml(o.id.slice(0, 8).toUpperCase())}</span>
+                <span class="token">${escapeHtml(o.order_code || o.id.slice(0, 8).toUpperCase())}</span>
                 ${hasScreenshot ? `<span onclick="openScreenshot('${escapeHtml(screenshotUrl)}')" title="Click to view product screenshot" style="display:inline-block;margin-left:6px;vertical-align:middle;color:#2980b9;cursor:pointer;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg></span>` : ''}
             </td>
             <td>
@@ -786,7 +787,7 @@ window.renderOrders = function() {
             <td>
                 <div class="actions">
                     <button class="btn-icon btn-edit" onclick="openOrderDetail('${escapeHtml(o.id)}')" title="Edit"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>
-                    ${c.phone ? `<a class="btn-icon btn-wa" href="https://wa.me/${formatWhatsAppPhone(c.phone)}?text=Hi%20${encodeURIComponent(c.name || '')},%20regarding%20your%20order%20${encodeURIComponent(o.id.slice(0,8).toUpperCase())}" target="_blank" rel="noopener" title="WhatsApp"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg></a>` : ''}
+                    ${c.phone ? `<a class="btn-icon btn-wa" href="https://wa.me/${formatWhatsAppPhone(c.phone)}?text=Hi%20${encodeURIComponent(c.name || '')},%20regarding%20your%20order%20${encodeURIComponent(o.order_code || o.id.slice(0,8).toUpperCase())}" target="_blank" rel="noopener" title="WhatsApp"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg></a>` : ''}
                 </div>
             </td>
         </tr>
@@ -808,7 +809,7 @@ window.openOrderDetail = function(id) {
     const modalBody = document.getElementById('modalBody');
     modalBody.innerHTML = `
         <div class="detail-grid">
-            <div class="detail-group"><label>Order ID</label><span class="token">${escapeHtml(order.id.slice(0, 8).toUpperCase())}</span></div>
+            <div class="detail-group"><label>Order Code</label><span class="token">${escapeHtml(order.order_code || order.id.slice(0, 8).toUpperCase())}</span></div>
             <div class="detail-group"><label>Submitted</label><span>${order.created_at ? escapeHtml(new Date(order.created_at).toLocaleString()) : '-'}</span></div>
             <div class="detail-group"><label>Customer</label><span>${escapeHtml(c.name || '-')}</span></div>
             <div class="detail-group"><label>Phone</label><span>${escapeHtml(c.phone || '-')}</span></div>
@@ -926,12 +927,12 @@ window.saveOrderChanges = async function() {
 
 // ===== EXPORT =====
 window.exportCSV = function() {
-    const headers = ['OrderID','Status','Customer','Phone','Dzongkhag','Address','Items','PaymentMethod','TotalPrice','TripDate','CreatedAt'];
+    const headers = ['OrderCode','Status','Customer','Phone','Dzongkhag','Address','Items','PaymentMethod','TotalPrice','TripDate','CreatedAt'];
     const rows = allOrders.map(o => {
         const c = o.customer || {};
         const items = (o.items || []).map(i => i.product_name).filter(Boolean).join('; ');
         return [
-            csvEscape(o.id),
+            csvEscape(o.order_code || o.id),
             csvEscape(o.status),
             csvEscape(c.name),
             csvEscape(c.phone),
@@ -1407,19 +1408,23 @@ window.openQuotationModal = async function(quotationId = null) {
         <!-- Charges & Profit -->
         <div style="margin:1.5rem 0; padding:1.25rem; background:#fff; border:1px solid #e8e8e8; border-radius:12px;">
             <label style="font-size:0.8rem;color:#888;text-transform:uppercase;font-weight:600;display:block;margin-bottom:1rem">Charges & Profit Calculator</label>
-
-        <div class="form-row" style="margin-bottom:0.75rem;">
-    <div>
-        <label>Service Charge <small style="color:var(--text-muted);font-weight:400;">(auto-applied)</small></label>
-        <div style="display:flex;align-items:center;gap:0.5rem;padding:0.65rem;border:2px solid var(--border);border-radius:8px;background:var(--surface-raised);">
-            <span id="serviceChargeLabel" style="font-weight:600;color:var(--accent);">11%</span>
-            <span style="color:var(--text-muted);">—</span>
-            <span id="serviceChargeApplied" style="font-weight:500;">0</span>
-        </div>
-        <small style="color:var(--text-muted);display:block;margin-top:0.25rem;">
-            Nu. 250 flat under Nu. 1,500 · 15% (Nu. 1,501–4,000) · 11% (Nu. 4,001–6,000) · 8% (above)
-        </small>
-    </div>
+            <div class="form-row" style="margin-bottom:0.75rem;">
+                <div>
+                    <label>Service Charge <small style="color:var(--text-muted);font-weight:400;">(auto-applied)</small></label>
+                    <div style="display:flex;align-items:center;gap:0.5rem;padding:0.65rem;border:2px solid var(--border);border-radius:8px;background:var(--surface-raised);">
+                        <span id="serviceChargeLabel" style="font-weight:600;color:var(--accent);">11%</span>
+                        <span style="color:var(--text-muted);">—</span>
+                        <span id="serviceChargeApplied" style="font-weight:500;">0</span>
+                    </div>
+                    <small style="color:var(--text-muted);display:block;margin-top:0.25rem;">
+                        Nu. 250 flat under Nu. 1,500 · 15% (Nu. 1,501–4,000) · 11% (Nu. 4,001–6,000) · 8% (above)
+                    </small>
+                </div>
+                <div>
+                    <label>Shipping Charge <small style="color:var(--text-muted);font-weight:400;">(default from settings)</small></label>
+                    <input type="number" id="quotationShipping" oninput="recalculateQuotation()" placeholder="0" style="width:100%;padding:0.65rem;border:2px solid #e8e8e8;border-radius:8px;font-size:0.9rem;outline:none;">
+                </div>
+            </div>
 
             <div class="form-row" style="margin-bottom:0.75rem;">
                 <div>
@@ -1598,10 +1603,12 @@ function calculateServiceCharge(subtotal) {
     }
 }
 
-function recalculateQuotation() {
+window.recalculateQuotation = function() {
     const rows = document.querySelectorAll('.quotation-item-row');
     let subtotal = 0;
     let totalBaseCost = 0;
+
+    window.recalculateQuotation = recalculateQuotation;
 
     rows.forEach(row => {
         const qty = parseFloat(row.querySelector('.qitem-qty')?.value) || 0;

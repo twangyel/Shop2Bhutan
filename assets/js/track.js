@@ -60,6 +60,9 @@ async function loadOrders() {
       <div class="order-card-track">
         <div class="order-header-track">
           <div>
+            <div style="font-family:'Courier New',monospace;font-size:0.82rem;color:#888;margin-bottom:0.3rem;letter-spacing:0.02em;">
+              ${order.order_code || String(order.id).slice(0,8).toUpperCase()}
+            </div>
             <h4>${order.product_name}</h4>
             <p class="order-meta">Qty: ${order.quantity} | ${order.variant || 'Standard'}</p>
             <p class="order-meta">Trip: ${new Date(order.trip_date).toLocaleDateString()}</p>
