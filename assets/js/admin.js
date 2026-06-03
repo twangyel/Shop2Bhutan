@@ -1,20 +1,56 @@
 import { supabase } from './supabase.js';
 
 function escapeHtml(text) {
-    if (!text) return '';
+    if (text == null) return '';
     const div = document.createElement('div');
-    div.textContent = text;
+    div.textContent = String(text);
     return div.innerHTML;
+}
+
+// Properly quote a value for CSV (handles commas, quotes, newlines).
+function csvEscape(v) {
+    if (v == null) return '""';
+    const s = String(v);
+    return `"${s.replace(/"/g, '""')}"`;
+}
+
+// Build a sanitized WhatsApp phone fragment (digits only, ensures single 975 prefix).
+function formatWhatsAppPhone(phone) {
+    if (!phone) return '';
+    const digits = String(phone).replace(/\D/g, '');
+    if (!digits) return '';
+    return digits.startsWith('975') ? digits : '975' + digits;
+}
+
+// Admin-role gate. Flip REQUIRE_ADMIN_ROLE to true once admin users have been
+// granted a role. To grant: in Supabase dashboard → Authentication → Users →
+// select user → raw_app_meta_data → add { "role": "admin" }.
+const REQUIRE_ADMIN_ROLE = false;
+function isAdmin(user) {
+    if (!user) return false;
+    if (!REQUIRE_ADMIN_ROLE) return true;
+    const role = user.app_metadata?.role || user.user_metadata?.role;
+    return role === 'admin';
 }
 
 // ===== AUTH =====
 async function checkAuth() {
     const { data: { session } } = await supabase.auth.getSession();
-    if (session) {
+    if (session && isAdmin(session.user)) {
         showDashboard(session.user);
-    } else {
-        document.getElementById('loginScreen').style.display = 'flex';
+        return;
     }
+    if (session) {
+        // Authenticated but not authorized — sign out so a stale non-admin
+        // session can't sit on the login screen.
+        await supabase.auth.signOut();
+        const errorEl = document.getElementById('loginError');
+        if (errorEl) {
+            errorEl.textContent = 'This account does not have admin access.';
+            errorEl.classList.add('visible');
+        }
+    }
+    document.getElementById('loginScreen').style.display = 'flex';
 }
 
 function showDashboard(user) {
@@ -60,6 +96,13 @@ window.doLogin = async function() {
         return;
     }
 
+    if (!isAdmin(data.user)) {
+        await supabase.auth.signOut();
+        errorEl.innerHTML = alertIcon + 'This account does not have admin access.';
+        errorEl.classList.add('visible');
+        return;
+    }
+
     showDashboard(data.user);
 };
 
@@ -89,6 +132,55 @@ function toast(msg, type) {
         console.warn('toast() unavailable:', msg, type);
     }
 }
+
+// ===== SCREENSHOT LIGHTBOX =====
+// Modern browsers block window.open() on data: URLs (about:blank result),
+// so we display the screenshot in an in-page lightbox instead.
+window.openScreenshot = function(url) {
+    if (!url) return;
+    const existing = document.getElementById('screenshotLightbox');
+    if (existing) existing.remove();
+
+    const lb = document.createElement('div');
+    lb.id = 'screenshotLightbox';
+    lb.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.88);z-index:9999;display:flex;align-items:center;justify-content:center;padding:2rem;cursor:zoom-out;backdrop-filter:blur(4px);';
+
+    const img = document.createElement('img');
+    img.src = url;
+    img.style.cssText = 'max-width:95%;max-height:90vh;object-fit:contain;border-radius:8px;box-shadow:0 20px 60px rgba(0,0,0,0.5);cursor:default;';
+    img.onclick = (e) => e.stopPropagation();
+
+    const closeBtn = document.createElement('button');
+    closeBtn.innerHTML = '&times;';
+    closeBtn.setAttribute('aria-label', 'Close');
+    closeBtn.style.cssText = 'position:absolute;top:1rem;right:1.5rem;background:rgba(255,255,255,0.1);color:#fff;border:none;width:42px;height:42px;border-radius:50%;font-size:1.7rem;cursor:pointer;display:flex;align-items:center;justify-content:center;line-height:1;transition:background .15s;';
+    closeBtn.onmouseenter = () => closeBtn.style.background = 'rgba(255,255,255,0.2)';
+    closeBtn.onmouseleave = () => closeBtn.style.background = 'rgba(255,255,255,0.1)';
+
+    const dl = document.createElement('a');
+    dl.href = url;
+    dl.download = `screenshot-${Date.now()}.png`;
+    dl.textContent = '↓ Download';
+    dl.style.cssText = 'position:absolute;bottom:1.5rem;left:50%;transform:translateX(-50%);background:rgba(255,255,255,0.12);color:#fff;padding:0.55rem 1.15rem;border-radius:8px;text-decoration:none;font-weight:600;font-size:0.85rem;border:1px solid rgba(255,255,255,0.2);transition:background .15s;';
+    dl.onmouseenter = () => dl.style.background = 'rgba(255,255,255,0.22)';
+    dl.onmouseleave = () => dl.style.background = 'rgba(255,255,255,0.12)';
+    dl.onclick = (e) => e.stopPropagation();
+
+    lb.appendChild(img);
+    lb.appendChild(closeBtn);
+    lb.appendChild(dl);
+
+    const close = () => {
+        lb.remove();
+        document.removeEventListener('keydown', escHandler);
+    };
+    function escHandler(e) { if (e.key === 'Escape') close(); }
+    lb.onclick = close;
+    closeBtn.onclick = close;
+    document.addEventListener('keydown', escHandler);
+
+    document.body.appendChild(lb);
+};
 
 // ===== AUDIO =====
 // Browser autoplay policy: a new AudioContext starts suspended and can only
@@ -365,12 +457,12 @@ window.renderReviews = function() {
 
         return `
         <tr>
-            <td><span class="token">${String(r.id).slice(0, 8).toUpperCase()}</span></td>
+            <td><span class="token">${escapeHtml(String(r.id).slice(0, 8).toUpperCase())}</span></td>
             <td>
                 <div class="customer-info">
-                    <strong>${c.name || 'Anonymous'}</strong>
-                    <small>${c.phone || ''}</small>
-                    <small>${c.dzongkhag || ''}</small>
+                    <strong>${escapeHtml(c.name || 'Anonymous')}</strong>
+                    <small>${escapeHtml(c.phone || '')}</small>
+                    <small>${escapeHtml(c.dzongkhag || '')}</small>
                 </div>
             </td>
             <td>
@@ -485,31 +577,31 @@ window.openReviewDetail = function(id) {
         <div class="detail-grid">
             <div class="detail-group">
                 <label>Review ID</label>
-                <span class="token">${String(review.id).slice(0, 8).toUpperCase()}</span>
+                <span class="token">${escapeHtml(String(review.id).slice(0, 8).toUpperCase())}</span>
             </div>
             <div class="detail-group">
                 <label>Submitted</label>
-                <span>${dateStr}</span>
+                <span>${escapeHtml(dateStr)}</span>
             </div>
             <div class="detail-group">
                 <label>Customer</label>
-                <span>${c.name || '-'}</span>
+                <span>${escapeHtml(c.name || '-')}</span>
             </div>
             <div class="detail-group">
                 <label>Phone</label>
-                <span>${c.phone || '-'}</span>
+                <span>${escapeHtml(c.phone || '-')}</span>
             </div>
             <div class="detail-group">
                 <label>Dzongkhag</label>
-                <span>${c.dzongkhag || '-'}</span>
+                <span>${escapeHtml(c.dzongkhag || '-')}</span>
             </div>
             <div class="detail-group">
                 <label>Order ID</label>
-                <span>${review.order_id ? String(review.order_id).slice(0, 8).toUpperCase() : 'N/A'}</span>
+                <span>${review.order_id ? escapeHtml(String(review.order_id).slice(0, 8).toUpperCase()) : 'N/A'}</span>
             </div>
             <div class="detail-group">
                 <label>Status</label>
-                <span class="badge badge-${review.status || 'pending'}">${(review.status || 'pending').replace(/_/g, ' ')}</span>
+                <span class="badge badge-${escapeHtml(review.status || 'pending')}">${escapeHtml((review.status || 'pending').replace(/_/g, ' '))}</span>
             </div>
             <div class="detail-group">
                 <label>Moderated By</label>
@@ -642,10 +734,17 @@ window.renderOrders = function() {
     const tbody = document.getElementById('ordersTableBody');
     if (filtered.length === 0) {
         tbody.innerHTML = `<tr><td colspan="9" style="text-align:center;padding:2rem;color:#888">No orders found</td></tr>`;
+        renderOrdersPagination(0);
         return;
     }
 
-    tbody.innerHTML = filtered.map(o => {
+    // Slice for pagination. Reset page when filters drop the count below current page.
+    const totalPages = Math.max(1, Math.ceil(filtered.length / ORDERS_PAGE_SIZE));
+    if (currentOrdersPage > totalPages) currentOrdersPage = 1;
+    const startIdx = (currentOrdersPage - 1) * ORDERS_PAGE_SIZE;
+    const pageItems = filtered.slice(startIdx, startIdx + ORDERS_PAGE_SIZE);
+
+    tbody.innerHTML = pageItems.map(o => {
         const c = o.customer || {};
         const payments = o.payments || [];
         const paid = payments.filter(p => p.status === 'completed').reduce((s, p) => s + (parseFloat(p.amount) || 0), 0);
@@ -659,38 +758,41 @@ window.renderOrders = function() {
         const timeStr = submittedDate ? submittedDate.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : '';
 
         const screenshotItem = (o.items || []).find(i => i.screenshot);
-        const hasScreenshot = !!screenshotItem;
+        const screenshotUrl = o.screenshot || screenshotItem?.screenshot || '';
+        const hasScreenshot = !!screenshotUrl;
 
         return `
         <tr>
-            <td><input type="checkbox" class="row-select" value="${o.id}" onchange="updateBulkBar()"></td>
+            <td><input type="checkbox" class="row-select" value="${escapeHtml(o.id)}" onchange="updateBulkBar()"></td>
             <td>
-                <span class="token">${o.id.slice(0, 8).toUpperCase()}</span>
-                ${hasScreenshot ? `<span onclick="window.open('${escapeHtml(screenshotItem.screenshot)}','_blank')" title="Click to view product screenshot" style="display:inline-block;margin-left:6px;vertical-align:middle;color:#2980b9;cursor:pointer;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg></span>` : ''}
+                <span class="token">${escapeHtml(o.id.slice(0, 8).toUpperCase())}</span>
+                ${hasScreenshot ? `<span onclick="openScreenshot('${escapeHtml(screenshotUrl)}')" title="Click to view product screenshot" style="display:inline-block;margin-left:6px;vertical-align:middle;color:#2980b9;cursor:pointer;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg></span>` : ''}
             </td>
             <td>
-                <div style="font-size:0.9rem;color:#1a1a2e;font-weight:500;">${dateStr}</div>
-                <small style="color:#888">${timeStr}</small>
+                <div style="font-size:0.9rem;color:#1a1a2e;font-weight:500;">${escapeHtml(dateStr)}</div>
+                <small style="color:#888">${escapeHtml(timeStr)}</small>
             </td>
             <td>
                 <div class="customer-info">
-                    <strong>${c.name || 'N/A'}</strong>
-                    <small>${c.phone || ''}</small>
-                    <small>${c.dzongkhag || ''}</small>
+                    <strong>${escapeHtml(c.name || 'N/A')}</strong>
+                    <small>${escapeHtml(c.phone || '')}</small>
+                    <small>${escapeHtml(c.dzongkhag || '')}</small>
                 </div>
             </td>
-            <td>${o.trip_date ? new Date(o.trip_date).toLocaleDateString() : '-'}</td>
-            <td><span class="badge badge-${o.status || 'submitted'}">${(o.status || 'submitted').replace(/_/g,' ')}</span></td>
-            <td>${o.total_price ? 'Nu. ' + o.total_price : '-'}</td>
+            <td>${o.trip_date ? escapeHtml(new Date(o.trip_date).toLocaleDateString()) : '-'}</td>
+            <td><span class="badge badge-${escapeHtml(o.status || 'submitted')}">${escapeHtml((o.status || 'submitted').replace(/_/g,' '))}</span></td>
+            <td>${o.total_price ? 'Nu. ' + escapeHtml(o.total_price) : '-'}</td>
             <td>${paymentBadge}</td>
             <td>
                 <div class="actions">
-                    <button class="btn-icon btn-edit" onclick="openOrderDetail('${o.id}')" title="Edit"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>
-                    <a class="btn-icon btn-wa" href="https://wa.me/975${c.phone}?text=Hi%20${encodeURIComponent(c.name || '')},%20regarding%20your%20order%20${encodeURIComponent(o.id.slice(0,8).toUpperCase())}" target="_blank" title="WhatsApp"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg></a>
+                    <button class="btn-icon btn-edit" onclick="openOrderDetail('${escapeHtml(o.id)}')" title="Edit"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>
+                    ${c.phone ? `<a class="btn-icon btn-wa" href="https://wa.me/${formatWhatsAppPhone(c.phone)}?text=Hi%20${encodeURIComponent(c.name || '')},%20regarding%20your%20order%20${encodeURIComponent(o.id.slice(0,8).toUpperCase())}" target="_blank" rel="noopener" title="WhatsApp"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg></a>` : ''}
                 </div>
             </td>
         </tr>
     `}).join('');
+
+    renderOrdersPagination(filtered.length);
 };
 // ===== MODAL =====
 window.openOrderDetail = function(id) {
@@ -706,12 +808,12 @@ window.openOrderDetail = function(id) {
     const modalBody = document.getElementById('modalBody');
     modalBody.innerHTML = `
         <div class="detail-grid">
-            <div class="detail-group"><label>Order ID</label><span class="token">${order.id.slice(0, 8).toUpperCase()}</span></div>
-            <div class="detail-group"><label>Submitted</label><span>${order.created_at ? new Date(order.created_at).toLocaleString() : '-'}</span></div>
-            <div class="detail-group"><label>Customer</label><span>${c.name || '-'}</span></div>
-            <div class="detail-group"><label>Phone</label><span>${c.phone || '-'}</span></div>
-            <div class="detail-group"><label>Dzongkhag</label><span>${c.dzongkhag || '-'}</span></div>
-            <div class="detail-group"><label>Address</label><span>${c.address || '-'}</span></div>
+            <div class="detail-group"><label>Order ID</label><span class="token">${escapeHtml(order.id.slice(0, 8).toUpperCase())}</span></div>
+            <div class="detail-group"><label>Submitted</label><span>${order.created_at ? escapeHtml(new Date(order.created_at).toLocaleString()) : '-'}</span></div>
+            <div class="detail-group"><label>Customer</label><span>${escapeHtml(c.name || '-')}</span></div>
+            <div class="detail-group"><label>Phone</label><span>${escapeHtml(c.phone || '-')}</span></div>
+            <div class="detail-group"><label>Dzongkhag</label><span>${escapeHtml(c.dzongkhag || '-')}</span></div>
+            <div class="detail-group"><label>Address</label><span>${escapeHtml(c.address || '-')}</span></div>
             <div class="detail-group"><label>Payment Method</label><span>${order.payment_method === '50_50' ? '50 / 50' : 'Full Payment'}</span></div>
             <div class="detail-group"><label>Payments Received</label><span>Nu. ${payments.filter(p => p.status === 'completed').reduce((s, p) => s + (parseFloat(p.amount) || 0), 0)}</span></div>
         </div>
@@ -721,18 +823,18 @@ window.openOrderDetail = function(id) {
             ${items.map(item => `
                 <div style="display:flex;justify-content:space-between;align-items:flex-start;padding:0.75rem 0;border-bottom:1px solid #eee;gap:12px;">
                     <div style="min-width:0;flex:1;">
-                        ${item.screenshot ? `<div style="margin-bottom:0.5rem;"><img src="${escapeHtml(item.screenshot)}" style="width:90px;height:90px;object-fit:cover;border-radius:8px;border:1px solid #ddd;cursor:pointer;background:#fff;" onclick="window.open('${escapeHtml(item.screenshot)}','_blank')" title="Click to view full image"></div>` : ''}
-                        <span class="badge" style="font-size:0.7rem">${item.platform || 'Store'}</span>
-                        <div style="font-size:0.9rem;color:#1a1a2e;margin-top:0.25rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${item.product_name || 'N/A'}</div>
-                        ${item.variant ? `<small style="color:#888">Variant: ${item.variant}</small>` : ''}
+                        ${item.screenshot ? `<div style="margin-bottom:0.5rem;"><img src="${escapeHtml(item.screenshot)}" style="width:90px;height:90px;object-fit:cover;border-radius:8px;border:1px solid #ddd;cursor:pointer;background:#fff;" onclick="openScreenshot('${escapeHtml(item.screenshot)}')" title="Click to view full image"></div>` : ''}
+                        <span class="badge" style="font-size:0.7rem">${escapeHtml(item.platform || 'Store')}</span>
+                        <div style="font-size:0.9rem;color:#1a1a2e;margin-top:0.25rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escapeHtml(item.product_name || 'N/A')}</div>
+                        ${item.variant ? `<small style="color:#888">Variant: ${escapeHtml(item.variant)}</small>` : ''}
                         ${item.product_link && item.product_link.startsWith('search://') ? `<small style="color:#e94560;display:block;margin-top:2px;">Search: ${escapeHtml(item.product_link.replace('search://','').replace(/-/g,' '))}</small>` : ''}
                     </div>
                     <div style="text-align:right;flex-shrink:0">
-                        <div style="font-weight:600">Qty: ${item.quantity || 1}</div>
-                        ${item.price_confirmed ? `<div style="color:#e94560;font-size:0.85rem">Nu. ${item.price_confirmed}</div>` : ''}
+                        <div style="font-weight:600">Qty: ${escapeHtml(item.quantity || 1)}</div>
+                        ${item.price_confirmed ? `<div style="color:#e94560;font-size:0.85rem">Nu. ${escapeHtml(item.price_confirmed)}</div>` : ''}
                     </div>
                 </div>
-                ${item.product_link && !item.product_link.startsWith('search://') ? `<a href="${escapeHtml(item.product_link)}" target="_blank" style="font-size:0.8rem;color:#e94560">Open Product Link ↗</a>` : ''}
+                ${item.product_link && !item.product_link.startsWith('search://') ? `<a href="${escapeHtml(item.product_link)}" target="_blank" rel="noopener" style="font-size:0.8rem;color:#e94560">Open Product Link ↗</a>` : ''}
             `).join('')}
         </div>
 
@@ -742,8 +844,8 @@ window.openOrderDetail = function(id) {
             <div style="font-size:0.85rem;color:#666;line-height:1.6">
                 ${history.slice(0, 5).map(h => `
                     <div style="padding:0.35rem 0;border-bottom:1px solid #f0f0f0">
-                        <span style="font-weight:600">${h.status.replace(/_/g, ' ')}</span> 
-                        <span style="color:#888">— ${new Date(h.created_at).toLocaleString()}</span>
+                        <span style="font-weight:600">${escapeHtml(h.status.replace(/_/g, ' '))}</span> 
+                        <span style="color:#888">— ${escapeHtml(new Date(h.created_at).toLocaleString())}</span>
                     </div>
                 `).join('')}
             </div>
@@ -795,8 +897,10 @@ window.openOrderDetail = function(id) {
 
 window.closeOrderModal = function() {
     document.getElementById('orderModal').classList.remove('active');
+    document.body.style.overflow = '';
     currentEditId = null;
     currentReviewId = null;
+    currentQuotationId = null;
 };
 
 window.saveOrderChanges = async function() {
@@ -813,8 +917,9 @@ window.saveOrderChanges = async function() {
 
     const { error } = await supabase.from('orders').update(updates).eq('id', currentEditId);
 
-    if (error) { alert('Error saving: ' + error.message); return; }
+    if (error) { toast('Error saving: ' + error.message, 'error'); return; }
 
+    toast('Order updated', 'success');
     closeOrderModal();
     await fetchOrders();
 };
@@ -824,12 +929,25 @@ window.exportCSV = function() {
     const headers = ['OrderID','Status','Customer','Phone','Dzongkhag','Address','Items','PaymentMethod','TotalPrice','TripDate','CreatedAt'];
     const rows = allOrders.map(o => {
         const c = o.customer || {};
-        const items = (o.items || []).map(i => i.product_name).join('; ');
-        return [o.id, o.status, c.name, c.phone, c.dzongkhag, `"${(c.address||'').replace(/"/g,'""')}"`, `"${items.replace(/"/g,'""')}"`, o.payment_method, o.total_price || '', o.trip_date, o.created_at];
+        const items = (o.items || []).map(i => i.product_name).filter(Boolean).join('; ');
+        return [
+            csvEscape(o.id),
+            csvEscape(o.status),
+            csvEscape(c.name),
+            csvEscape(c.phone),
+            csvEscape(c.dzongkhag),
+            csvEscape(c.address),
+            csvEscape(items),
+            csvEscape(o.payment_method),
+            csvEscape(o.total_price),
+            csvEscape(o.trip_date),
+            csvEscape(o.created_at)
+        ];
     });
 
-    const csv = [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
-    const blob = new Blob([csv], { type: 'text/csv' });
+    const csv = [headers.map(csvEscape).join(','), ...rows.map(r => r.join(','))].join('\r\n');
+    // Prepend BOM so Excel reads UTF-8 (e.g. Bhutanese script in addresses) correctly.
+    const blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
@@ -1008,29 +1126,47 @@ window.saveSettings = async function() {
 window.saveDeliveryRates = async function() {
     const btn = document.getElementById('saveDeliveryRatesBtn');
     btn.disabled = true; btn.textContent = 'Saving…';
+    const restoreBtn = () => { btn.disabled = false; btn.textContent = 'Save Delivery Rates'; };
 
     const rows = gatherDeliveryRateRows();
 
-    // Upsert all rows
-    const { error } = await supabase.from('delivery_rates').upsert(rows, { onConflict: 'dzongkhag' });
+    // 1. Upsert provided rows first. Only delete on success.
+    if (rows.length > 0) {
+        const { error: upsertError } = await supabase
+            .from('delivery_rates')
+            .upsert(rows, { onConflict: 'dzongkhag' });
 
-    // Remove any dzongkhags that were deleted (optional — simple approach: delete all not in rows)
-    const keepDzongs = rows.map(r => r.dzongkhag);
-    if (keepDzongs.length > 0) {
-        await supabase.from('delivery_rates').delete().not('dzongkhag', 'in', `(${keepDzongs.join(',')})`);
-    } else {
-        await supabase.from('delivery_rates').delete().neq('dzongkhag', ''); // delete all
+        if (upsertError) {
+            restoreBtn();
+            toast('Error saving delivery rates: ' + upsertError.message, 'error');
+            return;
+        }
     }
 
-    btn.disabled = false; btn.textContent = 'Save Delivery Rates';
+    // 2. Remove any dzongkhags the admin took out of the list. PostgREST's `in`
+    //    filter needs values wrapped in double quotes, otherwise names with
+    //    spaces or commas (e.g. "Trashi Yangtse") break the query.
+    const keepDzongs = rows.map(r => r.dzongkhag);
+    let delQuery = supabase.from('delivery_rates').delete();
+    if (keepDzongs.length > 0) {
+        const quoted = keepDzongs
+            .map(d => `"${String(d).replace(/"/g, '\\"')}"`)
+            .join(',');
+        delQuery = delQuery.not('dzongkhag', 'in', `(${quoted})`);
+    } else {
+        delQuery = delQuery.neq('dzongkhag', ''); // wipe everything
+    }
+    const { error: deleteError } = await delQuery;
 
-    if (error) {
-        toast('Error saving delivery rates: ' + error.message, 'error');
-        return;
+    restoreBtn();
+
+    if (deleteError) {
+        toast('Rates saved, but removing deleted entries failed: ' + deleteError.message, 'warning');
+    } else {
+        toast('Delivery rates saved', 'success');
     }
 
     await fetchDeliveryRates();
-    toast('Delivery rates saved', 'success');
 };
 
 // ===== QUOTATIONS =====
@@ -1135,33 +1271,33 @@ window.renderQuotations = function() {
         return `
         <tr>
             <td>
-                <span class="token">${String(q.id).slice(0, 8).toUpperCase()}</span>
-                <div style="font-size:0.75rem;color:#888;margin-top:2px;">For order ${orderIdShort}</div>
+                <span class="token">${escapeHtml(String(q.id).slice(0, 8).toUpperCase())}</span>
+                <div style="font-size:0.75rem;color:#888;margin-top:2px;">For order ${escapeHtml(orderIdShort)}</div>
             </td>
             <td>
-                <div style="font-size:0.9rem;color:#1a1a2e;font-weight:500;">${dateStr}</div>
-                <small style="color:#888">${q.created_at ? new Date(q.created_at).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}) : ''}</small>
+                <div style="font-size:0.9rem;color:#1a1a2e;font-weight:500;">${escapeHtml(dateStr)}</div>
+                <small style="color:#888">${q.created_at ? escapeHtml(new Date(q.created_at).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})) : ''}</small>
             </td>
             <td>
                 <div class="customer-info">
-                    <strong>${c.name || 'N/A'}</strong>
-                    <small>${c.phone || ''}</small>
-                    <small>${c.dzongkhag || ''}</small>
+                    <strong>${escapeHtml(c.name || 'N/A')}</strong>
+                    <small>${escapeHtml(c.phone || '')}</small>
+                    <small>${escapeHtml(c.dzongkhag || '')}</small>
                 </div>
             </td>
             <td>
                 <div style="font-size:0.85rem;color:#555;max-width:200px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" title="${escapeHtml(itemSummary)}">${itemCount > 0 ? escapeHtml(itemSummary) : 'No items'}</div>
                 <small style="color:#888">${itemCount} item(s)</small>
             </td>
-            <td>${q.total_amount ? 'Nu. ' + q.total_amount : '-'}</td>
-            <td><span class="badge ${statusClass}">${statusText}</span></td>
-            <td>${validUntil}</td>
+            <td>${q.total_amount ? 'Nu. ' + escapeHtml(q.total_amount) : '-'}</td>
+            <td><span class="badge ${escapeHtml(statusClass)}">${escapeHtml(statusText)}</span></td>
+            <td>${escapeHtml(validUntil)}</td>
             <td>
                 <div class="actions">
-                    <button class="btn-icon btn-view" onclick="openQuotationDetail('${q.id}')" title="View"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button>
-                    <button class="btn-icon btn-edit" onclick="openQuotationModal('${q.id}')" title="Edit"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>
+                    <button class="btn-icon btn-view" onclick="openQuotationDetail('${escapeHtml(q.id)}')" title="View"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button>
+                    <button class="btn-icon btn-edit" onclick="openQuotationModal('${escapeHtml(q.id)}')" title="Edit"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>
                     ${sendBtn}
-                    <button class="btn-icon btn-delete" onclick="confirmDeleteQuotation('${q.id}')" title="Delete"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button>
+                    <button class="btn-icon btn-delete" onclick="confirmDeleteQuotation('${escapeHtml(q.id)}')" title="Delete"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button>
                 </div>
             </td>
         </tr>
@@ -1179,17 +1315,17 @@ function renderOrderPreview(order) {
 
     content.innerHTML = `
         <div style="display:flex;gap:1.5rem;flex-wrap:wrap;margin-bottom:0.75rem;">
-            <div><strong style="color:#1a1a2e;">${c.name || 'N/A'}</strong><br><small style="color:#666">${c.phone || ''}</small></div>
-            <div><small style="color:#888">Dzongkhag</small><br><strong style="color:#1a1a2e;">${c.dzongkhag || '-'}</strong></div>
-            <div><small style="color:#888">Trip Date</small><br><strong style="color:#1a1a2e;">${order.trip_date ? new Date(order.trip_date).toLocaleDateString() : '-'}</strong></div>
+            <div><strong style="color:#1a1a2e;">${escapeHtml(c.name || 'N/A')}</strong><br><small style="color:#666">${escapeHtml(c.phone || '')}</small></div>
+            <div><small style="color:#888">Dzongkhag</small><br><strong style="color:#1a1a2e;">${escapeHtml(c.dzongkhag || '-')}</strong></div>
+            <div><small style="color:#888">Trip Date</small><br><strong style="color:#1a1a2e;">${order.trip_date ? escapeHtml(new Date(order.trip_date).toLocaleDateString()) : '-'}</strong></div>
         </div>
         <div style="display:flex;gap:0.5rem;flex-wrap:wrap;">
             ${items.map(item => `
                 <div style="background:#fff;padding:0.5rem;border-radius:8px;border:1px solid #e0e0e0;width:120px;">
-                    ${item.screenshot ? `<img src="${escapeHtml(item.screenshot)}" style="width:100%;height:80px;object-fit:cover;border-radius:4px;margin-bottom:0.35rem;cursor:pointer;" onclick="window.open('${escapeHtml(item.screenshot)}','_blank')">` : '<div style="width:100%;height:80px;background:#f0f0f0;border-radius:4px;display:flex;align-items:center;justify-content:center;color:#aaa;font-size:0.7rem;">No image</div>'}
+                    ${item.screenshot ? `<img src="${escapeHtml(item.screenshot)}" style="width:100%;height:80px;object-fit:cover;border-radius:4px;margin-bottom:0.35rem;cursor:pointer;" onclick="openScreenshot('${escapeHtml(item.screenshot)}')">` : '<div style="width:100%;height:80px;background:#f0f0f0;border-radius:4px;display:flex;align-items:center;justify-content:center;color:#aaa;font-size:0.7rem;">No image</div>'}
                     <div style="font-size:0.75rem;color:#1a1a2e;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" title="${escapeHtml(item.product_name || '')}">${escapeHtml(item.product_name || 'Item')}</div>
-                    <div style="font-size:0.7rem;color:#888;">Qty: ${item.quantity || 1}</div>
-                    ${item.product_link && !item.product_link.startsWith('search://') ? `<a href="${escapeHtml(item.product_link)}" target="_blank" style="font-size:0.7rem;color:var(--accent);">Link ↗</a>` : ''}
+                    <div style="font-size:0.7rem;color:#888;">Qty: ${escapeHtml(item.quantity || 1)}</div>
+                    ${item.product_link && !item.product_link.startsWith('search://') ? `<a href="${escapeHtml(item.product_link)}" target="_blank" rel="noopener" style="font-size:0.7rem;color:var(--accent);">Link ↗</a>` : ''}
                 </div>
             `).join('')}
         </div>
@@ -1272,23 +1408,18 @@ window.openQuotationModal = async function(quotationId = null) {
         <div style="margin:1.5rem 0; padding:1.25rem; background:#fff; border:1px solid #e8e8e8; border-radius:12px;">
             <label style="font-size:0.8rem;color:#888;text-transform:uppercase;font-weight:600;display:block;margin-bottom:1rem">Charges & Profit Calculator</label>
 
-            <div class="form-row" style="margin-bottom:0.75rem;">
-                <div>
-                    <label>Service Charge</label>
-                    <div style="display:flex;gap:0.5rem;">
-                        <select id="quotationServiceType" onchange="recalculateQuotation()" style="width:auto;min-width:130px;padding:0.65rem;border:2px solid #e8e8e8;border-radius:8px;font-size:0.9rem;outline:none;">
-                            <option value="percentage">% of subtotal</option>
-                            <option value="fixed">Fixed amount</option>
-                        </select>
-                        <input type="number" id="quotationServiceValue" oninput="recalculateQuotation()" placeholder="e.g. 10" style="flex:1;padding:0.65rem;border:2px solid #e8e8e8;border-radius:8px;font-size:0.9rem;outline:none;">
-                    </div>
-                    <small style="color:#888;display:block;margin-top:0.25rem;">Applied: Nu. <span id="serviceChargeApplied">0</span></small>
-                </div>
-                <div>
-                    <label>Shipping Charge</label>
-                    <input type="number" id="quotationShipping" oninput="recalculateQuotation()" placeholder="0" style="width:100%;padding:0.65rem;border:2px solid #e8e8e8;border-radius:8px;font-size:0.9rem;outline:none;">
-                </div>
-            </div>
+        <div class="form-row" style="margin-bottom:0.75rem;">
+    <div>
+        <label>Service Charge <small style="color:var(--text-muted);font-weight:400;">(auto-applied)</small></label>
+        <div style="display:flex;align-items:center;gap:0.5rem;padding:0.65rem;border:2px solid var(--border);border-radius:8px;background:var(--surface-raised);">
+            <span id="serviceChargeLabel" style="font-weight:600;color:var(--accent);">11%</span>
+            <span style="color:var(--text-muted);">—</span>
+            <span id="serviceChargeApplied" style="font-weight:500;">0</span>
+        </div>
+        <small style="color:var(--text-muted);display:block;margin-top:0.25rem;">
+            Nu. 250 flat under Nu. 1,500 · 15% (Nu. 1,501–4,000) · 11% (Nu. 4,001–6,000) · 8% (above)
+        </small>
+    </div>
 
             <div class="form-row" style="margin-bottom:0.75rem;">
                 <div>
@@ -1369,8 +1500,8 @@ window.openQuotationModal = async function(quotationId = null) {
         (q.items || []).forEach((item, idx) => addQuotationItemRow(item, idx));
         if ((q.items || []).length === 0) addQuotationItemRow();
 
-        document.getElementById('quotationServiceType').value = q.service_charge_type || 'percentage';
-        document.getElementById('quotationServiceValue').value = q.service_charge_value || '';
+                // Service charge is auto-calculated, no need to restore old dropdown values
+        // The recalculateQuotation() call below will set the correct tier
         document.getElementById('quotationShipping').value = q.shipping_charge || '';
         document.getElementById('quotationDelivery').value = q.delivery_charge || '';
         document.getElementById('quotationGstApplicable').checked = q.gst_applicable || false;
@@ -1378,12 +1509,11 @@ window.openQuotationModal = async function(quotationId = null) {
     } else {
         // New quotation — apply saved defaults from Settings
         addQuotationItemRow();
-        if (appSettings) {
-            document.getElementById('quotationServiceType').value = appSettings.service_charge_type || 'percentage';
-            document.getElementById('quotationServiceValue').value = appSettings.service_charge_value || '';
+                if (appSettings) {
             document.getElementById('quotationShipping').value = appSettings.default_shipping || '';
             document.getElementById('quotationGstApplicable').checked = appSettings.gst_enabled || false;
         }
+        // Service charge is auto-calculated based on subtotal — no defaults needed
         recalculateQuotation();
     }
 
@@ -1438,6 +1568,36 @@ window.removeQuotationItemRow = function(rowId) {
     recalculateQuotation();
 };
 
+function calculateServiceCharge(subtotal) {
+    // If the admin has set a non-zero override in Settings, use it.
+    // Otherwise fall back to the default Shop2Bhutan tiered pricing.
+    const cfgVal = appSettings ? parseFloat(appSettings.service_charge_value) : 0;
+    const cfgType = appSettings?.service_charge_type;
+    if (cfgVal > 0) {
+        if (cfgType === 'fixed') {
+            const amount = Math.round(cfgVal * 100) / 100;
+            return { amount, rate: null, label: `Nu. ${amount} (fixed)` };
+        }
+        // Default to percentage if not 'fixed'.
+        const rate = cfgVal / 100;
+        const amount = Math.round(subtotal * rate * 100) / 100;
+        return { amount, rate, label: `${cfgVal}%` };
+    }
+
+    if (subtotal <= 1500) {
+        return { amount: 250, rate: null, label: 'Flat fee' };
+    } else if (subtotal <= 4000) {
+        const amount = Math.round(subtotal * 0.15 * 100) / 100;
+        return { amount, rate: 0.15, label: '15%' };
+    } else if (subtotal <= 6000) {
+        const amount = Math.round(subtotal * 0.11 * 100) / 100;
+        return { amount, rate: 0.11, label: '11%' };
+    } else {
+        const amount = Math.round(subtotal * 0.08 * 100) / 100;
+        return { amount, rate: 0.08, label: '8%' };
+    }
+}
+
 function recalculateQuotation() {
     const rows = document.querySelectorAll('.quotation-item-row');
     let subtotal = 0;
@@ -1451,29 +1611,28 @@ function recalculateQuotation() {
         totalBaseCost += qty * cost;
     });
 
-    // Service charge
-    const svcType = document.getElementById('quotationServiceType')?.value || 'percentage';
-    const svcVal = parseFloat(document.getElementById('quotationServiceValue')?.value) || 0;
-    let serviceAmount = 0;
-    if (svcType === 'percentage') {
-        serviceAmount = subtotal * (svcVal / 100);
-    } else {
-        serviceAmount = svcVal;
-    }
+    // Auto-calculated service charge
+    const svc = calculateServiceCharge(subtotal);
+    const serviceAmount = svc.amount;
 
     // Shipping & Delivery
     const shipping = parseFloat(document.getElementById('quotationShipping')?.value) || 0;
     const delivery = parseFloat(document.getElementById('quotationDelivery')?.value) || 0;
 
-    // GST (5% on taxable amount)
+    // GST (rate from app_settings; defaults to 5% if unset)
     const gstApplicable = document.getElementById('quotationGstApplicable')?.checked || false;
+    const gstRatePercent = appSettings && parseFloat(appSettings.gst_rate) > 0
+        ? parseFloat(appSettings.gst_rate)
+        : 5;
+    const gstRate = gstRatePercent / 100;
     const taxableAmount = subtotal + serviceAmount + shipping + delivery;
-    const gstAmount = gstApplicable ? taxableAmount * 0.05 : 0;
+    const gstAmount = gstApplicable ? Math.round(taxableAmount * gstRate * 100) / 100 : 0;
 
-    const total = taxableAmount + gstAmount;
-    const profit = total - totalBaseCost;
+    const total = Math.round((taxableAmount + gstAmount) * 100) / 100;
+    const profit = Math.round((total - totalBaseCost) * 100) / 100;
     const margin = total > 0 ? ((profit / total) * 100).toFixed(1) : '0.0';
 
+    // Update display
     const setText = (id, val) => {
         const el = document.getElementById(id);
         if (el) el.textContent = val;
@@ -1483,19 +1642,29 @@ function recalculateQuotation() {
         if (el) el.value = val;
     };
 
-    setText('quotationSubtotalDisplay', subtotal.toLocaleString());
-    setText('serviceChargeApplied', serviceAmount.toLocaleString());
-    setText('calcSubtotal', subtotal.toLocaleString());
-    setText('calcService', serviceAmount.toLocaleString());
-    setText('calcShipping', shipping.toLocaleString());
-    setText('calcDelivery', delivery.toLocaleString());
-    setText('calcGst', gstAmount.toLocaleString());
-    setText('calcTotal', total.toLocaleString());
-    setText('calcBaseCost', totalBaseCost.toLocaleString());
-    setText('calcProfit', profit.toLocaleString());
+    // Show auto-applied tier info
+    const svcLabel = svc.rate ? `${svc.label}` : svc.label;
+    setText('serviceChargeLabel', svcLabel);
+    
+    setText('quotationSubtotalDisplay', subtotal.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
+    setText('serviceChargeApplied', serviceAmount.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
+    setText('calcSubtotal', subtotal.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
+    setText('calcService', `${serviceAmount.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} (${svcLabel})`);
+    setText('calcShipping', shipping.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
+    setText('calcDelivery', delivery.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
+    setText('calcGst', gstAmount.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
+    // Reflect configured GST % in the line label, if the label element exists.
+    const gstLabelEl = document.querySelector('label[for="quotationGstApplicable"] span, #quotationGstApplicable + span');
+    if (gstLabelEl) gstLabelEl.textContent = `Apply GST (${gstRatePercent}%)`;
+    setText('calcTotal', total.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
+    setText('calcBaseCost', totalBaseCost.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
+    setText('calcProfit', profit.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
     setText('calcMargin', margin);
 
     setValue('quotationTotalAmount', total > 0 ? total.toFixed(2) : '');
+    
+    // Store for save
+    window.__currentServiceTier = svc;
 }
 
 function gatherQuotationItems() {
@@ -1536,11 +1705,10 @@ async function saveQuotation() {
     if (items.length === 0) { toast('Please add at least one item', 'error'); return; }
 
     recalculateQuotation();
+    const svc = window.__currentServiceTier || { amount: 0, rate: null, label: 'Flat fee' };
 
     const subtotal = parseFloat(document.getElementById('calcSubtotal')?.textContent.replace(/,/g, '')) || 0;
-    const serviceType = document.getElementById('quotationServiceType')?.value || 'percentage';
-    const serviceValue = parseFloat(document.getElementById('quotationServiceValue')?.value) || 0;
-    const serviceAmount = parseFloat(document.getElementById('calcService')?.textContent.replace(/,/g, '')) || 0;
+    const serviceAmount = svc.amount;
     const shipping = parseFloat(document.getElementById('quotationShipping')?.value) || 0;
     const delivery = parseFloat(document.getElementById('quotationDelivery')?.value) || 0;
     const gstApplicable = document.getElementById('quotationGstApplicable')?.checked || false;
@@ -1552,9 +1720,9 @@ async function saveQuotation() {
     const payload = {
         order_id: orderId,
         items: items,
-        subtotal: subtotal,
-        service_charge_type: serviceType,
-        service_charge_value: serviceValue,
+              subtotal: subtotal,
+        service_charge_tier: svc.rate,
+        service_charge_label: svc.label,
         service_charge_amount: serviceAmount,
         shipping_charge: shipping,
         delivery_charge: delivery,
@@ -1600,14 +1768,14 @@ window.openQuotationDetail = function(id) {
     const modalBody = document.getElementById('modalBody');
     modalBody.innerHTML = `
         <div class="detail-grid">
-            <div class="detail-group"><label>Quotation ID</label><span class="token">${String(q.id).slice(0, 8).toUpperCase()}</span></div>
-            <div class="detail-group"><label>Linked Order</label><span class="token">${orderIdShort}</span></div>
-            <div class="detail-group"><label>Customer</label><span>${c.name || '-'}</span></div>
-            <div class="detail-group"><label>Phone</label><span>${c.phone || '-'}</span></div>
-            <div class="detail-group"><label>Dzongkhag</label><span>${c.dzongkhag || '-'}</span></div>
-            <div class="detail-group"><label>Valid Until</label><span>${validUntil}</span></div>
-            <div class="detail-group"><label>Status</label><span class="badge ${statusClass}">${statusText}</span></div>
-            <div class="detail-group"><label>Created</label><span>${q.created_at ? new Date(q.created_at).toLocaleString() : '-'}</span></div>
+            <div class="detail-group"><label>Quotation ID</label><span class="token">${escapeHtml(String(q.id).slice(0, 8).toUpperCase())}</span></div>
+            <div class="detail-group"><label>Linked Order</label><span class="token">${escapeHtml(orderIdShort)}</span></div>
+            <div class="detail-group"><label>Customer</label><span>${escapeHtml(c.name || '-')}</span></div>
+            <div class="detail-group"><label>Phone</label><span>${escapeHtml(c.phone || '-')}</span></div>
+            <div class="detail-group"><label>Dzongkhag</label><span>${escapeHtml(c.dzongkhag || '-')}</span></div>
+            <div class="detail-group"><label>Valid Until</label><span>${escapeHtml(validUntil)}</span></div>
+            <div class="detail-group"><label>Status</label><span class="badge ${escapeHtml(statusClass)}">${escapeHtml(statusText)}</span></div>
+            <div class="detail-group"><label>Created</label><span>${q.created_at ? escapeHtml(new Date(q.created_at).toLocaleString()) : '-'}</span></div>
         </div>
 
         <div style="margin:1.5rem 0;padding:1rem;background:#f8f9fc;border-radius:10px;">
@@ -1619,10 +1787,10 @@ window.openQuotationDetail = function(id) {
                     ${items.map(i => `
                         <tr style="border-bottom:1px solid #f0f0f0;">
                             <td style="padding:0.5rem;">${escapeHtml(i.name)}</td>
-                            <td style="padding:0.5rem;text-align:center;">${i.quantity}</td>
-                            <td style="padding:0.5rem;text-align:right;">Nu. ${i.unit_price}</td>
-                            <td style="padding:0.5rem;text-align:right;color:#c0392b;">Nu. ${i.base_cost || 0}</td>
-                            <td style="padding:0.5rem;text-align:right;font-weight:600;">Nu. ${i.total}</td>
+                            <td style="padding:0.5rem;text-align:center;">${escapeHtml(i.quantity)}</td>
+                            <td style="padding:0.5rem;text-align:right;">Nu. ${escapeHtml(i.unit_price)}</td>
+                            <td style="padding:0.5rem;text-align:right;color:#c0392b;">Nu. ${escapeHtml(i.base_cost || 0)}</td>
+                            <td style="padding:0.5rem;text-align:right;font-weight:600;">Nu. ${escapeHtml(i.total)}</td>
                         </tr>
                     `).join('')}
                 </tbody>
@@ -1635,8 +1803,8 @@ window.openQuotationDetail = function(id) {
             <div style="display:flex;justify-content:space-between;font-size:0.9rem;color:#666;margin-bottom:0.35rem;">
                 <span>Subtotal</span><span>Nu. ${(q.subtotal || 0).toLocaleString()}</span>
             </div>
-            <div style="display:flex;justify-content:space-between;font-size:0.9rem;color:#666;margin-bottom:0.35rem;">
-                <span>Service Charge ${q.service_charge_type === 'percentage' ? '(' + q.service_charge_value + '%)' : ''}</span><span>Nu. ${(q.service_charge_amount || 0).toLocaleString()}</span>
+                        <div style="display:flex;justify-content:space-between;font-size:0.9rem;color:#666;margin-bottom:0.35rem;">
+                <span>Service Charge ${q.service_charge_label ? '(' + escapeHtml(q.service_charge_label) + ')' : ''}</span><span>Nu. ${(q.service_charge_amount || 0).toLocaleString()}</span>
             </div>
             <div style="display:flex;justify-content:space-between;font-size:0.9rem;color:#666;margin-bottom:0.35rem;">
                 <span>Shipping</span><span>Nu. ${(q.shipping_charge || 0).toLocaleString()}</span>
@@ -1669,7 +1837,7 @@ window.openQuotationDetail = function(id) {
 
         ${q.status === 'draft' ? `
         <div style="display:flex;gap:0.75rem;justify-content:center;margin-top:1rem;">
-            <button class="btn-primary" onclick="sendQuotation('${q.id}'); closeOrderModal();" style="background:var(--accent);">
+            <button class="btn-primary" onclick="sendQuotation('${escapeHtml(q.id)}'); closeOrderModal();" style="background:var(--accent);">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:6px;"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
                 Send Quotation
             </button>
@@ -1735,7 +1903,7 @@ window.sendQuotation = async function(id) {
     const cname = quotation.order?.customer?.name || 'there';
     if (phone) {
         const waMsg = `Hi ${cname}! 👋\n\nYour quotation is ready for review. Please click the link below to view and accept:\n\n${customerLink}\n\nThis link is valid until ${quotation.valid_until ? new Date(quotation.valid_until).toLocaleDateString() : '7 days from now'}.\n\n- Shop2Bhutan`;
-        window.open(`https://wa.me/975${phone.replace(/\D/g, '')}?text=${encodeURIComponent(waMsg)}`, '_blank');
+        window.open(`https://wa.me/${formatWhatsAppPhone(phone)}?text=${encodeURIComponent(waMsg)}`, '_blank', 'noopener');
     }
 
     await fetchQuotations();
@@ -1774,17 +1942,29 @@ window.exportQuotationsCSV = function() {
         const c = q.order?.customer || {};
         const items = (q.items || []).map(i => `${i.name} x${i.quantity}`).join('; ');
         return [
-            q.id, q.order_id, q.status, c.name, c.phone, c.dzongkhag,
-            `"${items.replace(/"/g,'""')}"`,
-            q.subtotal || '', q.service_charge_amount || '', q.shipping_charge || '',
-            q.delivery_charge || '', q.gst_amount || '', q.total_amount || '',
-            q.total_base_cost || '', q.profit || '',
-            q.valid_until || '', `"${(q.notes||'').replace(/"/g,'""')}"`, q.created_at
+            csvEscape(q.id),
+            csvEscape(q.order_id),
+            csvEscape(q.status),
+            csvEscape(c.name),
+            csvEscape(c.phone),
+            csvEscape(c.dzongkhag),
+            csvEscape(items),
+            csvEscape(q.subtotal),
+            csvEscape(q.service_charge_amount),
+            csvEscape(q.shipping_charge),
+            csvEscape(q.delivery_charge),
+            csvEscape(q.gst_amount),
+            csvEscape(q.total_amount),
+            csvEscape(q.total_base_cost),
+            csvEscape(q.profit),
+            csvEscape(q.valid_until),
+            csvEscape(q.notes),
+            csvEscape(q.created_at)
         ];
     });
 
-    const csv = [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
-    const blob = new Blob([csv], { type: 'text/csv' });
+    const csv = [headers.map(csvEscape).join(','), ...rows.map(r => r.join(','))].join('\r\n');
+    const blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
@@ -1794,10 +1974,11 @@ window.exportQuotationsCSV = function() {
 };
 // ===== FILTER LISTENERS =====
 function setupFilters() {
+    const resetOrdersPage = () => { currentOrdersPage = 1; renderOrders(); };
     const ids = ['filterSearch', 'filterStatus', 'filterDzongkhag', 'filterDate'];
     ids.forEach(id => {
         const el = document.getElementById(id);
-        if (el) { el.addEventListener('input', renderOrders); el.addEventListener('change', renderOrders); }
+        if (el) { el.addEventListener('input', resetOrdersPage); el.addEventListener('change', resetOrdersPage); }
     });
 
     const reviewIds = ['reviewFilterSearch', 'reviewFilterStatus', 'reviewFilterRating'];
@@ -1813,6 +1994,64 @@ function setupFilters() {
         if (el) { el.addEventListener('input', renderQuotations); el.addEventListener('change', renderQuotations); }
     });
 }
+
+// ===== PAGINATION (Orders) =====
+const ORDERS_PAGE_SIZE = 25;
+let currentOrdersPage = 1;
+
+function renderOrdersPagination(total) {
+    const pageInfo = document.getElementById('pageInfo');
+    const pageButtons = document.getElementById('pageButtons');
+    if (!pageInfo || !pageButtons) return;
+
+    if (total === 0) {
+        pageInfo.textContent = 'No orders';
+        pageButtons.innerHTML = '';
+        return;
+    }
+
+    const totalPages = Math.max(1, Math.ceil(total / ORDERS_PAGE_SIZE));
+    if (currentOrdersPage > totalPages) currentOrdersPage = totalPages;
+    if (currentOrdersPage < 1) currentOrdersPage = 1;
+
+    const start = (currentOrdersPage - 1) * ORDERS_PAGE_SIZE + 1;
+    const end = Math.min(currentOrdersPage * ORDERS_PAGE_SIZE, total);
+    pageInfo.textContent = `${start}–${end} of ${total}`;
+
+    const btn = (label, page, opts = {}) =>
+        `<button class="page-btn${opts.active ? ' active' : ''}"${opts.disabled ? ' disabled' : ''} onclick="goToOrdersPage(${page})">${label}</button>`;
+
+    const maxBtns = 5;
+    let startPage = Math.max(1, currentOrdersPage - Math.floor(maxBtns / 2));
+    let endPage = Math.min(totalPages, startPage + maxBtns - 1);
+    if (endPage - startPage < maxBtns - 1) startPage = Math.max(1, endPage - maxBtns + 1);
+
+    let html = btn('‹', currentOrdersPage - 1, { disabled: currentOrdersPage <= 1 });
+    for (let p = startPage; p <= endPage; p++) {
+        html += btn(String(p), p, { active: p === currentOrdersPage });
+    }
+    html += btn('›', currentOrdersPage + 1, { disabled: currentOrdersPage >= totalPages });
+    pageButtons.innerHTML = html;
+}
+
+window.goToOrdersPage = function(page) {
+    currentOrdersPage = page;
+    renderOrders();
+};
+
+// ===== MODAL ESCAPE-TO-CLOSE =====
+document.addEventListener('keydown', function(e) {
+    if (e.key !== 'Escape') return;
+    const confirmModal = document.getElementById('confirmModal');
+    if (confirmModal && confirmModal.classList.contains('active')) {
+        closeConfirmModal();
+        return;
+    }
+    const orderModal = document.getElementById('orderModal');
+    if (orderModal && orderModal.classList.contains('active')) {
+        closeOrderModal();
+    }
+});
 
 // ===== INIT =====
 setupFilters();
