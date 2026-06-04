@@ -529,19 +529,26 @@ async function initDashboard() {
         currentAdminId = session.user.id;
     }
 
-    await fetchOrders();
-    await fetchReviews();
-    await fetchQuotations();
-    await fetchPayments();
-    await fetchSettings();
-    await fetchDeliveryRates();
+    // Start loading notifications immediately so the badge appears fast
+    const notificationsPromise = loadNotifications();
 
-    // Load persistent notifications
-    await loadNotifications();
+    // Run all independent data fetches concurrently instead of one-by-one
+    await Promise.all([
+        fetchOrders(),
+        fetchReviews(),
+        fetchQuotations(),
+        fetchPayments(),
+        fetchSettings(),
+        fetchDeliveryRates()
+    ]);
+
+    // Ensure notifications are finished (they already started above)
+    await notificationsPromise;
+
     subscribeToAdminNotifications();
     initNotificationPanel();
 
-    setupRealtime();
+    setupFilters();
     populateDzongkhagFilter();
     updateReviewStats();
 }
