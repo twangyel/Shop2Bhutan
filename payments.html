@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Submit Payment - Shop2Bhutan</title>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        :root { --accent: #c2410c; --success: #15803d; --text: #1c1917; --muted: #78716c; --border: #e7e5e4; --surface: #fafaf9; }
+        * { margin:0; padding:0; box-sizing:border-box; }
+        body { font-family:'DM Sans',sans-serif; background:#f5f5f4; color:var(--text); min-height:100vh; display:flex; align-items:center; justify-content:center; padding:1.5rem; }
+        .payment-box { background:#fff; padding:2.5rem; border-radius:16px; width:100%; max-width:460px; box-shadow:0 20px 60px rgba(0,0,0,.08); }
+        .logo { text-align:center; margin-bottom:1.5rem; }
+        .logo img { height:40px; }
+        h2 { font-size:1.4rem; margin-bottom:.25rem; text-align:center; }
+        .subtitle { color:var(--muted); text-align:center; margin-bottom:1.5rem; font-size:.9rem; }
+        .order-summary { background:var(--surface); padding:1rem; border-radius:10px; margin-bottom:1.5rem; border:1px solid var(--border); }
+        .order-summary h4 { font-size:.75rem; text-transform:uppercase; color:var(--muted); margin-bottom:.75rem; letter-spacing:.5px; }
+        .summary-row { display:flex; justify-content:space-between; padding:.35rem 0; font-size:.88rem; }
+        .summary-row.total { border-top:2px solid var(--border); margin-top:.5rem; padding-top:.75rem; font-weight:700; font-size:1rem; }
+        .form-group { margin-bottom:1.1rem; }
+        .form-group label { display:block; font-size:.72rem; color:var(--muted); font-weight:600; text-transform:uppercase; letter-spacing:.5px; margin-bottom:.4rem; }
+        .form-group input, .form-group select { width:100%; padding:.8rem 1rem; border:1.5px solid var(--border); border-radius:8px; font-size:.9rem; outline:none; font-family:inherit; }
+        .form-group input:focus, .form-group select:focus { border-color:var(--accent); box-shadow:0 0 0 3px rgba(194,65,12,.1); }
+        .form-group small { color:var(--muted); font-size:.78rem; margin-top:.25rem; display:block; }
+        .file-input { position:relative; }
+        .file-input input[type="file"] { position:absolute; opacity:0; width:100%; height:100%; cursor:pointer; }
+        .file-label { display:block; padding:1.5rem; border:2px dashed var(--border); border-radius:8px; text-align:center; color:var(--muted); cursor:pointer; transition:all .2s; }
+        .file-label:hover { border-color:var(--accent); background:rgba(194,65,12,.02); }
+        .file-label.has-file { border-color:var(--success); background:#f0fdf4; color:var(--success); }
+        button[type="submit"] { width:100%; padding:.9rem; background:var(--accent); color:#fff; border:none; border-radius:8px; font-weight:700; font-size:.95rem; cursor:pointer; transition:all .2s; font-family:inherit; }
+        button[type="submit"]:hover { background:#9a3412; transform:translateY(-1px); }
+        button[type="submit"]:disabled { opacity:.5; cursor:not-allowed; transform:none; }
+        .error { color:#dc2626; font-size:.85rem; margin-top:.75rem; text-align:center; display:none; background:#fef2f2; padding:.65rem; border-radius:6px; }
+        .error.visible { display:block; }
+        .success-screen { display:none; text-align:center; padding:2rem 0; }
+        .success-screen.visible { display:block; }
+        .success-icon { width:64px; height:64px; background:var(--success); color:#fff; border-radius:50%; display:flex; align-items:center; justify-content:center; margin:0 auto 1.5rem; font-size:2rem; }
+    </style>
+</head>
+<body>
+
+<div class="payment-box" id="paymentBox">
+    <div class="logo">
+        <img src="/image/logo.svg" alt="Shop2Bhutan">
+    </div>
+    <h2>Submit Payment</h2>
+    <p class="subtitle">Complete your order by submitting payment details</p>
+    
+    <div class="order-summary" id="orderSummary">
+        <h4>Order Summary</h4>
+        <div id="summaryContent">Loading...</div>
+    </div>
+
+    <form id="paymentForm">
+        <div class="form-group">
+            <label>Payment Method</label>
+            <select id="payMethod" required>
+                <option value="">Select method...</option>
+                <option value="bank_transfer">Bank Transfer</option>
+                <option value="cash">Cash on Delivery</option>
+                <option value="online">Online Payment</option>
+            </select>
+        </div>
+        
+        <div class="form-group">
+            <label>Amount Paid (Nu.)</label>
+            <input type="number" id="payAmount" step="0.01" required placeholder="Enter amount">
+            <small>Enter the exact amount you paid</small>
+        </div>
+
+        <div class="form-group">
+            <label>Transaction Reference</label>
+            <input type="text" id="payReference" placeholder="e.g. TXN123456, deposit slip number">
+            <small>Required for bank transfers. Optional for cash.</small>
+        </div>
+
+        <div class="form-group">
+            <label>Payment Proof (Screenshot/Photo)</label>
+            <div class="file-input">
+                <input type="file" id="payProof" accept="image/*" required>
+                <div class="file-label" id="fileLabel">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin:0 auto .5rem;display:block;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                    <span id="fileText">Click to upload payment proof</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label>Notes (Optional)</label>
+            <input type="text" id="payNotes" placeholder="Bank name, branch, date of transfer...">
+        </div>
+
+        <button type="submit" id="submitBtn">Submit Payment</button>
+        <div class="error" id="errorMsg"></div>
+    </form>
+</div>
+
+<div class="success-screen" id="successScreen">
+    <div class="success-icon">✓</div>
+    <h2>Payment Submitted!</h2>
+    <p style="color:var(--muted);margin-top:.5rem;">Your payment is under review. We'll update you via WhatsApp once verified.</p>
+    <p style="margin-top:1.5rem;font-size:.85rem;color:var(--muted);">You can close this page now.</p>
+</div>
+
+<script type="module">
+import { supabase } from './supabase.js';
+
+const urlParams = new URLSearchParams(window.location.search);
+const orderId = urlParams.get('order');
+const quotationId = urlParams.get('quotation');
+
+let currentOrder = null;
+let proofFile = null;
+
+// Load order details
+async function loadOrder() {
+    if (!orderId && !quotationId) {
+        showError('Invalid payment link. Missing order information.');
+        return;
+    }
+
+    let orderQuery = supabase.from('orders').select(`
+        *, 
+        customer:customers(*), 
+        items:order_items(*),
+        quotation:quotations(*)
+    `);
+
+    if (orderId) {
+        orderQuery = orderQuery.eq('id', orderId).single();
+    } else {
+        // Get order from quotation
+        const { data: q } = await supabase.from('quotations').select('order_id').eq('id', quotationId).single();
+        if (q?.order_id) {
+            orderQuery = orderQuery.eq('id', q.order_id).single();
+        }
+    }
+
+    const { data, error } = await orderQuery;
+    
+    if (error || !data) {
+        showError('Order not found or link expired.');
+        return;
+    }
+
+    currentOrder = data;
+    renderSummary(data);
+}
+
+function renderSummary(order) {
+    const c = order.customer || {};
+    const items = order.items || [];
+    const q = order.quotation?.[0] || {};
+    const total = q.total_amount || order.total_price || 0;
+
+    const html = `
+        <div class="summary-row"><span>Order</span><span style="font-family:monospace;">${String(order.id).slice(0,8).toUpperCase()}</span></div>
+        <div class="summary-row"><span>Customer</span><span>${escapeHtml(c.name || '-')}</span></div>
+        <div class="summary-row"><span>Items</span><span>${items.length} item(s)</span></div>
+        ${q.total_amount ? `
+        <div class="summary-row"><span>Subtotal</span><span>Nu. ${q.subtotal?.toLocaleString() || 0}</span></div>
+        <div class="summary-row"><span>Service Charge</span><span>Nu. ${q.service_charge_amount?.toLocaleString() || 0}</span></div>
+        <div class="summary-row"><span>Delivery</span><span>Nu. ${(q.shipping_charge + q.delivery_charge)?.toLocaleString() || 0}</span></div>
+        ` : ''}
+        <div class="summary-row total"><span>Total Due</span><span>Nu. ${Number(total).toLocaleString()}</span></div>
+    `;
+    
+    document.getElementById('summaryContent').innerHTML = html;
+    
+    // Auto-fill amount
+    document.getElementById('payAmount').value = total || '';
+}
+
+// File handling
+document.getElementById('payProof').addEventListener('change', (e) => {
+    proofFile = e.target.files[0];
+    const label = document.getElementById('fileLabel');
+    const text = document.getElementById('fileText');
+    if (proofFile) {
+        label.classList.add('has-file');
+        text.textContent = proofFile.name;
+    }
+});
+
+// Form submission
+document.getElementById('paymentForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    
+    const btn = document.getElementById('submitBtn');
+    btn.disabled = true;
+    btn.textContent = 'Submitting...';
+    
+    try {
+        const method = document.getElementById('payMethod').value;
+        const amount = parseFloat(document.getElementById('payAmount').value);
+        const reference = document.getElementById('payReference').value || null;
+        const notes = document.getElementById('payNotes').value || null;
+        
+        if (!method) { throw new Error('Please select a payment method'); }
+        if (!amount || amount <= 0) { throw new Error('Please enter a valid amount'); }
+        if (!proofFile) { throw new Error('Please upload payment proof'); }
+        if (!currentOrder) { throw new Error('Order not loaded'); }
+
+        // Upload proof image
+        const fileExt = proofFile.name.split('.').pop();
+        const fileName = `payment-proofs/${currentOrder.id}/${Date.now()}.${fileExt}`;
+        
+        const { error: uploadError } = await supabase.storage
+            .from('payments')
+            .upload(fileName, proofFile, { contentType: proofFile.type });
+            
+        if (uploadError) throw uploadError;
+        
+        const { data: { publicUrl } } = supabase.storage
+            .from('payments')
+            .getPublicUrl(fileName);
+
+        // Create payment record
+        const { error: insertError } = await supabase.from('payments').insert({
+            order_id: currentOrder.id,
+            amount: amount,
+            payment_method: method,
+            transaction_reference: reference,
+            proof_url: publicUrl,
+            notes: notes,
+            status: 'pending',
+            created_at: new Date().toISOString()
+        });
+
+        if (insertError) throw insertError;
+        
+        // Update order status if it was just a quotation acceptance
+        await supabase.from('orders').update({ 
+            status: 'confirmed',
+            updated_at: new Date().toISOString()
+        }).eq('id', currentOrder.id);
+
+        // Show success
+        document.getElementById('paymentBox').style.display = 'none';
+        document.getElementById('successScreen').classList.add('visible');
+        
+    } catch (err) {
+        showError(err.message);
+        btn.disabled = false;
+        btn.textContent = 'Submit Payment';
+    }
+});
+
+function showError(msg) {
+    const el = document.getElementById('errorMsg');
+    el.textContent = msg;
+    el.classList.add('visible');
+}
+
+function escapeHtml(text) {
+    if (!text) return '';
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
+loadOrder();
+</script>
+
+</body>
+</html>

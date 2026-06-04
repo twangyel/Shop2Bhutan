@@ -35,22 +35,34 @@ function isAdmin(user) {
 
 // ===== AUTH =====
 async function checkAuth() {
-    const { data: { session } } = await supabase.auth.getSession();
-    if (session && isAdmin(session.user)) {
-        showDashboard(session.user);
-        return;
-    }
-    if (session) {
-        // Authenticated but not authorized — sign out so a stale non-admin
-        // session can't sit on the login screen.
-        await supabase.auth.signOut();
+    try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session && isAdmin(session.user)) {
+            showDashboard(session.user);
+            return;
+        }
+        if (session) {
+            // Authenticated but not authorized — sign out so a stale non-admin
+            // session can't sit on the login screen.
+            await supabase.auth.signOut();
+            const errorEl = document.getElementById('loginError');
+            if (errorEl) {
+                errorEl.textContent = 'This account does not have admin access.';
+                errorEl.classList.add('visible');
+            }
+        }
+    } catch (err) {
+        // Network failure, bad Supabase config, etc. Show the login screen
+        // anyway with a visible error rather than leaving a blank page.
+        console.error('Auth check failed:', err);
         const errorEl = document.getElementById('loginError');
         if (errorEl) {
-            errorEl.textContent = 'This account does not have admin access.';
+            errorEl.textContent = 'Could not reach authentication service. Check your connection and try again.';
             errorEl.classList.add('visible');
         }
     }
-    document.getElementById('loginScreen').style.display = 'flex';
+    const loginScreen = document.getElementById('loginScreen');
+    if (loginScreen) loginScreen.style.display = 'flex';
 }
 
 function showDashboard(user) {
@@ -64,6 +76,7 @@ function showDashboard(user) {
         document.getElementById('adminAvatar').textContent = avatar;
     }
 
+    setupFilters();
     initDashboard();
 }
 
@@ -85,7 +98,17 @@ window.doLogin = async function() {
     loginBtn.disabled = true;
     loginBtn.textContent = 'Signing in…';
 
-    const { data, error } = await supabase.auth.signInWithPassword({ email, password: pw });
+    let data, error;
+    try {
+        ({ data, error } = await supabase.auth.signInWithPassword({ email, password: pw }));
+    } catch (err) {
+        console.error('Sign-in failed:', err);
+        loginBtn.disabled = false;
+        loginBtn.textContent = 'Sign In';
+        errorEl.innerHTML = alertIcon + 'Could not reach authentication service.';
+        errorEl.classList.add('visible');
+        return;
+    }
 
     loginBtn.disabled = false;
     loginBtn.textContent = 'Sign In';
@@ -2419,5 +2442,4 @@ document.addEventListener('keydown', function(e) {
 });
 
 // ===== INIT =====
-setupFilters();
 checkAuth();

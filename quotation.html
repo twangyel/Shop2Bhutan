@@ -425,6 +425,10 @@
             box-shadow: 0 0 0 3px rgba(233, 69, 96, 0.1);
         }
 
+        .badge-paid { background: #dcfce7; color: #15803d; }
+
+        
+
         /* Success State */
         .success-state {
             text-align: center;
@@ -602,21 +606,35 @@
                 <div class="card-body">
                     <!-- Payment Tabs -->
                     <div class="payment-tabs">
-                        <button class="payment-tab active" onclick="switchPayment('qr')" id="tabQr">
-                            📱 Scan QR
+                        <button class="payment-tab active" onclick="switchPayment('mbob')" id="tabMbob">
+                            📱 mBoB
                         </button>
-                        <button class="payment-tab" onclick="switchPayment('bank')" id="tabBank">
+                        <button class="payment-tab" onclick="switchPayment('mpay')" id="tabMpay">
+                            📱 mPay
+                        </button>
+                        <button class="payment-tab" onclick="switchPayment('bank_transfer')" id="tabBank">
                             🏦 Bank Transfer
                         </button>
                     </div>
 
-                    <!-- QR Code Panel -->
-                    <div id="qrPanel">
+                    <!-- mBoB QR Panel -->
+                    <div id="mbobPanel">
                         <div class="qr-container">
-                            <div id="qrcode"></div>
-                            <div class="qr-label">Scan with your banking app</div>
+                            <div id="mbobQrcode"></div>
+                            <div class="qr-label">Scan with mBoB app</div>
                             <div class="qr-label" style="font-size:0.75rem;margin-top:0.5rem;">
-                                Amount: <strong id="qrAmount">Nu. 0</strong>
+                                Amount: <strong class="qrAmount">Nu. 0</strong>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- mPay QR Panel -->
+                    <div id="mpayPanel" style="display:none;">
+                        <div class="qr-container">
+                            <div id="mpayQrcode"></div>
+                            <div class="qr-label">Scan with mPay app</div>
+                            <div class="qr-label" style="font-size:0.75rem;margin-top:0.5rem;">
+                                Amount: <strong class="qrAmount">Nu. 0</strong>
                             </div>
                         </div>
                     </div>
@@ -691,7 +709,7 @@
 
         let currentQuotation = null;
         let selectedFile = null;
-        let paymentMethod = 'qr';
+        let paymentMethod = 'mbob';
 
         // Initialize
         if (!token) {
@@ -782,7 +800,9 @@
             
             document.getElementById('totalAmount').textContent = `Nu. ${(q.total_amount || 0).toLocaleString()}`;
             document.getElementById('paymentAmount').textContent = `Nu. ${(q.total_amount || 0).toLocaleString()}`;
-            document.getElementById('qrAmount').textContent = `Nu. ${(q.total_amount || 0).toLocaleString()}`;
+            document.querySelectorAll('.qrAmount').forEach(el => {
+                el.textContent = `Nu. ${(q.total_amount || 0).toLocaleString()}`;
+            });
 
             // Notes
             if (q.notes) {
@@ -811,24 +831,25 @@
         }
 
         function generateQR(q) {
-            const container = document.getElementById('qrcode');
-            container.innerHTML = '';
-            
-            // Generate a simple payment QR with amount
             const qrData = JSON.stringify({
                 merchant: 'Shop2Bhutan',
                 amount: q.total_amount,
                 order_id: q.order_id,
                 quotation_id: q.id
             });
-            
-            new QRCode(container, {
-                text: qrData,
-                width: 180,
-                height: 180,
-                colorDark: '#1a1a2e',
-                colorLight: '#ffffff',
-                correctLevel: QRCode.CorrectLevel.M
+
+            ['mbobQrcode', 'mpayQrcode'].forEach(id => {
+                const container = document.getElementById(id);
+                if (!container) return;
+                container.innerHTML = '';
+                new QRCode(container, {
+                    text: qrData,
+                    width: 180,
+                    height: 180,
+                    colorDark: '#1a1a2e',
+                    colorLight: '#ffffff',
+                    correctLevel: QRCode.CorrectLevel.M
+                });
             });
         }
 
@@ -875,10 +896,14 @@
         // Payment tab switching
         window.switchPayment = function(method) {
             paymentMethod = method;
+            const tabMap = { mbob: 'tabMbob', mpay: 'tabMpay', bank_transfer: 'tabBank' };
+            const panelMap = { mbob: 'mbobPanel', mpay: 'mpayPanel', bank_transfer: 'bankPanel' };
             document.querySelectorAll('.payment-tab').forEach(t => t.classList.remove('active'));
-            document.getElementById(method === 'qr' ? 'tabQr' : 'tabBank').classList.add('active');
-            document.getElementById('qrPanel').style.display = method === 'qr' ? 'block' : 'none';
-            document.getElementById('bankPanel').style.display = method === 'bank' ? 'block' : 'none';
+            document.getElementById(tabMap[method]).classList.add('active');
+            Object.values(panelMap).forEach(id => {
+                document.getElementById(id).style.display = 'none';
+            });
+            document.getElementById(panelMap[method]).style.display = 'block';
         };
 
         // Accept quotation
@@ -1024,72 +1049,85 @@
         }
 
         // Submit payment
-        window.submitPayment = async function() {
-            if (!selectedFile) {
-                showToast('Please upload a payment screenshot first.', true);
-                return;
-            }
+       window.submitPayment = async function() {
+    if (!selectedFile) {
+        showToast('Please upload a payment screenshot first.', true);
+        return;
+    }
 
-            const btn = document.getElementById('submitPaymentBtn');
-            btn.disabled = true;
-            btn.innerHTML = '<div class="spinner"></div> Uploading...';
+    const btn = document.getElementById('submitPaymentBtn');
+    btn.disabled = true;
+    btn.innerHTML = '<div class="spinner"></div> Uploading...';
 
-            try {
-                // Upload to Supabase Storage
-                const fileExt = selectedFile.name.split('.').pop();
-                const fileName = `payment-${currentQuotation.id}-${Date.now()}.${fileExt}`;
-                
-                const { data: uploadData, error: uploadError } = await supabase.storage
-                    .from('payment-screenshots')
-                    .upload(fileName, selectedFile, {
-                        cacheControl: '3600',
-                        upsert: false
-                    });
+    try {
+        // 1. Upload to Supabase Storage
+        const fileExt = selectedFile.name.split('.').pop();
+        const fileName = `payment-${currentQuotation.id}-${Date.now()}.${fileExt}`;
+        
+        const { data: uploadData, error: uploadError } = await supabase.storage
+            .from('payment-screenshots')  // Make sure this bucket exists!
+            .upload(fileName, selectedFile, {
+                cacheControl: '3600',
+                upsert: false
+            });
 
-                if (uploadError) throw uploadError;
+        if (uploadError) throw new Error('Upload failed: ' + uploadError.message);
 
-                // Get public URL
-                const { data: { publicUrl } } = supabase.storage
-                    .from('payment-screenshots')
-                    .getPublicUrl(fileName);
+        // Get public URL
+        const { data: { publicUrl } } = supabase.storage
+            .from('payment-screenshots')
+            .getPublicUrl(fileName);
 
-                // Update quotation (keep status as 'accepted'; track payment via payment_status)
-                const { error: updateError } = await supabase
-                    .from('quotations')
-                    .update({
-                        payment_status: 'pending_verification',
-                        payment_screenshot: publicUrl,
-                        payment_amount: currentQuotation.total_amount,
-                        payment_method: paymentMethod,
-                        customer_notes: document.getElementById('customerNote').value || null,
-                        updated_at: new Date().toISOString()
-                    })
-                    .eq('id', currentQuotation.id);
+        // 2. Update quotation status
+        const { error: quoteError } = await supabase
+            .from('quotations')
+            .update({
+                status: 'paid',  // Add 'paid' status or keep as 'accepted'
+                payment_screenshot: publicUrl,
+                payment_amount: currentQuotation.total_amount,
+                payment_method: paymentMethod,
+                customer_notes: document.getElementById('customerNote').value || null,
+                updated_at: new Date().toISOString()
+            })
+            .eq('id', currentQuotation.id);
 
-                if (updateError) throw updateError;
+        if (quoteError) throw new Error('Quotation update failed: ' + quoteError.message);
 
-                // Create payment record
-                await supabase.from('payments').insert({
-                    order_id: currentQuotation.order_id,
-                    quotation_id: currentQuotation.id,
-                    amount: currentQuotation.total_amount,
-                    status: 'pending',
-                    method: paymentMethod,
-                    screenshot_url: publicUrl,
-                    notes: document.getElementById('customerNote').value || null,
-                    created_at: new Date().toISOString()
-                });
+        // 3. Create payment record — paymentMethod is now a DB-valid value directly:
+        // 'mbob', 'mpay', or 'bank_transfer'
+        const methodLabel = {
+            mbob: 'mBoB',
+            mpay: 'mPay',
+            bank_transfer: 'Bank Transfer'
+        }[paymentMethod] || paymentMethod;
 
-                showSuccessState();
-                showToast('Payment submitted successfully!', false);
+        const { error: paymentError } = await supabase.from('payments').insert({
+            order_id: currentQuotation.order_id,
+            amount: currentQuotation.total_amount,
+            payment_method: paymentMethod,
+            payment_type: 'full',
+            status: 'pending',
+            proof_url: publicUrl,
+            transaction_reference: document.getElementById('customerNote').value || null,
+            notes: `Payment via ${methodLabel} for quotation ${currentQuotation.id}`,
+            created_at: new Date().toISOString()
+        });
 
-            } catch (err) {
-                showToast('Error: ' + err.message, true);
-                btn.disabled = false;
-                btn.innerHTML = '✅ I\'ve Paid — Submit Screenshot';
-            }
-        };
+        if (paymentError) {
+            console.error('Payment insert error:', paymentError);
+            throw new Error('Payment record failed: ' + paymentError.message);
+        }
 
+        showSuccessState();
+        showToast('Payment submitted successfully!', false);
+
+    } catch (err) {
+        console.error('Payment submission error:', err);
+        showToast(err.message, true);
+        btn.disabled = false;
+        btn.innerHTML = '✅ I\'ve Paid — Submit Screenshot';
+    }
+};
         // Utilities
         window.copyToClipboard = function(text) {
             navigator.clipboard.writeText(text).then(() => {
