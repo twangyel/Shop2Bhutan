@@ -2204,7 +2204,16 @@ window.sendQuotation = async function(id) {
 
     // Build the customer link
     const baseUrl = window.location.origin.replace('/admin', '').replace('/admin.html', '');
-    const customerLink = `${baseUrl}/quotation.html?token=${token}`;
+    // Use:
+const trackLink = `${baseUrl}/track?order=${quotation.order?.order_code || quotation.order_id}`;
+const oneTimeLink = `${baseUrl}/quotation.html?token=${token}`; // optional
+
+// WhatsApp message includes BOTH:
+let waMsg = template
+    .replace(/{{name}}/g, cname)
+    .replace(/{{link}}/g, oneTimeLink)      // direct quotation view
+    .replace(/{{track_link}}/g, trackLink)  // persistent portal
+    .replace(/{{valid_until}}/g, validUntil);
 
     // Copy to clipboard
     try {
