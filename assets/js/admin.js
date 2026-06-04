@@ -71,25 +71,6 @@ async function checkAuth() {
     if (loginScreen) loginScreen.style.display = 'flex';
 }
 
-    if (!isAdmin(data.user)) {
-        await supabase.auth.signOut();
-        errorEl.innerHTML = alertIcon + 'This account does not have admin access.';
-        errorEl.classList.add('visible');
-        return;
-    }
-
-    // Remember me: localStorage persists, sessionStorage dies with the tab/browser
-    const rememberMe = document.getElementById('rememberMe')?.checked ?? true;
-    if (rememberMe) {
-        localStorage.setItem('rememberMe', 'true');
-        sessionStorage.removeItem('sessionActive');
-    } else {
-        localStorage.setItem('rememberMe', 'false');
-        sessionStorage.setItem('sessionActive', 'true');
-    }
-
-    showDashboard(data.user);
-
 function showDashboard(user) {
     document.getElementById('loginScreen').style.display = 'none';
     document.getElementById('adminLayout').style.display = 'grid';
