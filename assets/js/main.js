@@ -97,7 +97,7 @@ function saveCart() {
 }
 
 function updateCartBadge() {
-  const count = cart.reduce((sum, item) => sum + (item.qty || 1), 0);
+  const count = cart.length;
   const badge = document.getElementById('cartCount');
   if (!badge) return;
   badge.textContent = count;
