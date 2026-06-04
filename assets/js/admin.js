@@ -1945,9 +1945,9 @@ window.recalculateQuotation = function() {
     const taxableAmount = subtotal + serviceAmount + shipping + delivery;
     const gstAmount = gstApplicable ? Math.round(taxableAmount * gstRate * 100) / 100 : 0;
 
-    const total = Math.round((taxableAmount + gstAmount) * 100) / 100;
+       const total = Math.round((taxableAmount + gstAmount) * 100) / 100;
     const totalCost = totalBaseCost + shipping + delivery + gstAmount;
-const profit = Math.round((total - totalCost) * 100) / 100;
+    const profit = Math.round((total - totalCost) * 100) / 100;
     const margin = total > 0 ? ((profit / total) * 100).toFixed(1) : '0.0';
 
     // Update display
