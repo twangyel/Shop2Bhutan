@@ -44,6 +44,39 @@
             -webkit-font-smoothing: antialiased;
         }
 
+        .upload-preview-wrap {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.75rem;
+    width: 100%;
+}
+.preview-img {
+    max-width: 200px;
+    max-height: 200px;
+    border-radius: 8px;
+    box-shadow: var(--shadow);
+    display: block;
+    margin: 0 auto;
+}
+.delete-screenshot-btn {
+    background: #fef2f2;
+    color: var(--danger);
+    border: 1.5px solid var(--danger);
+    padding: 0.4rem 1rem;
+    border-radius: 6px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: var(--transition);
+    font-family: inherit;
+}
+.delete-screenshot-btn:hover {
+    background: var(--danger);
+    color: #fff;
+    transform: translateY(-1px);
+}
+
         /* ===== MODAL ===== */
         .modal-overlay {
             position: fixed;

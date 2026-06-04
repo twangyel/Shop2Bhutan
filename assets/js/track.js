@@ -389,14 +389,18 @@ function renderPaymentSection(quotation) {
                     <label style="display:block;font-size:0.8rem;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;color:var(--text-muted);margin-bottom:0.75rem;">
                         Upload Payment Screenshot
                     </label>
-                    <div class="upload-area" id="uploadArea">
-                        <div class="upload-icon">📤</div>
-                        <div style="font-size:0.9rem;color:var(--text-muted);">Click or drag payment screenshot here</div>
-                        <div style="font-size:0.8rem;color:var(--text-muted);opacity:0.7;margin-top:0.25rem;">JPG, PNG up to 5MB</div>
-                        <img id="previewImg" class="preview-img" style="display:none;">
-                    </div>
-                    <input type="file" id="fileInput" accept="image/jpeg,image/png,image/jpg" style="display:none;">
-                </div>
+                  <div class="upload-area" id="uploadArea">
+    <div class="upload-placeholder" id="uploadPlaceholder">
+        <div class="upload-icon">📤</div>
+        <div style="font-size:0.9rem;color:var(--text-muted);">Click or drag payment screenshot here</div>
+        <div style="font-size:0.8rem;color:var(--text-muted);opacity:0.7;margin-top:0.25rem;">JPG, PNG up to 5MB</div>
+    </div>
+    <div class="upload-preview-wrap" id="uploadPreviewWrap" style="display:none;">
+        <img id="previewImg" class="preview-img" alt="Payment screenshot">
+        <button type="button" class="delete-screenshot-btn" onclick="window.clearPaymentFile(event)">🗑️ Remove Screenshot</button>
+    </div>
+</div>
+<input type="file" id="fileInput" accept="image/jpeg,image/png,image/jpg" style="display:none;">
 
                 <div style="margin-bottom:1.5rem;">
                     <label style="display:block;font-size:0.8rem;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;color:var(--text-muted);margin-bottom:0.75rem;">
@@ -521,18 +525,38 @@ function handlePaymentFile(file) {
         return;
     }
 
+    window.clearPaymentFile = function(e) {
+    if (e) e.stopPropagation();
+
+    selectedPaymentFile = null;
+    const fileInput = document.getElementById('fileInput');
+    if (fileInput) fileInput.value = '';
+
+    const img = document.getElementById('previewImg');
+    const placeholder = document.getElementById('uploadPlaceholder');
+    const previewWrap = document.getElementById('uploadPreviewWrap');
+    const uploadArea = document.getElementById('uploadArea');
+
+    if (img) img.src = '';
+    if (placeholder) placeholder.style.display = 'block';
+    if (previewWrap) previewWrap.style.display = 'none';
+    if (uploadArea) uploadArea.classList.remove('has-file');
+};
+
     selectedPaymentFile = file;
     const reader = new FileReader();
     reader.onload = (e) => {
-        const img = document.getElementById('previewImg');
-        const uploadArea = document.getElementById('uploadArea');
-        if (img) {
-            img.src = e.target.result;
-            img.style.display = 'block';
-        }
-        if (uploadArea) uploadArea.classList.add('has-file');
-    };
-    reader.readAsDataURL(file);
+    const img = document.getElementById('previewImg');
+    const placeholder = document.getElementById('uploadPlaceholder');
+    const previewWrap = document.getElementById('uploadPreviewWrap');
+    const uploadArea = document.getElementById('uploadArea');
+
+    if (img) img.src = e.target.result;
+    if (placeholder) placeholder.style.display = 'none';
+    if (previewWrap) previewWrap.style.display = 'flex';
+    if (uploadArea) uploadArea.classList.add('has-file');
+}
+reader.readAsDataURL(file);
 }
 
 // ===== GLOBAL FUNCTIONS (exposed for inline onclick) =====
@@ -540,15 +564,7 @@ window.trackOrder = trackOrder;
 
 window.respondToQuotation = async function(quotationId, action) {
     if (action === 'reject') {
-    const confirmed = await window.showModal({
-        title: 'Decline Quotation',
-        message: 'Are you sure you want to decline this quotation? This action cannot be undone.',
-        icon: 'error',
-        confirmText: 'Yes, Decline',
-        cancelText: 'Cancel',
-        confirmClass: 'btn-danger'
-    }).catch(() => false);
-    if (!confirmed) return;
+        if (!confirm('Are you sure you want to decline this quotation?')) return;
 
         const { error } = await supabase
             .from('quotations')
@@ -564,16 +580,9 @@ window.respondToQuotation = async function(quotationId, action) {
         return;
     }
 
-   if (action === 'accept') {
-    const confirmed = await window.showModal({
-        title: 'Accept Quotation',
-        message: 'Accept this quotation and proceed to payment?',
-        icon: 'confirm',
-        confirmText: 'Accept & Pay',
-        cancelText: 'Cancel',
-        confirmClass: 'btn-primary'
-    }).catch(() => false);
-    if (!confirmed) return;
+    if (action === 'accept') {
+        if (!confirm('Accept this quotation and proceed to payment?')) return;
+
         const { error } = await supabase
             .from('quotations')
             .update({
@@ -620,7 +629,6 @@ window.copyToClipboard = function(text) {
     });
 };
 
-// ===== IN track.js — UPDATE submitPayment() =====
 window.submitPayment = async function() {
     if (!selectedPaymentFile) {
         showToast('Please upload a payment screenshot first.', true);
@@ -651,13 +659,11 @@ window.submitPayment = async function() {
             .from('payment-screenshots')
             .getPublicUrl(fileName);
 
-        // FIX: Keep status as 'accepted', use payment_status for payment tracking
         const { error: updateError } = await supabase
             .from('quotations')
             .update({
-                // ❌ REMOVED: status: 'paid',  // This violates the check constraint
-                // ✅ KEPT: status stays 'accepted'
-                payment_status: 'pending_verification',  // Track payment separately
+                status: 'paid',
+                payment_status: 'pending_verification',
                 payment_screenshot: publicUrl,
                 payment_amount: currentQuotation.total_amount,
                 payment_method: paymentMethod,
@@ -686,14 +692,15 @@ window.submitPayment = async function() {
             <div class="state-card">
                 <div class="state-icon empty" style="background:#ecfdf5;color:var(--success);font-size:2.5rem;">✓</div>
                 <h3>Payment Submitted!</h3>
-                <p>Thank you! We've received your payment screenshot. Our team will verify it within 24 hours and update your order status.</p>
+                <p>Thank you! We've received your payment screenshot. Our team will verify it within an hour and update your order status.</p>
                 <div style="background:#fafafa;border-radius:var(--radius-sm);padding:1.25rem;margin-top:1rem;text-align:left;">
                     <div style="font-size:0.75rem;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;color:var(--text-muted);margin-bottom:0.5rem;">What's Next?</div>
                     <div style="font-size:0.9rem;color:var(--text);line-height:1.8;">
-                        1. We'll verify your payment within 24 hours<br>
+                        1. We'll verify your payment within an hour<br>
                         2. You'll receive a WhatsApp confirmation<br>
                         3. Your order will be marked as "Confirmed"<br>
                         4. Come back here anytime to track progress
+                        <p><a href="https://shop2bhutanv2.vercel.app/track.html" target="_blank" style="color:var(--primary);text-decoration:underline;">Contact Us on WhatsApp</a></p>
                     </div>
                 </div>
             </div>
@@ -703,7 +710,7 @@ window.submitPayment = async function() {
         showToast('Error: ' + err.message, true);
         if (btn) {
             btn.disabled = false;
-            btn.innerHTML = '✅ I\'ve Paid — Submit Screenshot';
+            btn.innerHTML = "✅ I've Paid — Submit Screenshot"
         }
     }
 };
