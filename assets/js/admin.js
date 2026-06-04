@@ -1946,9 +1946,15 @@ window.recalculateQuotation = function() {
     const gstAmount = gstApplicable ? Math.round(taxableAmount * gstRate * 100) / 100 : 0;
 
        const total = Math.round((taxableAmount + gstAmount) * 100) / 100;
-    const totalCost = totalBaseCost + shipping + delivery + gstAmount;
-    const profit = Math.round((total - totalCost) * 100) / 100;
-    const margin = total > 0 ? ((profit / total) * 100).toFixed(1) : '0.0';
+
+// Only subtract actual costs the shop bears:
+// - base procurement cost
+// - shipping (pass-through to international courier)
+// - GST (pass-through to government)
+// Delivery is intentionally LEFT OUT — it is the shop's own revenue.
+const totalCost = totalBaseCost + shipping + gstAmount;
+const profit = Math.round((total - totalCost) * 100) / 100;
+const margin = total > 0 ? ((profit / total) * 100).toFixed(1) : '0.0';
 
     // Update display
     const setText = (id, val) => {
