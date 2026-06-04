@@ -2202,27 +2202,10 @@ window.sendQuotation = async function(id) {
         return;
     }
 
-    // Build the customer link
+    // Build links
     const baseUrl = window.location.origin.replace('/admin', '').replace('/admin.html', '');
-    // Use:
-const trackLink = `${baseUrl}/track?order=${quotation.order?.order_code || quotation.order_id}`;
-const oneTimeLink = `${baseUrl}/quotation.html?token=${token}`; // optional
-
-// WhatsApp message includes BOTH:
-let waMsg = template
-    .replace(/{{name}}/g, cname)
-    .replace(/{{link}}/g, oneTimeLink)      // direct quotation view
-    .replace(/{{track_link}}/g, trackLink)  // persistent portal
-    .replace(/{{valid_until}}/g, validUntil);
-
-    // Copy to clipboard
-    try {
-        await navigator.clipboard.writeText(customerLink);
-        toast('✓ Quotation sent! Link copied to clipboard', 'success');
-    } catch (e) {
-        toast('Link: ' + customerLink, 'info');
-        console.log('Customer link:', customerLink);
-    }
+    const trackLink = `${baseUrl}/track?order=${quotation.order?.order_code || quotation.order_id}`;
+    const oneTimeLink = `${baseUrl}/quotation.html?token=${token}`;
 
     // Build WhatsApp message from template
     const phone = quotation.order?.customer?.phone;
@@ -2232,11 +2215,21 @@ let waMsg = template
         : '7 days from now';
     
     // Use template from settings
-    let template = appSettings?.wa_template_quotation || 'Hi {{name}}! Your quotation is ready: {{link}}';
+    let template = appSettings?.wa_template_quotation || 'Hi {{name}}! Your quotation is ready: {{link}}\n\nTrack anytime: {{track_link}}';
     let waMsg = template
         .replace(/{{name}}/g, cname)
-        .replace(/{{link}}/g, customerLink)
+        .replace(/{{link}}/g, oneTimeLink)
+        .replace(/{{track_link}}/g, trackLink)
         .replace(/{{valid_until}}/g, validUntil);
+
+    // Copy track link to clipboard (more useful than one-time link)
+    try {
+        await navigator.clipboard.writeText(trackLink);
+        toast('✓ Quotation sent! Track link copied to clipboard', 'success');
+    } catch (e) {
+        toast('Track link: ' + trackLink, 'info');
+        console.log('Track link:', trackLink);
+    }
 
     if (phone) {
         window.open(`https://wa.me/${formatWhatsAppPhone(phone)}?text=${encodeURIComponent(waMsg)}`, '_blank', 'noopener');
@@ -2244,7 +2237,6 @@ let waMsg = template
 
     await fetchQuotations();
 };
-
 window.confirmDeleteQuotation = function(id) {
     const confirmModal = document.getElementById('confirmModal');
     document.getElementById('confirmTitle').textContent = 'Delete Quotation?';
