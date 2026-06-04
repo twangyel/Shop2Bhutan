@@ -1856,6 +1856,38 @@ async function loadOrderDropdown(selectedId) {
         opt.textContent = `${o.order_code || String(o.id).slice(0, 8).toUpperCase()} — ${c.name || 'Unknown'} (${c.phone || 'no phone'})`;
         if (o.id === selectedId) opt.selected = true;
         select.appendChild(opt);
+
+        async function loadOrderDropdown(selectedId) {
+    const { data: orders } = await supabase
+        .from('orders')
+        .select('id, order_code, customer:customers(name, phone)')
+        .order('created_at', { ascending: false })
+        .limit(100);
+
+    // Fetch existing quotation order_ids to exclude them (for NEW quotations only)
+    let existingOrderIds = new Set();
+    if (!currentQuotationId) {  // Only when creating NEW quotation
+        const { data: existingQuotations } = await supabase
+            .from('quotations')
+            .select('order_id');
+        existingOrderIds = new Set((existingQuotations || []).map(q => q.order_id));
+    }
+
+    const select = document.getElementById('quotationOrderId');
+    if (!select) return;
+
+    (orders || []).forEach(o => {
+        // Skip orders that already have quotations (unless editing current one)
+        if (existingOrderIds.has(o.id) && o.id !== selectedId) return;
+        
+        const c = o.customer || {};
+        const opt = document.createElement('option');
+        opt.value = o.id;
+        opt.textContent = `${o.order_code || String(o.id).slice(0, 8).toUpperCase()} — ${c.name || 'Unknown'} (${c.phone || 'no phone'})`;
+        if (o.id === selectedId) opt.selected = true;
+        select.appendChild(opt);
+    });
+}
     });
 }
 
@@ -2105,12 +2137,18 @@ window.openQuotationDetail = function(id) {
         <div style="margin:1.5rem 0;padding:1rem;background:#f8f9fc;border-radius:10px;">
             <label style="font-size:0.8rem;color:#888;text-transform:uppercase;font-weight:600;display:block;margin-bottom:0.75rem">Items (${items.length})</label>
             ${items.length === 0 ? '<p style="color:#888;font-size:0.9rem;">No items</p>' : `
-            <table style="width:100%;font-size:0.85rem;border-collapse:collapse;">
-                <thead><tr style="border-bottom:2px solid #e8e8e8;"><th style="text-align:left;padding:0.5rem;">Item</th><th style="text-align:center;padding:0.5rem;">Qty</th><th style="text-align:right;padding:0.5rem;">Unit</th><th style="text-align:right;padding:0.5rem;">Cost</th><th style="text-align:right;padding:0.5rem;">Total</th></tr></thead>
+            <table style="width:100%;font-size:0.85rem;border-collapse:collapse;table-layout:fixed;">
+                <thead><tr style="border-bottom:2px solid #e8e8e8;">
+    <th style="text-align:left;padding:0.5rem;width:45%;">Item</th>
+    <th style="text-align:center;padding:0.5rem;width:10%;">Qty</th>
+    <th style="text-align:right;padding:0.5rem;width:15%;">Unit</th>
+    <th style="text-align:right;padding:0.5rem;width:15%;">Cost</th>
+    <th style="text-align:right;padding:0.5rem;width:15%;">Total</th>
+</tr></thead>
                 <tbody>
                     ${items.map(i => `
                         <tr style="border-bottom:1px solid #f0f0f0;">
-                            <td style="padding:0.5rem;">${escapeHtml(i.name)}</td>
+                            <td style="padding:0.5rem;word-break:break-word;">${escapeHtml(i.name)}</td>
                             <td style="padding:0.5rem;text-align:center;">${escapeHtml(i.quantity)}</td>
                             <td style="padding:0.5rem;text-align:right;">Nu. ${escapeHtml(i.unit_price)}</td>
                             <td style="padding:0.5rem;text-align:right;color:#c0392b;">Nu. ${escapeHtml(i.base_cost || 0)}</td>
