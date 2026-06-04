@@ -132,6 +132,19 @@ window.doLogin = async function() {
         return;
     }
 
+    // Remember me: localStorage persists, sessionStorage dies with the tab/browser.
+    // If checked, we clear sessionActive so checkAuth() won't sign-out on reload.
+    // If unchecked, we set sessionActive so the session survives reloads in THIS tab
+    // but checkAuth() will sign-out when a fresh browser session starts.
+    const rememberMe = document.getElementById('rememberMe')?.checked ?? false;
+    if (rememberMe) {
+        localStorage.setItem('rememberMe', 'true');
+        sessionStorage.removeItem('sessionActive');
+    } else {
+        localStorage.setItem('rememberMe', 'false');
+        sessionStorage.setItem('sessionActive', 'true');
+    }
+
     showDashboard(data.user);
 };
 
