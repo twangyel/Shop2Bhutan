@@ -1846,16 +1846,29 @@ async function loadOrderDropdown(selectedId) {
         .order('created_at', { ascending: false })
         .limit(100);
 
+    // For NEW quotations only: hide orders that already have a quotation
+    let existingOrderIds = new Set();
+    if (!currentQuotationId) {
+        const { data: existingQuotations } = await supabase
+            .from('quotations')
+            .select('order_id');
+        existingOrderIds = new Set((existingQuotations || []).map(q => q.order_id));
+    }
+
     const select = document.getElementById('quotationOrderId');
     if (!select) return;
 
     (orders || []).forEach(o => {
+        // Skip orders already linked to a quotation, unless we're editing that specific one
+        if (existingOrderIds.has(o.id) && o.id !== selectedId) return;
+
         const c = o.customer || {};
         const opt = document.createElement('option');
         opt.value = o.id;
         opt.textContent = `${o.order_code || String(o.id).slice(0, 8).toUpperCase()} — ${c.name || 'Unknown'} (${c.phone || 'no phone'})`;
         if (o.id === selectedId) opt.selected = true;
         select.appendChild(opt);
+
 
         async function loadOrderDropdown(selectedId) {
     const { data: orders } = await supabase
@@ -2136,28 +2149,32 @@ window.openQuotationDetail = function(id) {
 
         <div style="margin:1.5rem 0;padding:1rem;background:#f8f9fc;border-radius:10px;">
             <label style="font-size:0.8rem;color:#888;text-transform:uppercase;font-weight:600;display:block;margin-bottom:0.75rem">Items (${items.length})</label>
-            ${items.length === 0 ? '<p style="color:#888;font-size:0.9rem;">No items</p>' : `
-            <table style="width:100%;font-size:0.85rem;border-collapse:collapse;table-layout:fixed;">
-                <thead><tr style="border-bottom:2px solid #e8e8e8;">
-    <th style="text-align:left;padding:0.5rem;width:45%;">Item</th>
-    <th style="text-align:center;padding:0.5rem;width:10%;">Qty</th>
-    <th style="text-align:right;padding:0.5rem;width:15%;">Unit</th>
-    <th style="text-align:right;padding:0.5rem;width:15%;">Cost</th>
-    <th style="text-align:right;padding:0.5rem;width:15%;">Total</th>
-</tr></thead>
-                <tbody>
-                    ${items.map(i => `
-                        <tr style="border-bottom:1px solid #f0f0f0;">
-                            <td style="padding:0.5rem;word-break:break-word;">${escapeHtml(i.name)}</td>
-                            <td style="padding:0.5rem;text-align:center;">${escapeHtml(i.quantity)}</td>
-                            <td style="padding:0.5rem;text-align:right;">Nu. ${escapeHtml(i.unit_price)}</td>
-                            <td style="padding:0.5rem;text-align:right;color:#c0392b;">Nu. ${escapeHtml(i.base_cost || 0)}</td>
-                            <td style="padding:0.5rem;text-align:right;font-weight:600;">Nu. ${escapeHtml(i.total)}</td>
-                        </tr>
-                    `).join('')}
-                </tbody>
-            </table>
-            `}
+            // AFTER (fixed)
+${items.length === 0 ? '<p style="color:#888;font-size:0.9rem;">No items</p>' : `
+<div style="overflow-x:auto;-webkit-overflow-scrolling:touch;border-radius:6px;border:1px solid #e8e8e8;">
+<table style="width:100%;min-width:480px;font-size:0.85rem;border-collapse:collapse;table-layout:fixed;">
+    <thead><tr style="border-bottom:2px solid #e8e8e8;">
+        <th style="text-align:left;padding:0.5rem;width:40%;">Item</th>
+        <th style="text-align:center;padding:0.5rem;width:12%;">Qty</th>
+        <th style="text-align:right;padding:0.5rem;width:16%;">Unit</th>
+        <th style="text-align:right;padding:0.5rem;width:16%;">Cost</th>
+        <th style="text-align:right;padding:0.5rem;width:16%;">Total</th>
+    </tr></thead>
+    <tbody>
+        ${items.map(i => `
+            <tr style="border-bottom:1px solid #f0f0f0;">
+                <td style="padding:0.5rem;word-break:break-word;">${escapeHtml(i.name)}</td>
+                <td style="padding:0.5rem;text-align:center;">${escapeHtml(i.quantity)}</td>
+                <td style="padding:0.5rem;text-align:right;">Nu. ${escapeHtml(i.unit_price)}</td>
+                <td style="padding:0.5rem;text-align:right;color:#c0392b;">Nu. ${escapeHtml(i.base_cost || 0)}</td>
+                <td style="padding:0.5rem;text-align:right;font-weight:600;">Nu. ${escapeHtml(i.total)}</td>
+            </tr>
+        `).join('')}
+    </tbody>
+</table>
+</div>
+`}
+
         </div>
 
         <div style="margin:1.5rem 0;padding:1.25rem;background:#fff;border:1px solid #e8e8e8;border-radius:12px;">
