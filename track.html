@@ -32,9 +32,9 @@
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        
+
         html { scroll-behavior: smooth; }
-        
+
         body {
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
             background: var(--bg);
@@ -44,6 +44,135 @@
             -webkit-font-smoothing: antialiased;
         }
 
+        /* ===== MODAL ===== */
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(26, 26, 46, 0.6);
+            backdrop-filter: blur(8px);
+            z-index: 9999;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 1rem;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+        .modal-overlay.active {
+            display: flex;
+            opacity: 1;
+        }
+        .modal-panel {
+            background: var(--surface);
+            border-radius: var(--radius);
+            width: 100%;
+            max-width: 420px;
+            box-shadow: 0 25px 60px rgba(0,0,0,0.25), 0 10px 20px rgba(0,0,0,0.15);
+            transform: scale(0.92) translateY(10px);
+            transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+            overflow: hidden;
+        }
+        .modal-overlay.active .modal-panel {
+            transform: scale(1) translateY(0);
+        }
+        .modal-header {
+            padding: 1.75rem 1.75rem 0.5rem;
+            text-align: center;
+        }
+        .modal-icon {
+            width: 56px;
+            height: 56px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 1rem;
+            font-size: 1.5rem;
+        }
+        .modal-icon.confirm {
+            background: #fff7ed;
+            color: #ea580c;
+        }
+        .modal-icon.success {
+            background: #f0fdf4;
+            color: #16a34a;
+        }
+        .modal-icon.error {
+            background: #fef2f2;
+            color: #dc2626;
+        }
+        .modal-icon.info {
+            background: #eff6ff;
+            color: #2563eb;
+        }
+        .modal-header h3 {
+            font-size: 1.15rem;
+            font-weight: 700;
+            color: var(--text);
+            margin-bottom: 0.35rem;
+        }
+        .modal-header p {
+            font-size: 0.9rem;
+            color: var(--text-muted);
+            line-height: 1.5;
+        }
+        .modal-body {
+            padding: 0.5rem 1.75rem 1.5rem;
+        }
+        .modal-footer {
+            padding: 0 1.75rem 1.75rem;
+            display: flex;
+            gap: 0.75rem;
+        }
+        .modal-footer .btn {
+            flex: 1;
+            padding: 0.75rem 1rem;
+            border-radius: 10px;
+            font-weight: 600;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: var(--transition);
+            border: none;
+            font-family: inherit;
+            text-align: center;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.4rem;
+        }
+        .modal-footer .btn-secondary {
+            background: var(--bg);
+            color: var(--text);
+            border: 1.5px solid var(--border);
+        }
+        .modal-footer .btn-secondary:hover {
+            background: var(--border);
+            border-color: var(--text-muted);
+        }
+        .modal-footer .btn-primary {
+            background: var(--primary);
+            color: #fff;
+        }
+        .modal-footer .btn-primary:hover {
+            background: var(--primary-dark);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(233, 69, 96, 0.3);
+        }
+        .modal-footer .btn-success {
+            background: var(--success);
+            color: #fff;
+        }
+        .modal-footer .btn-success:hover {
+            background: #1a9c4e;
+        }
+        .modal-footer .btn-danger {
+            background: var(--danger);
+            color: #fff;
+        }
+        .modal-footer .btn-danger:hover {
+            background: #a93226;
+        }
+
         /* ===== HERO / SEARCH ===== */
         .hero {
             background: linear-gradient(135deg, var(--secondary) 0%, #16213e 50%, #0f3460 100%);
@@ -51,7 +180,6 @@
             position: relative;
             overflow: hidden;
         }
-
         .hero::before {
             content: '';
             position: absolute;
@@ -59,7 +187,6 @@
             background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.03'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
             opacity: 0.5;
         }
-
         .hero-content {
             max-width: 600px;
             margin: 0 auto;
@@ -67,7 +194,6 @@
             z-index: 1;
             text-align: center;
         }
-
         .logo {
             width: 160px;
             height: 50px;
@@ -84,12 +210,10 @@
             box-shadow: 0 8px 32px rgba(233, 69, 96, 0.3);
             animation: logoFloat 3s ease-in-out infinite;
         }
-
         @keyframes logoFloat {
             0%, 100% { transform: translateY(0); }
             50% { transform: translateY(-6px); }
         }
-
         .hero h1 {
             color: #fff;
             font-size: 2.5rem;
@@ -98,14 +222,12 @@
             letter-spacing: -0.02em;
             line-height: 1.2;
         }
-
         .hero p {
             color: rgba(255,255,255,0.7);
             font-size: 1.1rem;
             margin-bottom: 2.5rem;
             font-weight: 400;
         }
-
         .search-box {
             background: rgba(255,255,255,0.1);
             backdrop-filter: blur(20px);
@@ -117,14 +239,12 @@
             box-shadow: 0 20px 60px rgba(0,0,0,0.3);
             transition: var(--transition);
         }
-
         .search-box:focus-within {
             background: rgba(255,255,255,0.15);
             border-color: rgba(255,255,255,0.4);
             transform: translateY(-2px);
             box-shadow: 0 25px 70px rgba(0,0,0,0.4);
         }
-
         .search-box input {
             flex: 1;
             background: transparent;
@@ -136,11 +256,9 @@
             font-family: inherit;
             font-weight: 500;
         }
-
         .search-box input::placeholder {
             color: rgba(255,255,255,0.5);
         }
-
         .search-box button {
             background: var(--primary);
             color: #fff;
@@ -156,18 +274,15 @@
             gap: 0.5rem;
             white-space: nowrap;
         }
-
         .search-box button:hover {
             background: var(--primary-dark);
             transform: scale(1.02);
         }
-
         .search-box button:disabled {
             opacity: 0.6;
             cursor: not-allowed;
             transform: none;
         }
-
         .search-box button svg {
             width: 20px;
             height: 20px;
@@ -187,12 +302,10 @@
             animation: skeleton 1.5s infinite;
             border-radius: 8px;
         }
-
         @keyframes skeleton {
             0% { background-position: 200% 0; }
             100% { background-position: -200% 0; }
         }
-
         .loading-pulse {
             display: flex;
             flex-direction: column;
@@ -200,7 +313,6 @@
             gap: 1.5rem;
             padding: 4rem 2rem;
         }
-
         .spinner {
             width: 48px;
             height: 48px;
@@ -209,7 +321,6 @@
             border-radius: 50%;
             animation: spin 0.8s linear infinite;
         }
-
         @keyframes spin {
             to { transform: rotate(360deg); }
         }
@@ -226,12 +337,10 @@
             z-index: 2;
             animation: slideUp 0.5s ease-out;
         }
-
         @keyframes slideUp {
             from { opacity: 0; transform: translateY(30px); }
             to { opacity: 1; transform: translateY(0); }
         }
-
         .state-icon {
             width: 80px;
             height: 80px;
@@ -242,24 +351,20 @@
             margin: 0 auto 1.5rem;
             font-size: 2rem;
         }
-
         .state-icon.error {
             background: #fef2f2;
             color: var(--danger);
         }
-
         .state-icon.empty {
             background: #f0f9ff;
             color: var(--info);
         }
-
         .state-card h3 {
             font-size: 1.25rem;
             font-weight: 700;
             margin-bottom: 0.5rem;
             color: var(--text);
         }
-
         .state-card p {
             color: var(--text-muted);
             font-size: 0.95rem;
@@ -276,7 +381,6 @@
             overflow: hidden;
             animation: slideUp 0.6s cubic-bezier(0.16, 1, 0.3, 1);
         }
-
         .tracking-header {
             padding: 2rem 2rem 1.5rem;
             border-bottom: 1px solid var(--border);
@@ -286,13 +390,11 @@
             flex-wrap: wrap;
             gap: 1rem;
         }
-
         .tracking-id {
             display: flex;
             align-items: center;
             gap: 0.75rem;
         }
-
         .tracking-id .label {
             font-size: 0.75rem;
             color: var(--text-muted);
@@ -300,7 +402,6 @@
             letter-spacing: 0.1em;
             font-weight: 600;
         }
-
         .tracking-id .value {
             font-family: 'Courier New', monospace;
             font-size: 1.5rem;
@@ -308,7 +409,6 @@
             color: var(--text);
             letter-spacing: -0.02em;
         }
-
         .status-badge {
             display: inline-flex;
             align-items: center;
@@ -321,12 +421,10 @@
             letter-spacing: 0.05em;
             animation: badgePop 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
         }
-
         @keyframes badgePop {
             0% { transform: scale(0.5); opacity: 0; }
             100% { transform: scale(1); opacity: 1; }
         }
-
         .status-badge::before {
             content: '';
             width: 8px;
@@ -334,12 +432,10 @@
             border-radius: 50%;
             animation: pulse 2s infinite;
         }
-
         @keyframes pulse {
             0%, 100% { opacity: 1; transform: scale(1); }
             50% { opacity: 0.5; transform: scale(1.2); }
         }
-
         .status-submitted { background: #fef2f2; color: var(--danger); }
         .status-submitted::before { background: var(--danger); }
         .status-price_sent { background: #fffbeb; color: #92400e; }
@@ -360,12 +456,10 @@
             padding: 2rem;
             background: linear-gradient(180deg, #fafafa 0%, #fff 100%);
         }
-
         .progress-bar-container {
             position: relative;
             margin: 1rem 0 2.5rem;
         }
-
         .progress-track {
             height: 6px;
             background: var(--border);
@@ -373,7 +467,6 @@
             position: relative;
             overflow: hidden;
         }
-
         .progress-fill {
             height: 100%;
             background: linear-gradient(90deg, var(--primary), var(--accent));
@@ -381,7 +474,6 @@
             transition: width 1.2s cubic-bezier(0.16, 1, 0.3, 1);
             position: relative;
         }
-
         .progress-fill::after {
             content: '';
             position: absolute;
@@ -396,19 +488,16 @@
             box-shadow: 0 0 0 4px rgba(233, 69, 96, 0.2);
             animation: glow 2s ease-in-out infinite;
         }
-
         @keyframes glow {
             0%, 100% { box-shadow: 0 0 0 4px rgba(233, 69, 96, 0.2); }
             50% { box-shadow: 0 0 0 8px rgba(233, 69, 96, 0.1); }
         }
-
         .progress-steps {
             display: flex;
             justify-content: space-between;
             position: relative;
             top: -11px;
         }
-
         .step {
             display: flex;
             flex-direction: column;
@@ -416,7 +505,6 @@
             gap: 0.5rem;
             cursor: default;
         }
-
         .step-dot {
             width: 28px;
             height: 28px;
@@ -430,32 +518,27 @@
             position: relative;
             z-index: 2;
         }
-
         .step-dot.pending {
             background: #fff;
             border: 2px solid var(--border);
             color: var(--text-muted);
         }
-
         .step-dot.active {
             background: var(--primary);
             border: 2px solid var(--primary);
             color: #fff;
             animation: stepBounce 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
         }
-
         .step-dot.completed {
             background: var(--success);
             border: 2px solid var(--success);
             color: #fff;
         }
-
         @keyframes stepBounce {
             0% { transform: scale(0); }
             60% { transform: scale(1.2); }
             100% { transform: scale(1); }
         }
-
         .step-label {
             font-size: 0.7rem;
             font-weight: 600;
@@ -466,12 +549,10 @@
             max-width: 80px;
             line-height: 1.3;
         }
-
         .step.active .step-label {
             color: var(--primary);
             font-weight: 700;
         }
-
         .step.completed .step-label {
             color: var(--success);
         }
@@ -480,7 +561,6 @@
         .timeline-section {
             padding: 0 2rem 2rem;
         }
-
         .section-title {
             font-size: 0.8rem;
             font-weight: 700;
@@ -489,12 +569,10 @@
             color: var(--text-muted);
             margin-bottom: 1.5rem;
         }
-
         .timeline {
             position: relative;
             padding-left: 2rem;
         }
-
         .timeline::before {
             content: '';
             position: absolute;
@@ -504,24 +582,20 @@
             width: 2px;
             background: linear-gradient(180deg, var(--border) 0%, transparent 100%);
         }
-
         .timeline-item {
             position: relative;
             padding-bottom: 1.75rem;
             animation: timelineSlide 0.4s ease-out both;
         }
-
         .timeline-item:nth-child(1) { animation-delay: 0.1s; }
         .timeline-item:nth-child(2) { animation-delay: 0.2s; }
         .timeline-item:nth-child(3) { animation-delay: 0.3s; }
         .timeline-item:nth-child(4) { animation-delay: 0.4s; }
         .timeline-item:nth-child(5) { animation-delay: 0.5s; }
-
         @keyframes timelineSlide {
             from { opacity: 0; transform: translateX(-20px); }
             to { opacity: 1; transform: translateX(0); }
         }
-
         .timeline-dot {
             position: absolute;
             left: -2rem;
@@ -533,18 +607,15 @@
             background: #fff;
             transition: var(--transition);
         }
-
         .timeline-item.active .timeline-dot {
             border-color: var(--primary);
             background: var(--primary);
             box-shadow: 0 0 0 4px rgba(233, 69, 96, 0.15);
         }
-
         .timeline-item.completed .timeline-dot {
             border-color: var(--success);
             background: var(--success);
         }
-
         .timeline-content {
             background: #fafafa;
             border-radius: var(--radius-sm);
@@ -552,26 +623,22 @@
             border: 1px solid var(--border);
             transition: var(--transition);
         }
-
         .timeline-item.active .timeline-content {
             background: #fff5f7;
             border-color: rgba(233, 69, 96, 0.2);
             box-shadow: 0 4px 12px rgba(233, 69, 96, 0.08);
         }
-
         .timeline-content h4 {
             font-size: 0.95rem;
             font-weight: 700;
             color: var(--text);
             margin-bottom: 0.25rem;
         }
-
         .timeline-content p {
             font-size: 0.85rem;
             color: var(--text-muted);
             line-height: 1.5;
         }
-
         .timeline-time {
             font-size: 0.75rem;
             color: var(--text-muted);
@@ -589,7 +656,6 @@
             gap: 1.5rem;
             padding: 0 2rem 2rem;
         }
-
         .detail-box {
             background: #fafafa;
             border-radius: var(--radius-sm);
@@ -597,13 +663,11 @@
             border: 1px solid var(--border);
             transition: var(--transition);
         }
-
         .detail-box:hover {
             transform: translateY(-2px);
             box-shadow: var(--shadow);
             border-color: rgba(233, 69, 96, 0.15);
         }
-
         .detail-box .label {
             font-size: 0.7rem;
             font-weight: 700;
@@ -612,13 +676,11 @@
             color: var(--text-muted);
             margin-bottom: 0.5rem;
         }
-
         .detail-box .value {
             font-size: 1rem;
             font-weight: 600;
             color: var(--text);
         }
-
         .detail-box .value.price {
             color: var(--primary);
             font-size: 1.25rem;
@@ -628,7 +690,6 @@
         .items-section {
             padding: 0 2rem 2rem;
         }
-
         .item-card {
             display: flex;
             gap: 1rem;
@@ -640,12 +701,10 @@
             transition: var(--transition);
             animation: slideUp 0.4s ease-out both;
         }
-
         .item-card:hover {
             border-color: rgba(233, 69, 96, 0.2);
             box-shadow: var(--shadow);
         }
-
         .item-img {
             width: 70px;
             height: 70px;
@@ -656,11 +715,9 @@
             cursor: pointer;
             transition: var(--transition);
         }
-
         .item-img:hover {
             transform: scale(1.05);
         }
-
         .item-img.placeholder {
             display: flex;
             align-items: center;
@@ -668,12 +725,10 @@
             color: #ccc;
             font-size: 1.5rem;
         }
-
         .item-info {
             flex: 1;
             min-width: 0;
         }
-
         .item-info h4 {
             font-size: 0.95rem;
             font-weight: 600;
@@ -683,12 +738,10 @@
             overflow: hidden;
             text-overflow: ellipsis;
         }
-
         .item-info p {
             font-size: 0.8rem;
             color: var(--text-muted);
         }
-
         .item-qty {
             font-size: 0.85rem;
             font-weight: 700;
@@ -707,14 +760,12 @@
             padding: 1.5rem;
             margin: 0 2rem 2rem;
         }
-
         .quotation-card h3 {
             font-size: 1rem;
             font-weight: 700;
             margin-bottom: 1rem;
             color: var(--text);
         }
-
         .quotation-row {
             display: flex;
             justify-content: space-between;
@@ -722,7 +773,6 @@
             font-size: 0.9rem;
             border-bottom: 1px solid var(--border);
         }
-
         .quotation-row:last-child {
             border-bottom: none;
             margin-top: 0.5rem;
@@ -731,13 +781,11 @@
             font-weight: 700;
             color: var(--primary);
         }
-
         .quotation-actions {
             display: flex;
             gap: 0.75rem;
             margin-top: 1.25rem;
         }
-
         .btn {
             flex: 1;
             padding: 0.875rem;
@@ -755,43 +803,36 @@
             justify-content: center;
             gap: 0.4rem;
         }
-
         .btn-primary {
             background: var(--primary);
             color: #fff;
         }
-
         .btn-primary:hover {
             background: var(--primary-dark);
             transform: translateY(-1px);
             box-shadow: 0 6px 20px rgba(233, 69, 96, 0.25);
         }
-
         .btn-secondary {
             background: var(--surface);
             color: var(--text);
             border: 2px solid var(--border);
         }
-
         .btn-secondary:hover {
             background: var(--bg);
             border-color: var(--text-muted);
         }
-
         .btn-success {
             background: var(--success);
             color: #fff;
         }
-
         .btn-success:hover {
             background: #1a9c4e;
         }
 
-        /* ===== PAYMENT SECTION (for accepted quotations) ===== */
+        /* ===== PAYMENT SECTION ===== */
         .payment-section {
             padding: 0 2rem 2rem;
         }
-
         .payment-card {
             background: var(--surface);
             border: 2px solid var(--border);
@@ -799,13 +840,11 @@
             padding: 1.5rem;
             margin-bottom: 1rem;
         }
-
         .payment-tabs {
             display: flex;
             gap: 0.5rem;
             margin-bottom: 1.5rem;
         }
-
         .payment-tab {
             flex: 1;
             padding: 0.75rem;
@@ -818,20 +857,17 @@
             font-size: 0.85rem;
             transition: var(--transition);
         }
-
         .payment-tab.active {
             border-color: var(--primary);
             background: #fff5f7;
             color: var(--primary);
         }
-
         .qr-container {
             text-align: center;
             padding: 1.5rem;
             background: #fafafa;
             border-radius: var(--radius-sm);
         }
-
         #qrcode {
             display: inline-block;
             padding: 1rem;
@@ -839,13 +875,11 @@
             border-radius: 12px;
             box-shadow: var(--shadow-sm);
         }
-
         .bank-details {
             background: #fafafa;
             border-radius: var(--radius-sm);
             padding: 1.25rem;
         }
-
         .bank-row {
             display: flex;
             justify-content: space-between;
@@ -853,22 +887,18 @@
             font-size: 0.9rem;
             border-bottom: 1px solid var(--border);
         }
-
         .bank-row:last-child {
             border-bottom: none;
         }
-
         .bank-row .label {
             color: var(--text-muted);
             font-weight: 500;
         }
-
         .bank-row .value {
             font-weight: 600;
             color: var(--text);
             font-family: 'Courier New', monospace;
         }
-
         .copy-btn {
             background: none;
             border: none;
@@ -878,11 +908,9 @@
             font-weight: 600;
             margin-left: 0.5rem;
         }
-
         .copy-btn:hover {
             text-decoration: underline;
         }
-
         .upload-area {
             border: 2px dashed var(--border);
             border-radius: var(--radius-sm);
@@ -892,22 +920,18 @@
             transition: var(--transition);
             background: #fafafa;
         }
-
         .upload-area:hover {
             border-color: var(--primary);
             background: #fff5f7;
         }
-
         .upload-area.has-file {
             border-color: var(--success);
             background: #f0fdf4;
         }
-
         .upload-icon {
             font-size: 2rem;
             margin-bottom: 0.5rem;
         }
-
         .preview-img {
             max-width: 200px;
             max-height: 200px;
@@ -921,7 +945,6 @@
             padding: 0 2rem 2rem;
             text-align: center;
         }
-
         .support-btn {
             display: inline-flex;
             align-items: center;
@@ -937,7 +960,6 @@
             text-decoration: none;
             transition: var(--transition);
         }
-
         .support-btn:hover {
             background: #2a2a4a;
             transform: translateY(-2px);
@@ -951,7 +973,6 @@
             color: var(--text-muted);
             font-size: 0.85rem;
         }
-
         .footer a {
             color: var(--primary);
             text-decoration: none;
@@ -978,16 +999,13 @@
             align-items: center;
             gap: 0.75rem;
         }
-
         .toast.show {
             transform: translateX(-50%) translateY(0);
             opacity: 1;
         }
-
         .toast.error {
             background: var(--danger);
         }
-
         .toast.success {
             background: var(--success);
         }
@@ -1008,6 +1026,7 @@
             .step-label { font-size: 0.6rem; max-width: 60px; }
             .step-dot { width: 22px; height: 22px; font-size: 0.65rem; }
             .quotation-card { margin-left: 1.5rem; margin-right: 1.5rem; }
+            .modal-footer { flex-direction: column; }
         }
 
         /* ===== REDUCED MOTION ===== */
@@ -1018,8 +1037,27 @@
             }
         }
     </style>
+<base target="_blank">
 </head>
 <body>
+
+    <!-- MODAL DIALOG -->
+    <div class="modal-overlay" id="modalOverlay">
+        <div class="modal-panel">
+            <div class="modal-header">
+                <div class="modal-icon confirm" id="modalIcon">
+                    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                </div>
+                <h3 id="modalTitle">Confirm Action</h3>
+                <p id="modalMessage">Are you sure you want to proceed?</p>
+            </div>
+            <div class="modal-body" id="modalBody"></div>
+            <div class="modal-footer" id="modalFooter">
+                <button class="btn btn-secondary" id="modalCancelBtn" onclick="closeModal()">Cancel</button>
+                <button class="btn btn-primary" id="modalConfirmBtn" onclick="modalConfirm()">Confirm</button>
+            </div>
+        </div>
+    </div>
 
     <!-- HERO / SEARCH -->
     <section class="hero">
@@ -1058,5 +1096,94 @@
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <script type="module" src="assets/js/track.js"></script>
+
+    <script>
+    // ===== MODAL SYSTEM =====
+    let modalResolve = null;
+    let modalReject = null;
+
+    function showModal({ title, message, icon = 'confirm', confirmText = 'Confirm', cancelText = 'Cancel', confirmClass = 'btn-primary', showCancel = true, bodyHtml = '' }) {
+        return new Promise((resolve, reject) => {
+            modalResolve = resolve;
+            modalReject = reject;
+
+            const overlay = document.getElementById('modalOverlay');
+            const iconEl = document.getElementById('modalIcon');
+            const titleEl = document.getElementById('modalTitle');
+            const msgEl = document.getElementById('modalMessage');
+            const bodyEl = document.getElementById('modalBody');
+            const footerEl = document.getElementById('modalFooter');
+            const confirmBtn = document.getElementById('modalConfirmBtn');
+            const cancelBtn = document.getElementById('modalCancelBtn');
+
+            // Set icon
+            iconEl.className = 'modal-icon ' + icon;
+            const icons = {
+                confirm: '<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>',
+                success: '<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>',
+                error: '<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>',
+                info: '<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>'
+            };
+            iconEl.innerHTML = icons[icon] || icons.confirm;
+
+            titleEl.textContent = title;
+            msgEl.textContent = message;
+            bodyEl.innerHTML = bodyHtml;
+
+            confirmBtn.textContent = confirmText;
+            confirmBtn.className = 'btn ' + confirmClass;
+            cancelBtn.textContent = cancelText;
+            cancelBtn.style.display = showCancel ? '' : 'none';
+
+            overlay.classList.add('active');
+            document.body.style.overflow = 'hidden';
+        });
+    }
+
+    function closeModal() {
+        const overlay = document.getElementById('modalOverlay');
+        overlay.classList.remove('active');
+        document.body.style.overflow = '';
+        if (modalReject) modalReject(false);
+        modalResolve = null;
+        modalReject = null;
+    }
+
+    function modalConfirm() {
+        const overlay = document.getElementById('modalOverlay');
+        overlay.classList.remove('active');
+        document.body.style.overflow = '';
+        if (modalResolve) modalResolve(true);
+        modalResolve = null;
+        modalReject = null;
+    }
+
+    // Close on backdrop click
+    document.getElementById('modalOverlay').addEventListener('click', function(e) {
+        if (e.target === this) closeModal();
+    });
+
+    // Close on Escape key
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') {
+            const overlay = document.getElementById('modalOverlay');
+            if (overlay.classList.contains('active')) closeModal();
+        }
+    });
+
+    // Expose to global scope so track.js can use it
+    window.showModal = showModal;
+    window.closeModal = closeModal;
+
+    // ===== TOAST =====
+    function showToast(msg, type = 'default') {
+        const el = document.getElementById('toast');
+        el.textContent = msg;
+        el.className = 'toast ' + (type || '');
+        el.classList.add('show');
+        setTimeout(() => el.classList.remove('show'), 3000);
+    }
+    window.showToast = showToast;
+    </script>
 </body>
 </html>
