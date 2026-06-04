@@ -957,10 +957,15 @@ function updateStats() {
         .filter(o => o.total_price && o.status !== 'cancelled')
         .reduce((sum, o) => sum + (parseFloat(o.total_price) || 0), 0);
 
-    document.getElementById('statSubmitted').textContent = submitted;
-    document.getElementById('statConfirmed').textContent = confirmed;
-    document.getElementById('statWeek').textContent = thisWeek;
-    document.getElementById('statRevenue').textContent = 'Nu. ' + revenue.toLocaleString();
+    const setText = (id, val) => {
+        const el = document.getElementById(id);
+        if (el) el.textContent = val;
+    };
+
+    setText('statSubmitted', submitted);
+    setText('statConfirmed', confirmed);
+    setText('statWeek', thisWeek);
+    setText('statRevenue', 'Nu. ' + revenue.toLocaleString());
 }
 
 function populateDzongkhagFilter() {

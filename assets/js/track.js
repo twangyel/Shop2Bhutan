@@ -659,6 +659,35 @@ window.submitPayment = async function() {
             .from('payment-screenshots')
             .getPublicUrl(fileName);
 
+        const customerNote = document.getElementById('customerNote')?.value || null;
+
+        // 1) Insert into payments FIRST so admin panel sees the record.
+        //    Capture the error — previously this was silently swallowed.
+        const { data: paymentInsertData, error: paymentInsertError } = await supabase
+            .from('payments')
+            .insert({
+                order_id: currentQuotation.order_id,
+                quotation_id: currentQuotation.id,
+                amount: currentQuotation.total_amount,
+                status: 'pending',
+                method: paymentMethod,
+                screenshot_url: publicUrl,
+                notes: customerNote,
+                created_at: new Date().toISOString()
+            })
+            .select();
+
+        if (paymentInsertError) {
+            console.error('Payment insert failed:', paymentInsertError);
+            throw new Error('Payment record could not be saved: ' + paymentInsertError.message);
+        }
+
+        if (!paymentInsertData || paymentInsertData.length === 0) {
+            // RLS silently filtered the row out — no error returned, no row inserted.
+            throw new Error('Payment record was blocked by database permissions (RLS). Please contact support.');
+        }
+
+        // 2) Only after the payment row is safely written, update the quotation.
         const { error: updateError } = await supabase
             .from('quotations')
             .update({
@@ -667,23 +696,12 @@ window.submitPayment = async function() {
                 payment_screenshot: publicUrl,
                 payment_amount: currentQuotation.total_amount,
                 payment_method: paymentMethod,
-                customer_notes: document.getElementById('customerNote')?.value || null,
+                customer_notes: customerNote,
                 updated_at: new Date().toISOString()
             })
             .eq('id', currentQuotation.id);
 
         if (updateError) throw updateError;
-
-        await supabase.from('payments').insert({
-            order_id: currentQuotation.order_id,
-            quotation_id: currentQuotation.id,
-            amount: currentQuotation.total_amount,
-            status: 'pending',
-            method: paymentMethod,
-            screenshot_url: publicUrl,
-            notes: document.getElementById('customerNote')?.value || null,
-            created_at: new Date().toISOString()
-        });
 
         showToast('Payment submitted successfully! We will verify it shortly.', false);
 
