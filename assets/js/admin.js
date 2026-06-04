@@ -147,6 +147,7 @@ window.__currentSection = currentSection;   // expose to global scope
 // ===== NOTIFICATION STATE =====
 let unreadNotifications = [];
 let notificationSoundEnabled = true;
+let currentAdminId = null;  // Store current admin user ID for Supabase queries
 
 // Wrapper around the global toast() function defined in admin.html.
 // Resolves window.toast at call time to avoid any load-order edge cases.
@@ -157,6 +158,256 @@ function toast(msg, type) {
         console.warn('toast() unavailable:', msg, type);
     }
 }
+
+/* ============================================================
+   PERSISTENT NOTIFICATIONS (Supabase-backed)
+   Notifications now survive logout/login and page reloads.
+   ============================================================ */
+
+// Fetch notifications from Supabase for current admin
+async function loadNotifications() {
+    if (!supabase || !currentAdminId) return;
+
+    const { data, error } = await supabase
+        .from('notifications')
+        .select('*')
+        .eq('admin_id', currentAdminId)
+        .order('created_at', { ascending: false })
+        .limit(50);
+
+    if (error) {
+        console.error('Failed to load notifications:', error);
+        return;
+    }
+
+    unreadNotifications = (data || []).map(n => ({
+        ...n,
+        seen: n.read,        // Map DB 'read' to local 'seen'
+        time: new Date(n.created_at)
+    }));
+    updateNotificationBadge();
+    renderNotifications();
+}
+
+// Create a new notification in Supabase (persists across sessions)
+async function createNotification(title, message, type = 'info', linkAction = null) {
+    if (!supabase || !currentAdminId) {
+        // Fallback: in-memory only if Supabase not ready
+        const notif = {
+            id: Date.now() + Math.random(),
+            title,
+            message,
+            type,
+            time: new Date(),
+            seen: false,
+            read: false,
+            linkAction
+        };
+        unreadNotifications.unshift(notif);
+        updateNotificationBadge();
+        renderNotifications();
+        return notif;
+    }
+
+    const { data, error } = await supabase
+        .from('notifications')
+        .insert({
+            admin_id: currentAdminId,
+            title,
+            message,
+            type,
+            read: false
+        })
+        .select()
+        .single();
+
+    if (error) {
+        console.error('Failed to create notification:', error);
+        return null;
+    }
+
+    // Add to local array with linkAction preserved (function can't be stored in DB)
+    const notif = { ...data, seen: false, linkAction };
+    unreadNotifications.unshift(notif);
+    updateNotificationBadge();
+    renderNotifications();
+    return notif;
+}
+
+// Mark a single notification as read in Supabase
+async function markAsRead(notificationId) {
+    const notif = unreadNotifications.find(n => String(n.id) === String(notificationId));
+    if (!notif) return;
+
+    // Update locally first for instant feedback
+    notif.seen = true;
+    notif.read = true;
+    updateNotificationBadge();
+    renderNotifications();
+
+    // Update in Supabase
+    if (supabase && currentAdminId) {
+        const { error } = await supabase
+            .from('notifications')
+            .update({ read: true })
+            .eq('id', notificationId)
+            .eq('admin_id', currentAdminId);
+
+        if (error) console.error('Failed to mark notification as read:', error);
+    }
+}
+
+// Mark all notifications as read
+async function markAllAsRead() {
+    unreadNotifications.forEach(n => { n.seen = true; n.read = true; });
+    updateNotificationBadge();
+    renderNotifications();
+
+    if (supabase && currentAdminId) {
+        const { error } = await supabase
+            .from('notifications')
+            .update({ read: true })
+            .eq('admin_id', currentAdminId)
+            .eq('read', false);
+
+        if (error) console.error('Failed to mark all as read:', error);
+    }
+}
+
+// Subscribe to realtime notifications from other sessions/devices
+function subscribeToAdminNotifications() {
+    if (!supabase || !currentAdminId) return;
+
+    supabase
+        .channel('admin-notifications-' + currentAdminId)
+        .on('postgres_changes',
+            { event: 'INSERT', schema: 'public', table: 'notifications', filter: `admin_id=eq.${currentAdminId}` },
+            (payload) => {
+                const newNotif = payload.new;
+                // Only show toast/chime if it's from another session (not self)
+                if (newNotif.admin_id === currentAdminId) {
+                    playChime();
+                    toast(`🔔 ${newNotif.title}: ${newNotif.message}`, 'info');
+                    loadNotifications(); // Refresh list
+                }
+            }
+        )
+        .subscribe();
+}
+
+// Legacy wrapper — now persists to Supabase
+function addNotification(title, message, type = 'info', linkAction = null) {
+    createNotification(title, message, type, linkAction);
+}
+
+function updateNotificationBadge() {
+    const badge = document.getElementById('notifBadge');
+    const unseen = unreadNotifications.filter(n => !n.seen && !n.read).length;
+    if (badge) {
+        if (unseen > 0) {
+            badge.textContent = unseen > 99 ? '99+' : unseen;
+            badge.style.display = 'flex';
+        } else {
+            badge.style.display = 'none';
+        }
+    }
+}
+
+function renderNotifications() {
+    const list = document.getElementById('notifList');
+    if (!list) return;
+
+    if (unreadNotifications.length === 0) {
+        list.innerHTML = '<div class="notif-empty">No new notifications</div>';
+        return;
+    }
+
+    list.innerHTML = unreadNotifications.map(n => {
+        const timeStr = n.created_at
+            ? new Date(n.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+            : (n.time ? n.time.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '');
+        const dotColor = n.type === 'review' ? '#e94560' : (n.type === 'order' ? '#2980b9' : '#888');
+        const isRead = n.read || n.seen;
+        return `
+        <div class="notif-item" data-id="${n.id}" style="${isRead ? 'opacity:0.7;' : ''}cursor:pointer;">
+            <div style="display:flex;align-items:center;gap:0.5rem;margin-bottom:0.15rem">
+                <span class="notif-dot" style="width:8px;height:8px;background:${dotColor};border-radius:50%;display:inline-block;flex-shrink:0;${isRead ? 'opacity:0.4;' : ''}"></span>
+                <div class="notif-title">${escapeHtml(n.title)}</div>
+            </div>
+            <div class="notif-time">${escapeHtml(n.message)} · ${timeStr}</div>
+        </div>
+        `;
+    }).join('');
+
+    // Attach click handlers
+    list.querySelectorAll('.notif-item').forEach(item => {
+        item.addEventListener('click', () => {
+            const id = item.dataset.id;
+            const notif = unreadNotifications.find(n => String(n.id) === String(id));
+            if (notif) {
+                markAsRead(id);
+                if (notif.linkAction && typeof notif.linkAction === 'function') {
+                    notif.linkAction();
+                }
+            }
+        });
+    });
+}
+
+window.handleNotificationClick = function(id) {
+    const notif = unreadNotifications.find(n => String(n.id) === String(id));
+    if (notif) {
+        markAsRead(id);
+        if (notif.linkAction) notif.linkAction();
+    }
+};
+
+window.clearNotifications = async function() {
+    unreadNotifications = [];
+    updateNotificationBadge();
+    renderNotifications();
+
+    // Also clear from Supabase
+    if (supabase && currentAdminId) {
+        const { error } = await supabase
+            .from('notifications')
+            .delete()
+            .eq('admin_id', currentAdminId);
+
+        if (error) console.error('Failed to clear notifications:', error);
+    }
+};
+
+// Initialize notification panel (bell click, panel toggle, etc.)
+function initNotificationPanel() {
+    const bellBtn = document.getElementById('notifBell');
+    const panel = document.getElementById('notifPanel');
+    const clearBtn = document.getElementById('notifClear');
+
+    if (bellBtn && panel) {
+        bellBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            panel.classList.toggle('active');
+            if (panel.classList.contains('active')) {
+                loadNotifications();
+            }
+        });
+
+        document.addEventListener('click', (e) => {
+            if (!panel.contains(e.target) && !bellBtn.contains(e.target)) {
+                panel.classList.remove('active');
+            }
+        });
+    }
+
+    if (clearBtn) {
+        clearBtn.addEventListener('click', clearNotifications);
+    }
+}
+
+/* ============================================================
+   END PERSISTENT NOTIFICATIONS
+   ============================================================ */
 
 // ===== SCREENSHOT LIGHTBOX =====
 // Modern browsers block window.open() on data: URLs (about:blank result),
@@ -340,12 +591,24 @@ window.clearNotifications = function() {
 };
 
 async function initDashboard() {
+    // Get current admin ID for notifications
+    const { data: { session } } = await supabase.auth.getSession();
+    if (session?.user) {
+        currentAdminId = session.user.id;
+    }
+
     await fetchOrders();
     await fetchReviews();
     await fetchQuotations();
     await fetchPayments();
     await fetchSettings();
     await fetchDeliveryRates();
+
+    // Load persistent notifications
+    await loadNotifications();
+    subscribeToAdminNotifications();
+    initNotificationPanel();
+
     setupRealtime();
     populateDzongkhagFilter();
     updateReviewStats();
