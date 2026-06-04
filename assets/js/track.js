@@ -540,7 +540,15 @@ window.trackOrder = trackOrder;
 
 window.respondToQuotation = async function(quotationId, action) {
     if (action === 'reject') {
-        if (!confirm('Are you sure you want to decline this quotation?')) return;
+    const confirmed = await window.showModal({
+        title: 'Decline Quotation',
+        message: 'Are you sure you want to decline this quotation? This action cannot be undone.',
+        icon: 'error',
+        confirmText: 'Yes, Decline',
+        cancelText: 'Cancel',
+        confirmClass: 'btn-danger'
+    }).catch(() => false);
+    if (!confirmed) return;
 
         const { error } = await supabase
             .from('quotations')
@@ -556,9 +564,16 @@ window.respondToQuotation = async function(quotationId, action) {
         return;
     }
 
-    if (action === 'accept') {
-        if (!confirm('Accept this quotation and proceed to payment?')) return;
-
+   if (action === 'accept') {
+    const confirmed = await window.showModal({
+        title: 'Accept Quotation',
+        message: 'Accept this quotation and proceed to payment?',
+        icon: 'confirm',
+        confirmText: 'Accept & Pay',
+        cancelText: 'Cancel',
+        confirmClass: 'btn-primary'
+    }).catch(() => false);
+    if (!confirmed) return;
         const { error } = await supabase
             .from('quotations')
             .update({
