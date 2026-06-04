@@ -36,6 +36,12 @@ function isAdmin(user) {
 // ===== AUTH =====
 async function checkAuth() {
     try {
+        // If user previously unchecked "Remember me", and this is a new browser
+        // session (sessionStorage was cleared on tab/browser close), force sign-out.
+        if (localStorage.getItem('rememberMe') === 'false' && !sessionStorage.getItem('sessionActive')) {
+            await supabase.auth.signOut();
+            localStorage.removeItem('rememberMe');
+        }
         const { data: { session } } = await supabase.auth.getSession();
         if (session && isAdmin(session.user)) {
             showDashboard(session.user);
