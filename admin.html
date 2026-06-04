@@ -7,41 +7,42 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300..800;1,9..40,300..800&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
     <style>
         :root {
-            --sidebar: #1c1917;
+            --sidebar: #1e293b;
             --sidebar-hover: rgba(255,255,255,.06);
-            --accent: #c2410c;
+            --accent: #ea580c;
             --accent-light: #fed7aa;
-            --accent-glow: rgba(194,65,12,.15);
-            --success: #15803d;
+            --accent-glow: rgba(234,88,12,.12);
+            --success: #16a34a;
             --success-light: #dcfce7;
-            --warning: #a16207;
+            --warning: #ca8a04;
             --warning-light: #fef9c3;
-            --info: #1d4ed8;
+            --info: #2563eb;
             --info-light: #dbeafe;
-            --danger: #b91c1c;
+            --danger: #dc2626;
             --danger-light: #fee2e2;
             --surface: #ffffff;
-            --surface-raised: #fafaf9;
-            --text: #1c1917;
-            --text-secondary: #78716c;
-            --text-muted: #a8a29e;
-            --border: #e7e5e4;
-            --border-light: #f5f5f4;
+            --surface-raised: #f8fafc;
+            --text: #0f172a;
+            --text-secondary: #64748b;
+            --text-muted: #94a3b8;
+            --border: #e2e8f0;
+            --border-light: #f1f5f9;
             --sidebar-width: 264px;
             --sidebar-collapsed: 68px;
-            --radius: 10px;
-            --radius-lg: 14px;
-            --shadow-sm: 0 1px 3px rgba(28,25,23,.04), 0 1px 2px rgba(28,25,23,.02);
-            --shadow-md: 0 4px 16px rgba(28,25,23,.06), 0 1px 3px rgba(28,25,23,.04);
-            --shadow-lg: 0 12px 40px rgba(28,25,23,.1), 0 4px 12px rgba(28,25,23,.04);
+            --radius: 12px;
+            --radius-lg: 16px;
+            --shadow-sm: 0 1px 3px rgba(15,23,42,.04), 0 1px 2px rgba(15,23,42,.02);
+            --shadow-md: 0 4px 16px rgba(15,23,42,.06), 0 1px 3px rgba(15,23,42,.04);
+            --shadow-lg: 0 12px 40px rgba(15,23,42,.1), 0 4px 12px rgba(15,23,42,.04);
             --font-body: 'DM Sans', system-ui, sans-serif;
             --font-display: 'Instrument Serif', Georgia, serif;
         }
 
         * { margin:0; padding:0; box-sizing:border-box; }
-        body { font-family: var(--font-body); background: #f5f5f4; color: var(--text); min-height: 100vh; font-size: 14px; -webkit-font-smoothing: antialiased; }
+        body { font-family: var(--font-body); background: #f1f5f9; color: var(--text); min-height: 100vh; font-size: 14px; -webkit-font-smoothing: antialiased; }
 
         /* ═══════════════ LOGIN ═══════════════ */
         .login-screen {
@@ -53,7 +54,7 @@
         .login-screen::before {
             content: ''; position: absolute; inset: 0;
             background:
-                radial-gradient(ellipse 80% 50% at 20% 80%, rgba(194,65,12,.12) 0%, transparent 60%),
+                radial-gradient(ellipse 80% 50% at 20% 80%, rgba(234,88,12,.12) 0%, transparent 60%),
                 radial-gradient(ellipse 60% 40% at 80% 20%, rgba(217,119,6,.08) 0%, transparent 50%);
             pointer-events: none;
         }
@@ -91,7 +92,7 @@
             border-radius: var(--radius); font-weight: 700; cursor: pointer; font-size: .95rem;
             transition: all .2s; font-family: var(--font-body); letter-spacing: .3px;
         }
-        .login-box > button:hover { background: #9a3412; transform: translateY(-1px); box-shadow: 0 6px 20px rgba(194,65,12,.25); }
+        .login-box > button:hover { background: #c2410c; transform: translateY(-1px); box-shadow: 0 6px 20px rgba(234,88,12,.25); }
         .login-box > button:disabled { opacity: .5; cursor: not-allowed; transform: none; box-shadow: none; }
         .login-error { color: var(--danger); font-size: .82rem; margin-top: .85rem; text-align: center; display: none; align-items: center; justify-content: center; gap: .35rem; background: var(--danger-light); padding: .65rem 1rem; border-radius: 8px; border: 1px solid #fecaca; }
         .login-error.visible { display: flex; }
@@ -125,20 +126,20 @@
         .admin-layout.sidebar-collapsed aside nav { padding: .75rem .45rem 1rem; }
 
         aside nav a {
-            color: rgba(255,255,255,.5); text-decoration: none; padding: .65rem .85rem; border-radius: 8px;
+            color: rgba(255,255,255,.5); text-decoration: none; padding: .65rem .85rem; border-radius: 10px;
             font-size: .87rem; transition: all .15s; display: flex; align-items: center; gap: .75rem;
             font-weight: 500; white-space: nowrap; overflow: hidden; position: relative;
         }
         .admin-layout.sidebar-collapsed aside nav a { padding: .65rem; justify-content: center; gap: 0; }
         aside nav a:hover { background: var(--sidebar-hover); color: rgba(255,255,255,.85); }
-        aside nav a.active { background: rgba(194,65,12,.15); color: #fff; }
+        aside nav a.active { background: rgba(234,88,12,.15); color: #fff; }
         aside nav a.active::before { content: ''; position: absolute; left: 0; top: 50%; transform: translateY(-50%); width: 3px; height: 20px; background: var(--accent); border-radius: 0 3px 3px 0; }
         aside nav a .nav-icon { width: 20px; height: 20px; display: flex; align-items: center; justify-content: center; font-size: 1rem; flex-shrink: 0; }
         aside nav a .nav-label { opacity: 1; transition: opacity .2s; }
         .admin-layout.sidebar-collapsed aside nav a .nav-label { opacity: 0; width: 0; display: none; }
         aside .nav-divider { height: 1px; background: rgba(255,255,255,.06); margin: .6rem .5rem; }
         .admin-layout.sidebar-collapsed aside .nav-divider { margin: .5rem .35rem; }
-        aside .nav-section-label { color: rgba(255,255,255,.2); font-size: .65rem; text-transform: uppercase; letter-spacing: 1.2px; padding: 0 .85rem; margin-bottom: .35rem; margin-top: .25rem; font-weight: 700; white-space: nowrap; overflow: hidden; }
+        aside .nav-section-label { color: rgba(255,255,255,.3); font-size: .65rem; text-transform: uppercase; letter-spacing: 1.2px; padding: 0 .85rem; margin-bottom: .35rem; margin-top: .25rem; font-weight: 700; white-space: nowrap; overflow: hidden; }
         .admin-layout.sidebar-collapsed aside .nav-section-label { opacity: 0; height: 0; margin: 0; padding: 0; }
 
         /* Collapsed tooltips */
@@ -155,20 +156,27 @@
         }
 
         /* ═══════════════ MAIN ═══════════════ */
-        .admin-main { padding: 1.75rem 2rem; overflow-x: auto; transition: padding .3s; background: #f5f5f4; }
-        .admin-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.75rem; flex-wrap: wrap; gap: 1rem; }
-        .admin-header h1 { font-size: 1.5rem; font-weight: 700; font-family: var(--font-display); color: var(--text); letter-spacing: -.3px; }
+        .admin-main { padding: 1.5rem 2rem; overflow-x: hidden; transition: padding .3s; background: #f1f5f9; }
+        .admin-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1.75rem; flex-wrap: wrap; gap: 1rem; }
+        .admin-header-left h1 { font-size: 1.6rem; font-weight: 700; font-family: var(--font-display); color: var(--text); letter-spacing: -.3px; margin-bottom: .25rem; }
+        .admin-header-left p { color: var(--text-muted); font-size: .9rem; }
         .admin-header-actions { display: flex; align-items: center; gap: .75rem; }
+        .btn-create {
+            background: var(--accent); color: #fff; border: none; padding: .65rem 1.25rem;
+            border-radius: var(--radius); font-weight: 600; cursor: pointer; transition: all .15s;
+            font-family: var(--font-body); font-size: .88rem; display: inline-flex; align-items: center; gap: .4rem;
+        }
+        .btn-create:hover { background: #c2410c; transform: translateY(-1px); box-shadow: 0 4px 12px rgba(234,88,12,.25); }
         .notification-btn {
-            position: relative; width: 38px; height: 38px; border-radius: var(--radius); border: 1.5px solid var(--border);
+            position: relative; width: 40px; height: 40px; border-radius: var(--radius); border: 1.5px solid var(--border);
             background: #fff; cursor: pointer; display: flex; align-items: center; justify-content: center;
-            font-size: 1.1rem; transition: all .15s;
+            font-size: 1.1rem; transition: all .15s; color: var(--text-secondary);
         }
         .notification-btn:hover { background: var(--surface-raised); border-color: var(--text-muted); }
         .notification-badge {
             position: absolute; top: -4px; right: -4px; background: var(--accent); color: #fff;
-            font-size: .6rem; font-weight: 700; width: 17px; height: 17px; border-radius: 50%;
-            display: flex; align-items: center; justify-content: center; border: 2px solid #f5f5f4;
+            font-size: .6rem; font-weight: 700; width: 18px; height: 18px; border-radius: 50%;
+            display: flex; align-items: center; justify-content: center; border: 2px solid #f1f5f9;
         }
         .admin-profile {
             display: flex; align-items: center; gap: .6rem; font-size: .88rem; color: var(--text-secondary);
@@ -177,7 +185,7 @@
         }
         .admin-profile:hover { border-color: var(--text-muted); }
         .admin-profile .avatar {
-            width: 30px; height: 30px; background: var(--accent); border-radius: 8px;
+            width: 32px; height: 32px; background: var(--accent); border-radius: 8px;
             display: flex; align-items: center; justify-content: center;
             color: #fff; font-weight: 700; font-size: .75rem;
         }
@@ -187,129 +195,138 @@
         }
 
         /* ═══════════════ STAT CARDS ═══════════════ */
-        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: .85rem; margin-bottom: 1.5rem; }
+        .stats-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 1rem; margin-bottom: 1.5rem; }
         .stat-card {
-            background: #fff; padding: 1.15rem 1.25rem; border-radius: var(--radius-lg);
+            background: #fff; padding: 1.25rem; border-radius: var(--radius-lg);
             box-shadow: var(--shadow-sm); transition: transform .2s, box-shadow .2s;
             border: 1px solid var(--border-light); position: relative; overflow: hidden;
         }
-        .stat-card::after {
-            content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
-            background: var(--border); border-radius: var(--radius-lg) var(--radius-lg) 0 0;
-        }
         .stat-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); }
-        .stat-card h4 { font-size: .68rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: .7px; margin-bottom: .35rem; font-weight: 600; }
-        .stat-card .value { font-size: 1.6rem; font-weight: 700; color: var(--text); font-family: var(--font-display); }
-        .stat-card .stat-icon { width: 32px; height: 32px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: .9rem; margin-bottom: .6rem; }
+        .stat-card h4 { font-size: .75rem; color: var(--text-muted); margin-bottom: .5rem; font-weight: 500; }
+        .stat-card .value { font-size: 1.5rem; font-weight: 700; color: var(--text); font-family: var(--font-body); margin-bottom: .5rem; }
+        .stat-card .stat-icon { width: 40px; height: 40px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 1.1rem; margin-bottom: .75rem; }
+        .stat-card .trend { font-size: .75rem; font-weight: 500; display: flex; align-items: center; gap: .25rem; }
+        .stat-card .trend.up { color: var(--success); }
+        .stat-card .trend.down { color: var(--danger); }
+        .stat-card .trend.neutral { color: var(--text-muted); }
 
-        .stat-card.submitted::after { background: var(--accent); }
-        .stat-card.submitted .stat-icon { background: var(--accent-light); color: var(--accent); }
-        .stat-card.confirmed::after { background: var(--success); }
-        .stat-card.confirmed .stat-icon { background: var(--success-light); color: var(--success); }
-        .stat-card.pending::after { background: var(--warning); }
-        .stat-card.pending .stat-icon { background: var(--warning-light); color: var(--warning); }
-        .stat-card.revenue::after { background: var(--info); }
-        .stat-card.revenue .stat-icon { background: var(--info-light); color: var(--info); }
-        .stat-card.review-pending::after { background: var(--warning); }
-        .stat-card.review-pending .stat-icon { background: var(--warning-light); color: var(--warning); }
-        .stat-card.review-verified::after { background: var(--success); }
-        .stat-card.review-verified .stat-icon { background: var(--success-light); color: var(--success); }
-        .stat-card.review-rejected::after { background: var(--danger); }
-        .stat-card.review-rejected .stat-icon { background: var(--danger-light); color: var(--danger); }
-        .stat-card.avg-rating::after { background: #7c3aed; }
-        .stat-card.avg-rating .stat-icon { background: #f3e8ff; color: #7c3aed; }
+        .stat-card.submitted .stat-icon { background: #fff7ed; color: #ea580c; }
+        .stat-card.confirmed .stat-icon { background: #f0fdf4; color: #16a34a; }
+        .stat-card.pending .stat-icon { background: #fefce8; color: #ca8a04; }
+        .stat-card.in-transit .stat-icon { background: #eff6ff; color: #2563eb; }
+        .stat-card.delivered .stat-icon { background: #f5f3ff; color: #7c3aed; }
+        .stat-card.revenue .stat-icon { background: #ecfdf5; color: #059669; }
 
         /* Payment stat cards */
-        .stat-card.payment-completed::after { background: var(--success); }
         .stat-card.payment-completed .stat-icon { background: var(--success-light); color: var(--success); }
-        .stat-card.payment-pending::after { background: var(--warning); }
         .stat-card.payment-pending .stat-icon { background: var(--warning-light); color: var(--warning); }
-        .stat-card.payment-refunded::after { background: var(--danger); }
         .stat-card.payment-refunded .stat-icon { background: var(--danger-light); color: var(--danger); }
 
         /* ═══════════════ FILTERS ═══════════════ */
-        .filters {
+        .filters-card {
             background: #fff; padding: 1.15rem 1.25rem; border-radius: var(--radius-lg); margin-bottom: 1rem;
             display: flex; gap: .85rem; flex-wrap: wrap; align-items: end;
             box-shadow: var(--shadow-sm); border: 1px solid var(--border-light);
         }
-        .filters input, .filters select {
-            padding: .6rem .85rem; border: 1.5px solid var(--border); border-radius: 8px;
+        .filters-card input, .filters-card select {
+            padding: .6rem .85rem; border: 1.5px solid var(--border); border-radius: 10px;
             font-size: .88rem; outline: none; min-width: 155px; background: var(--surface-raised);
             font-family: var(--font-body); transition: border-color .15s, box-shadow .15s;
         }
-        .filters input:focus, .filters select:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-glow); background: #fff; }
-        .filters button {
-            background: var(--text); color: #fff; border: none; padding: .6rem 1.15rem;
-            border-radius: 8px; font-weight: 600; cursor: pointer; transition: all .15s;
+        .filters-card input:focus, .filters-card select:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-glow); background: #fff; }
+        .search-wrap { position: relative; min-width: 280px; }
+        .search-wrap input { padding-left: 2.5rem; width: 100%; }
+        .search-wrap svg { position: absolute; left: .85rem; top: 50%; transform: translateY(-50%); color: var(--text-muted); pointer-events: none; }
+        .filters-card button {
+            background: #fff; color: var(--text); border: 1.5px solid var(--border); padding: .6rem 1.15rem;
+            border-radius: 10px; font-weight: 600; cursor: pointer; transition: all .15s;
             font-family: var(--font-body); font-size: .85rem; display: inline-flex; align-items: center; gap: .35rem;
         }
-        .filters button:hover { background: var(--accent); }
-        .filters button:disabled { opacity: .5; cursor: not-allowed; }
+        .filters-card button:hover { background: var(--surface-raised); border-color: var(--text-muted); }
+        .filters-card button:disabled { opacity: .5; cursor: not-allowed; }
 
         /* ═══════════════ TABLE ═══════════════ */
         .table-wrap {
             background: #fff; border-radius: var(--radius-lg); box-shadow: var(--shadow-sm);
             overflow: hidden; border: 1px solid var(--border-light);
         }
-        table { width: 100%; border-collapse: collapse; font-size: .88rem; min-width: 700px; }
+        table { width: 100%; border-collapse: separate; border-spacing: 0; font-size: .88rem; }
         thead { background: var(--surface-raised); }
         th {
-            padding: .75rem 1rem; text-align: left; font-weight: 600; color: var(--text-muted);
-            font-size: .7rem; text-transform: uppercase; letter-spacing: .7px;
-            border-bottom: 1.5px solid var(--border);
+            padding: .85rem 1rem; text-align: left; font-weight: 600; color: var(--text-muted);
+            font-size: .72rem; text-transform: uppercase; letter-spacing: .6px;
+            border-bottom: 1.5px solid var(--border); white-space: nowrap;
         }
-        td { padding: .8rem 1rem; border-bottom: 1px solid var(--border-light); vertical-align: top; }
+        td { padding: .9rem 1rem; border-bottom: 1px solid var(--border-light); vertical-align: middle; }
         tr { transition: background .1s; }
-        tr:hover { background: #fafaf9; }
+        tbody tr:hover { background: #fafafa; }
+        tbody tr:last-child td { border-bottom: none; }
         .badge {
-            display: inline-flex; align-items: center; padding: 3px 10px; border-radius: 6px;
-            font-size: .68rem; font-weight: 700; text-transform: uppercase; letter-spacing: .3px;
+            display: inline-flex; align-items: center; padding: 4px 10px; border-radius: 20px;
+            font-size: .72rem; font-weight: 600; text-transform: capitalize; letter-spacing: .2px;
+            gap: .35rem;
         }
-        .badge-submitted { background: var(--accent-light); color: var(--accent); }
-        .badge-price_sent { background: var(--warning-light); color: var(--warning); }
-        .badge-confirmed { background: var(--success-light); color: var(--success); }
-        .badge-purchased { background: var(--info-light); color: var(--info); }
-        .badge-in_transit { background: #e0e7ff; color: #3730a3; }
-        .badge-delivered { background: var(--success-light); color: var(--success); }
-        .badge-cancelled { background: var(--danger-light); color: var(--danger); }
-        .badge-pending { background: var(--warning-light); color: var(--warning); }
-        .badge-verified { background: var(--success-light); color: var(--success); }
-        .badge-rejected { background: var(--danger-light); color: var(--danger); }
-        .badge-draft { background: #f5f5f4; color: var(--text-secondary); }
-        .badge-sent { background: var(--info-light); color: var(--info); }
-        .badge-accepted { background: var(--success-light); color: var(--success); }
-        .badge-expired { background: #f5f5f4; color: var(--text-muted); }
+        .badge-submitted { background: #fff7ed; color: #c2410c; }
+        .badge-price_sent { background: #fefce8; color: #a16207; }
+        .badge-confirmed { background: #f0fdf4; color: #15803d; }
+        .badge-purchased { background: #eff6ff; color: #1d4ed8; }
+        .badge-in_transit { background: #eef2ff; color: #4338ca; }
+        .badge-delivered { background: #f0fdf4; color: #15803d; }
+        .badge-cancelled { background: #fef2f2; color: #b91c1c; }
+        .badge-pending { background: #fefce8; color: #a16207; }
+        .badge-verified { background: #f0fdf4; color: #15803d; }
+        .badge-rejected { background: #fef2f2; color: #b91c1c; }
+        .badge-draft { background: #f8fafc; color: var(--text-secondary); }
+        .badge-sent { background: #eff6ff; color: #1d4ed8; }
+        .badge-accepted { background: #f0fdf4; color: #15803d; }
+        .badge-expired { background: #f8fafc; color: var(--text-muted); }
         .badge-50_50 { background: #fef3c7; color: #92400e; }
         .badge-bank_transfer { background: #e0e7ff; color: #3730a3; }
-        .badge-cash { background: var(--success-light); color: var(--success); }
-        .badge-online { background: var(--info-light); color: var(--info); }
-        .badge-other { background: #f5f5f4; color: var(--text-secondary); }
+        .badge-cash { background: #f0fdf4; color: #15803d; }
+        .badge-online { background: #eff6ff; color: #1d4ed8; }
+        .badge-other { background: #f8fafc; color: var(--text-secondary); }
+        .badge-full { background: #f0fdf4; color: #15803d; }
 
-        .customer-info { line-height: 1.45; }
-        .customer-info small { display: block; color: var(--text-muted); font-size: .78rem; }
-        .token { font-family: 'SF Mono', 'Cascadia Code', 'Consolas', monospace; font-size: .76rem; background: var(--surface-raised); padding: 2px 7px; border-radius: 5px; border: 1px solid var(--border-light); color: var(--text-secondary); }
-
-        .actions { display: flex; gap: .3rem; flex-wrap: wrap; }
-        .btn-icon {
-            width: 30px; height: 30px; border: 1.5px solid var(--border); border-radius: 7px;
-            cursor: pointer; display: inline-flex; align-items: center; justify-content: center;
-            transition: all .15s; font-size: .85rem; background: #fff;
+        .customer-cell { display: flex; align-items: center; gap: .75rem; }
+        .customer-avatar {
+            width: 36px; height: 36px; border-radius: 50%; background: var(--accent);
+            display: flex; align-items: center; justify-content: center;
+            color: #fff; font-weight: 700; font-size: .8rem; flex-shrink: 0;
         }
-        .btn-view { color: #7c3aed; border-color: #ede9fe; background: #faf5ff; }
-        .btn-view:hover { background: #7c3aed; color: #fff; border-color: #7c3aed; }
-        .btn-edit { color: var(--info); border-color: #dbeafe; background: #eff6ff; }
-        .btn-edit:hover { background: var(--info); color: #fff; border-color: var(--info); }
-        .btn-wa { color: #15803d; border-color: #dcfce7; background: #f0fdf4; }
-        .btn-wa:hover { background: #16a34a; color: #fff; border-color: #16a34a; }
-        .btn-link { color: var(--text-secondary); border-color: var(--border); background: var(--surface-raised); }
-        .btn-link:hover { background: var(--text-secondary); color: #fff; }
-        .btn-verify { color: var(--success); border-color: #dcfce7; background: #f0fdf4; }
-        .btn-verify:hover { background: var(--success); color: #fff; border-color: var(--success); }
-        .btn-reject { color: var(--danger); border-color: #fee2e2; background: #fef2f2; }
-        .btn-reject:hover { background: var(--danger); color: #fff; border-color: var(--danger); }
-        .btn-delete { color: var(--danger); border-color: #fee2e2; background: #fef2f2; }
-        .btn-delete:hover { background: var(--danger); color: #fff; border-color: var(--danger); }
+        .customer-info { line-height: 1.45; }
+        .customer-info strong { font-weight: 600; color: var(--text); font-size: .9rem; }
+        .customer-info small { display: block; color: var(--text-muted); font-size: .78rem; }
+        .token { font-family: 'SF Mono', 'Cascadia Code', 'Consolas', monospace; font-size: .8rem; background: var(--surface-raised); padding: 4px 8px; border-radius: 6px; border: 1px solid var(--border-light); color: var(--text-secondary); font-weight: 500; }
+        .token-wrap { display: flex; align-items: center; gap: .5rem; }
+        .btn-copy { background: none; border: none; cursor: pointer; color: var(--text-muted); padding: 2px; display: inline-flex; align-items: center; justify-content: center; border-radius: 4px; transition: all .15s; }
+        .btn-copy:hover { color: var(--accent); background: var(--accent-light); }
+
+        .actions { display: flex; gap: .4rem; }
+        .btn-icon {
+            width: 32px; height: 32px; border: 1.5px solid var(--border); border-radius: 8px;
+            cursor: pointer; display: inline-flex; align-items: center; justify-content: center;
+            transition: all .15s; font-size: .85rem; background: #fff; color: var(--text-secondary);
+        }
+        .btn-icon:hover { transform: translateY(-1px); }
+        .btn-view:hover { color: #7c3aed; border-color: #ddd6fe; background: #f5f3ff; }
+        .btn-edit:hover { color: var(--info); border-color: #bfdbfe; background: #eff6ff; }
+        .btn-wa:hover { color: #16a34a; border-color: #bbf7d0; background: #f0fdf4; }
+        .btn-link:hover { color: var(--text); border-color: var(--text-muted); background: var(--surface-raised); }
+        .btn-verify:hover { color: var(--success); border-color: #bbf7d0; background: #f0fdf4; }
+        .btn-reject:hover { color: var(--danger); border-color: #fecaca; background: #fef2f2; }
+        .btn-delete:hover { color: var(--danger); border-color: #fecaca; background: #fef2f2; }
+
+        .btn-assign {
+            background: #fff7ed; color: var(--accent); border: 1.5px solid #fed7aa;
+            padding: .35rem .75rem; border-radius: 6px; font-size: .78rem; font-weight: 600;
+            cursor: pointer; transition: all .15s; font-family: var(--font-body);
+        }
+        .btn-assign:hover { background: var(--accent); color: #fff; border-color: var(--accent); }
+
+        .location-cell { font-size: .88rem; color: var(--text); }
+        .location-cell small { display: block; color: var(--text-muted); font-size: .78rem; margin-top: 2px; }
+        .driver-cell { font-size: .85rem; }
+        .driver-cell .not-assigned { color: var(--danger); font-weight: 500; }
 
         /* Reviews */
         .review-stars-inline { color: #f59e0b; font-size: .95rem; letter-spacing: 1px; }
@@ -324,7 +341,7 @@
         .page-buttons { display: flex; gap: .35rem; }
         .page-btn {
             padding: .45rem .85rem; border: 1.5px solid var(--border); background: #fff;
-            border-radius: 7px; cursor: pointer; font-weight: 600; transition: all .15s;
+            border-radius: 8px; cursor: pointer; font-weight: 600; transition: all .15s;
             font-family: var(--font-body); font-size: .82rem; color: var(--text-secondary);
         }
         .page-btn:hover { background: var(--surface-raised); border-color: var(--text-muted); }
@@ -353,11 +370,11 @@
         .toast.toast-error { background: linear-gradient(135deg, #991b1b, #dc2626); }
         .toast.toast-info { background: linear-gradient(135deg, #1e40af, #3b82f6); }
         .toast.toast-warning { background: linear-gradient(135deg, #92400e, #d97706); }
-        .toast.toast-default { background: linear-gradient(135deg, var(--sidebar), #44403c); }
+        .toast.toast-default { background: linear-gradient(135deg, var(--sidebar), #334155); }
 
         /* ═══════════════ MODAL ═══════════════ */
         .modal-overlay {
-            position: fixed; inset: 0; background: rgba(28,25,23,.5); backdrop-filter: blur(6px);
+            position: fixed; inset: 0; background: rgba(15,23,42,.5); backdrop-filter: blur(6px);
             z-index: 2000; display: none; align-items: center; justify-content: center; padding: 1.25rem;
         }
         .modal-overlay.active { display: flex; }
@@ -403,7 +420,7 @@
             border-radius: 8px; font-weight: 600; cursor: pointer; transition: all .15s;
             font-family: var(--font-body); font-size: .88rem;
         }
-        .btn-primary:hover { background: #9a3412; }
+        .btn-primary:hover { background: #c2410c; }
         .btn-danger:hover { background: #991b1b; }
         .btn-secondary:hover { background: var(--border-light); border-color: var(--text-muted); }
 
@@ -444,12 +461,67 @@
         .placeholder-card p { color: var(--text-muted); font-size: .92rem; max-width: 400px; margin: 0 auto; line-height: 1.6; }
 
         /* Skeleton */
-        .skeleton { background: linear-gradient(90deg, #f5f5f4 25%, #e7e5e4 50%, #f5f5f4 75%); background-size: 200% 100%; animation: skeleton 1.5s infinite; border-radius: 4px; }
+        .skeleton { background: linear-gradient(90deg, #f1f5f9 25%, #e2e8f0 50%, #f1f5f9 75%); background-size: 200% 100%; animation: skeleton 1.5s infinite; border-radius: 4px; }
         @keyframes skeleton { 0% { background-position: 200% 0 } 100% { background-position: -200% 0 } }
 
-        .review-filters .filters select { min-width: 140px; }
+        .review-filters .filters-card select { min-width: 140px; }
+
+        /* ═══════════════ CHARTS ═══════════════ */
+        .charts-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1.25rem;
+            margin-top: 1.5rem;
+        }
+        .chart-card {
+            background: #fff;
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-sm);
+            border: 1px solid var(--border-light);
+            padding: 1.25rem;
+        }
+        .chart-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+        .chart-header h4 {
+            font-size: .95rem;
+            font-weight: 600;
+            color: var(--text);
+        }
+        .chart-header select {
+            padding: .35rem .65rem;
+            border: 1.5px solid var(--border);
+            border-radius: 6px;
+            font-size: .78rem;
+            font-family: var(--font-body);
+            background: var(--surface-raised);
+            color: var(--text-secondary);
+            cursor: pointer;
+        }
+        .chart-body {
+            position: relative;
+            height: 200px;
+        }
+        .chart-metric {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--text);
+            margin-bottom: .25rem;
+        }
+        .chart-metric-label {
+            font-size: .78rem;
+            color: var(--text-muted);
+            margin-bottom: 1rem;
+        }
 
         /* ═══════════════ RESPONSIVE ═══════════════ */
+        @media (max-width: 1280px) {
+            .stats-grid { grid-template-columns: repeat(3, 1fr); }
+            .charts-grid { grid-template-columns: repeat(2, 1fr); }
+        }
         @media (max-width: 768px) {
             .admin-layout { grid-template-columns: 1fr !important; }
             aside { height: auto; position: relative; width: 100% !important; }
@@ -459,13 +531,16 @@
             .admin-layout.sidebar-collapsed aside nav a::after, .admin-layout.sidebar-collapsed aside nav a::before { display: none !important; }
             .detail-grid { grid-template-columns: 1fr; }
             .form-row { grid-template-columns: 1fr; }
-            .filters { flex-direction: column; align-items: stretch; }
+            .filters-card { flex-direction: column; align-items: stretch; }
             .login-box { padding: 2rem 1.5rem; }
             .notification-dropdown { width: 280px; right: -60px; }
             .admin-main { padding: 1.25rem 1rem; }
-            .stats-grid { grid-template-columns: 1fr 1fr; }
+            .stats-grid { grid-template-columns: repeat(2, 1fr); }
+            .charts-grid { grid-template-columns: 1fr; }
+            .search-wrap { min-width: 100%; }
         }
     </style>
+<base target="_blank">
 </head>
 <body>
 
@@ -530,6 +605,10 @@
                 <span class="nav-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg></span>
                 <span class="nav-label">Payments</span>
             </a>
+            <a href="#" data-section="drivers" data-label="Drivers" onclick="showSection('drivers');return false">
+                <span class="nav-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="3" width="15" height="13"/><polygon points="16 8 20 8 23 11 23 16 20 16 16 16"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg></span>
+                <span class="nav-label">Drivers</span>
+            </a>
             <div class="nav-divider"></div>
             <div class="nav-section-label">Analytics</div>
             <a href="#" data-label="Reports" onclick="alert('Coming soon');return false">
@@ -555,8 +634,15 @@
 
     <main class="admin-main">
         <div class="admin-header">
-            <h1 id="pageTitle">Orders Dashboard</h1>
+            <div class="admin-header-left">
+                <h1 id="pageTitle">Orders Dashboard</h1>
+                <p>Track and manage all customer orders</p>
+            </div>
             <div class="admin-header-actions">
+                <button class="btn-create" onclick="toast('Create Order coming soon','info')">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                    Create Order
+                </button>
                 <div style="position:relative;">
                     <button class="notification-btn" onclick="toggleNotifications(event)" title="Notifications">
                         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
@@ -588,29 +674,45 @@
                 <div class="stat-card submitted">
                     <div class="stat-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/></svg></div>
                     <h4>New Orders</h4>
-                    <div class="value" id="statSubmitted"><div class="skeleton" style="height:20px;width:50%;"></div></div>
+                    <div class="value" id="statSubmitted"><div class="skeleton" style="height:24px;width:40px;"></div></div>
+                    <div class="trend up"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg> 100% from yesterday</div>
+                </div>
+                <div class="stat-card pending">
+                    <div class="stat-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div>
+                    <h4>Pending</h4>
+                    <div class="value" id="statPending"><div class="skeleton" style="height:24px;width:40px;"></div></div>
+                    <div class="trend neutral"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg> 0% from yesterday</div>
                 </div>
                 <div class="stat-card confirmed">
                     <div class="stat-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg></div>
                     <h4>Confirmed</h4>
-                    <div class="value" id="statConfirmed"><div class="skeleton" style="height:20px;width:50%;"></div></div>
+                    <div class="value" id="statConfirmed"><div class="skeleton" style="height:24px;width:40px;"></div></div>
+                    <div class="trend neutral"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg> 0% from yesterday</div>
                 </div>
-                <div class="stat-card pending">
-                    <div class="stat-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></div>
-                    <h4>This Week</h4>
-                    <div class="value" id="statWeek"><div class="skeleton" style="height:20px;width:50%;"></div></div>
+                <div class="stat-card in-transit">
+                    <div class="stat-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="3" width="15" height="13"/><polygon points="16 8 20 8 23 11 23 16 20 16 16 16"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg></div>
+                    <h4>In Transit</h4>
+                    <div class="value" id="statInTransit"><div class="skeleton" style="height:24px;width:40px;"></div></div>
+                    <div class="trend neutral"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg> 0% from yesterday</div>
+                </div>
+                <div class="stat-card delivered">
+                    <div class="stat-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg></div>
+                    <h4>Delivered</h4>
+                    <div class="value" id="statDelivered"><div class="skeleton" style="height:24px;width:40px;"></div></div>
+                    <div class="trend neutral"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg> 0% from yesterday</div>
                 </div>
                 <div class="stat-card revenue">
                     <div class="stat-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="20" height="12" rx="2"/><circle cx="12" cy="12" r="2"/><path d="M6 12h.01"/><path d="M18 12h.01"/></svg></div>
                     <h4>Total Revenue</h4>
-                    <div class="value" id="statRevenue"><div class="skeleton" style="height:20px;width:50%;"></div></div>
+                    <div class="value" id="statRevenue"><div class="skeleton" style="height:24px;width:80px;"></div></div>
+                    <div class="trend up"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg> 0% this week</div>
                 </div>
             </div>
 
-            <div class="filters">
-                <div>
-                    <label style="display:block;font-size:.68rem;color:var(--text-muted);margin-bottom:.35rem;font-weight:600;text-transform:uppercase;letter-spacing:.6px">Search</label>
-                    <input type="text" id="filterSearch" placeholder="Name, phone, order ID…">
+            <div class="filters-card">
+                <div class="search-wrap">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                    <input type="text" id="filterSearch" placeholder="Search by order ID, name, phone…">
                 </div>
                 <div>
                     <label style="display:block;font-size:.68rem;color:var(--text-muted);margin-bottom:.35rem;font-weight:600;text-transform:uppercase;letter-spacing:.6px">Status</label>
@@ -627,11 +729,11 @@
                 </div>
                 <div>
                     <label style="display:block;font-size:.68rem;color:var(--text-muted);margin-bottom:.35rem;font-weight:600;text-transform:uppercase;letter-spacing:.6px">Dzongkhag</label>
-                    <select id="filterDzongkhag"><option value="">All</option></select>
+                    <select id="filterDzongkhag"><option value="">All Dzongkhag</option></select>
                 </div>
                 <div>
                     <label style="display:block;font-size:.68rem;color:var(--text-muted);margin-bottom:.35rem;font-weight:600;text-transform:uppercase;letter-spacing:.6px">Trip Date</label>
-                    <input type="date" id="filterDate">
+                    <input type="date" id="filterDate" placeholder="dd/mm/yyyy">
                 </div>
                 <div style="margin-left:auto;display:flex;gap:.5rem">
                     <button onclick="exportCSV()" id="exportBtn"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:4px"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>Export</button>
@@ -653,17 +755,18 @@
                         <tr>
                             <th style="width:36px"><input type="checkbox" class="select-all" id="selectAll" onchange="toggleSelectAll()"></th>
                             <th>Order ID</th>
-                            <th>Submitted</th>
                             <th>Customer</th>
-                            <th>Trip</th>
+                            <th>Pickup Location</th>
+                            <th>Driver</th>
+                            <th>Trip Date</th>
                             <th>Status</th>
-                            <th>Price</th>
                             <th>Payment</th>
+                            <th>Total</th>
                             <th>Actions</th>
                         </tr>
                     </thead>
                     <tbody id="ordersTableBody">
-                        <tr><td colspan="9" style="text-align:center;padding:2.5rem;color:var(--text-muted)">Loading orders…</td></tr>
+                        <tr><td colspan="10" style="text-align:center;padding:2.5rem;color:var(--text-muted)">Loading orders…</td></tr>
                     </tbody>
                 </table>
             </div>
@@ -671,6 +774,38 @@
             <div class="pagination" id="pagination">
                 <div class="page-info" id="pageInfo">Loading…</div>
                 <div class="page-buttons" id="pageButtons"></div>
+            </div>
+
+            <!-- Charts -->
+            <div class="charts-grid">
+                <div class="chart-card">
+                    <div class="chart-header">
+                        <h4>Orders Trend</h4>
+                        <select id="ordersTrendPeriod"><option>This Week</option><option>Last Week</option><option>This Month</option></select>
+                    </div>
+                    <div class="chart-body">
+                        <canvas id="ordersTrendChart"></canvas>
+                    </div>
+                </div>
+                <div class="chart-card">
+                    <div class="chart-header">
+                        <h4>Revenue This Week</h4>
+                        <select id="revenuePeriod"><option>This Week</option><option>Last Week</option><option>This Month</option></select>
+                    </div>
+                    <div class="chart-body">
+                        <div class="chart-metric" id="revenueMetric">Nu. 0</div>
+                        <div class="chart-metric-label" id="revenueMetricLabel">0% from last week</div>
+                        <canvas id="revenueChart"></canvas>
+                    </div>
+                </div>
+                <div class="chart-card">
+                    <div class="chart-header">
+                        <h4>Orders by Dzongkhag</h4>
+                    </div>
+                    <div class="chart-body">
+                        <canvas id="dzongkhagChart"></canvas>
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -680,26 +815,26 @@
                 <div class="stat-card submitted">
                     <div class="stat-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg></div>
                     <h4>Draft</h4>
-                    <div class="value" id="statQuotationDraft"><div class="skeleton" style="height:20px;width:50%;"></div></div>
+                    <div class="value" id="statQuotationDraft"><div class="skeleton" style="height:24px;width:40px;"></div></div>
                 </div>
                 <div class="stat-card confirmed">
                     <div class="stat-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg></div>
                     <h4>Sent</h4>
-                    <div class="value" id="statQuotationSent"><div class="skeleton" style="height:20px;width:50%;"></div></div>
+                    <div class="value" id="statQuotationSent"><div class="skeleton" style="height:24px;width:40px;"></div></div>
                 </div>
                 <div class="stat-card pending">
                     <div class="stat-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></div>
                     <h4>Accepted</h4>
-                    <div class="value" id="statQuotationAccepted"><div class="skeleton" style="height:20px;width:50%;"></div></div>
+                    <div class="value" id="statQuotationAccepted"><div class="skeleton" style="height:24px;width:40px;"></div></div>
                 </div>
                 <div class="stat-card revenue">
                     <div class="stat-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="20" height="12" rx="2"/><circle cx="12" cy="12" r="2"/></svg></div>
                     <h4>Total Value</h4>
-                    <div class="value" id="statQuotationValue"><div class="skeleton" style="height:20px;width:50%;"></div></div>
+                    <div class="value" id="statQuotationValue"><div class="skeleton" style="height:24px;width:80px;"></div></div>
                 </div>
             </div>
 
-            <div class="filters">
+            <div class="filters-card">
                 <div>
                     <label style="display:block;font-size:.68rem;color:var(--text-muted);margin-bottom:.35rem;font-weight:600;text-transform:uppercase;letter-spacing:.6px">Search</label>
                     <input type="text" id="quotationFilterSearch" placeholder="Name, phone, item…">
@@ -755,26 +890,26 @@
                 <div class="stat-card review-pending">
                     <div class="stat-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div>
                     <h4>Pending Review</h4>
-                    <div class="value" id="statReviewPending"><div class="skeleton" style="height:20px;width:50%;"></div></div>
+                    <div class="value" id="statReviewPending"><div class="skeleton" style="height:24px;width:40px;"></div></div>
                 </div>
                 <div class="stat-card review-verified">
                     <div class="stat-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg></div>
                     <h4>Verified</h4>
-                    <div class="value" id="statReviewVerified"><div class="skeleton" style="height:20px;width:50%;"></div></div>
+                    <div class="value" id="statReviewVerified"><div class="skeleton" style="height:24px;width:40px;"></div></div>
                 </div>
                 <div class="stat-card review-rejected">
                     <div class="stat-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg></div>
                     <h4>Rejected</h4>
-                    <div class="value" id="statReviewRejected"><div class="skeleton" style="height:20px;width:50%;"></div></div>
+                    <div class="value" id="statReviewRejected"><div class="skeleton" style="height:24px;width:40px;"></div></div>
                 </div>
                 <div class="stat-card avg-rating">
                     <div class="stat-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg></div>
                     <h4>Avg Rating</h4>
-                    <div class="value" id="statAvgRating"><div class="skeleton" style="height:20px;width:50%;"></div></div>
+                    <div class="value" id="statAvgRating"><div class="skeleton" style="height:24px;width:40px;"></div></div>
                 </div>
             </div>
 
-            <div class="filters review-filters">
+            <div class="filters-card review-filters">
                 <div>
                     <label style="display:block;font-size:.68rem;color:var(--text-muted);margin-bottom:.35rem;font-weight:600;text-transform:uppercase;letter-spacing:.6px">Search</label>
                     <input type="text" id="reviewFilterSearch" placeholder="Name, phone, comment…">
@@ -827,26 +962,26 @@
                 <div class="stat-card payment-completed">
                     <div class="stat-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg></div>
                     <h4>Total Received</h4>
-                    <div class="value" id="statPaymentTotal"><div class="skeleton" style="height:20px;width:50%;"></div></div>
+                    <div class="value" id="statPaymentTotal"><div class="skeleton" style="height:24px;width:80px;"></div></div>
                 </div>
                 <div class="stat-card payment-pending">
                     <div class="stat-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div>
                     <h4>Pending</h4>
-                    <div class="value" id="statPaymentPending"><div class="skeleton" style="height:20px;width:50%;"></div></div>
+                    <div class="value" id="statPaymentPending"><div class="skeleton" style="height:24px;width:40px;"></div></div>
                 </div>
                 <div class="stat-card payment-refunded">
                     <div class="stat-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 14 4 9 9 4"/><path d="M4 9h10a4 4 0 0 1 4 4v4"/></svg></div>
                     <h4>Refunded</h4>
-                    <div class="value" id="statPaymentRefunded"><div class="skeleton" style="height:20px;width:50%;"></div></div>
+                    <div class="value" id="statPaymentRefunded"><div class="skeleton" style="height:24px;width:40px;"></div></div>
                 </div>
                 <div class="stat-card revenue">
                     <div class="stat-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></div>
                     <h4>This Week</h4>
-                    <div class="value" id="statPaymentWeek"><div class="skeleton" style="height:20px;width:50%;"></div></div>
+                    <div class="value" id="statPaymentWeek"><div class="skeleton" style="height:24px;width:80px;"></div></div>
                 </div>
             </div>
 
-            <div class="filters">
+            <div class="filters-card">
                 <div>
                     <label style="display:block;font-size:.68rem;color:var(--text-muted);margin-bottom:.35rem;font-weight:600;text-transform:uppercase;letter-spacing:.6px">Search</label>
                     <input type="text" id="paymentFilterSearch" placeholder="Order ID, customer, txn ref…">
@@ -902,142 +1037,137 @@
             </div>
         </div>
 
+        <!-- ═══ DRIVERS SECTION (Placeholder) ═══ -->
+        <div class="section-content" id="section-drivers">
+            <div class="placeholder-card">
+                <div class="placeholder-icon"><svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="3" width="15" height="13"/><polygon points="16 8 20 8 23 11 23 16 20 16 16 16"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg></div>
+                <h3>Driver Management</h3>
+                <p>Assign drivers to orders, track deliveries, and manage your fleet. Coming soon.</p>
+            </div>
+        </div>
+
         <!-- ═══ SETTINGS SECTION ═══ -->
-<div class="section-content" id="section-settings">
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.25rem;align-items:start;">
-        
-        <!-- LEFT COLUMN -->
-        <div style="display:flex;flex-direction:column;gap:1.25rem;">
-            
-            <!-- Store Profile -->
-            <div class="table-wrap" style="padding:1.5rem;">
-                <h3 style="font-size:1.1rem;margin-bottom:1.25rem;color:var(--text);font-family:var(--font-display);font-weight:400;">Store Profile</h3>
-                <div style="display:flex;flex-direction:column;gap:1rem;">
-                    <div>
-                        <label style="display:block;font-size:.68rem;color:var(--text-muted);margin-bottom:.35rem;font-weight:600;text-transform:uppercase;letter-spacing:.6px">Store Name</label>
-                        <input type="text" id="settingStoreName" placeholder="Shop2Bhutan" style="width:100%;padding:.65rem;border:1.5px solid var(--border);border-radius:8px;font-size:.88rem;outline:none;font-family:var(--font-body);background:var(--surface-raised);">
-                    </div>
-                    <div class="form-row">
-                        <div>
-                            <label style="display:block;font-size:.68rem;color:var(--text-muted);margin-bottom:.35rem;font-weight:600;text-transform:uppercase;letter-spacing:.6px">Phone</label>
-                            <input type="text" id="settingStorePhone" placeholder="975 17XX XXXX" style="width:100%;padding:.65rem;border:1.5px solid var(--border);border-radius:8px;font-size:.88rem;outline:none;font-family:var(--font-body);background:var(--surface-raised);">
+        <div class="section-content" id="section-settings">
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.25rem;align-items:start;">
+                <div style="display:flex;flex-direction:column;gap:1.25rem;">
+                    <div class="table-wrap" style="padding:1.5rem;">
+                        <h3 style="font-size:1.1rem;margin-bottom:1.25rem;color:var(--text);font-family:var(--font-display);font-weight:400;">Store Profile</h3>
+                        <div style="display:flex;flex-direction:column;gap:1rem;">
+                            <div>
+                                <label style="display:block;font-size:.68rem;color:var(--text-muted);margin-bottom:.35rem;font-weight:600;text-transform:uppercase;letter-spacing:.6px">Store Name</label>
+                                <input type="text" id="settingStoreName" placeholder="Shop2Bhutan" style="width:100%;padding:.65rem;border:1.5px solid var(--border);border-radius:8px;font-size:.88rem;outline:none;font-family:var(--font-body);background:var(--surface-raised);">
+                            </div>
+                            <div class="form-row">
+                                <div>
+                                    <label style="display:block;font-size:.68rem;color:var(--text-muted);margin-bottom:.35rem;font-weight:600;text-transform:uppercase;letter-spacing:.6px">Phone</label>
+                                    <input type="text" id="settingStorePhone" placeholder="975 17XX XXXX" style="width:100%;padding:.65rem;border:1.5px solid var(--border);border-radius:8px;font-size:.88rem;outline:none;font-family:var(--font-body);background:var(--surface-raised);">
+                                </div>
+                                <div>
+                                    <label style="display:block;font-size:.68rem;color:var(--text-muted);margin-bottom:.35rem;font-weight:600;text-transform:uppercase;letter-spacing:.6px">Email</label>
+                                    <input type="email" id="settingStoreEmail" placeholder="admin@shop2bhutan.com" style="width:100%;padding:.65rem;border:1.5px solid var(--border);border-radius:8px;font-size:.88rem;outline:none;font-family:var(--font-body);background:var(--surface-raised);">
+                                </div>
+                            </div>
+                            <div>
+                                <label style="display:block;font-size:.68rem;color:var(--text-muted);margin-bottom:.35rem;font-weight:600;text-transform:uppercase;letter-spacing:.6px">Address / Tagline</label>
+                                <textarea id="settingStoreAddress" placeholder="Bhutan's trusted shopping partner..." style="width:100%;padding:.65rem;border:1.5px solid var(--border);border-radius:8px;font-size:.88rem;outline:none;font-family:var(--font-body);background:var(--surface-raised);resize:vertical;min-height:60px;"></textarea>
+                            </div>
                         </div>
-                        <div>
-                            <label style="display:block;font-size:.68rem;color:var(--text-muted);margin-bottom:.35rem;font-weight:600;text-transform:uppercase;letter-spacing:.6px">Email</label>
-                            <input type="email" id="settingStoreEmail" placeholder="admin@shop2bhutan.com" style="width:100%;padding:.65rem;border:1.5px solid var(--border);border-radius:8px;font-size:.88rem;outline:none;font-family:var(--font-body);background:var(--surface-raised);">
+                    </div>
+                    <div class="table-wrap" style="padding:1.5rem;">
+                        <h3 style="font-size:1.1rem;margin-bottom:1.25rem;color:var(--text);font-family:var(--font-display);font-weight:400;">Charge Configuration</h3>
+                        <div style="display:flex;flex-direction:column;gap:1rem;">
+                            <div>
+                                <label style="display:block;font-size:.68rem;color:var(--text-muted);margin-bottom:.35rem;font-weight:600;text-transform:uppercase;letter-spacing:.6px">Service Charge Type</label>
+                                <select id="settingServiceType" style="width:100%;padding:.65rem;border:1.5px solid var(--border);border-radius:8px;font-size:.88rem;outline:none;font-family:var(--font-body);background:var(--surface-raised);">
+                                    <option value="percentage">Percentage (%)</option>
+                                    <option value="fixed">Fixed Amount (Nu.)</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label style="display:block;font-size:.68rem;color:var(--text-muted);margin-bottom:.35rem;font-weight:600;text-transform:uppercase;letter-spacing:.6px">Service Charge Value</label>
+                                <input type="number" id="settingServiceValue" placeholder="e.g. 10" style="width:100%;padding:.65rem;border:1.5px solid var(--border);border-radius:8px;font-size:.88rem;outline:none;font-family:var(--font-body);background:var(--surface-raised);">
+                                <small style="color:var(--text-muted);font-size:.78rem;">If percentage, enter 10 for 10%. If fixed, enter amount. Leave 0 to use default tiered pricing.</small>
+                            </div>
+                            <div>
+                                <label style="display:block;font-size:.68rem;color:var(--text-muted);margin-bottom:.35rem;font-weight:600;text-transform:uppercase;letter-spacing:.6px">Default Shipping Charge (Nu.)</label>
+                                <input type="number" id="settingShipping" placeholder="0" style="width:100%;padding:.65rem;border:1.5px solid var(--border);border-radius:8px;font-size:.88rem;outline:none;font-family:var(--font-body);background:var(--surface-raised);">
+                            </div>
+                            <div style="display:flex;align-items:center;gap:1rem;flex-wrap:wrap;">
+                                <label style="display:flex;align-items:center;gap:.5rem;cursor:pointer;font-size:.88rem;color:var(--text-secondary);font-weight:500;">
+                                    <input type="checkbox" id="settingGstEnabled" style="width:16px;height:16px;accent-color:var(--accent);">
+                                    <span>Enable GST</span>
+                                </label>
+                                <div style="display:flex;align-items:center;gap:.35rem;">
+                                    <input type="number" id="settingGstRate" value="5" style="width:65px;padding:.5rem;border:1.5px solid var(--border);border-radius:8px;font-size:.88rem;outline:none;font-family:var(--font-body);background:var(--surface-raised);">
+                                    <span style="color:var(--text-muted);font-size:.88rem;">%</span>
+                                </div>
+                            </div>
+                            <button onclick="saveSettings()" id="saveSettingsBtn" class="btn-primary" style="margin-top:.5rem;">Save Settings</button>
                         </div>
                     </div>
-                    <div>
-                        <label style="display:block;font-size:.68rem;color:var(--text-muted);margin-bottom:.35rem;font-weight:600;text-transform:uppercase;letter-spacing:.6px">Address / Tagline</label>
-                        <textarea id="settingStoreAddress" placeholder="Bhutan's trusted shopping partner..." style="width:100%;padding:.65rem;border:1.5px solid var(--border);border-radius:8px;font-size:.88rem;outline:none;font-family:var(--font-body);background:var(--surface-raised);resize:vertical;min-height:60px;"></textarea>
+                    <div class="table-wrap" style="padding:1.5rem;">
+                        <h3 style="font-size:1.1rem;margin-bottom:1.25rem;color:var(--text);font-family:var(--font-display);font-weight:400;">Notifications</h3>
+                        <div style="display:flex;flex-direction:column;gap:.85rem;">
+                            <label style="display:flex;align-items:center;gap:.65rem;cursor:pointer;font-size:.88rem;color:var(--text-secondary);">
+                                <input type="checkbox" id="settingNotifSound" style="width:16px;height:16px;accent-color:var(--accent);">
+                                <span>Play sound on new notification</span>
+                            </label>
+                            <label style="display:flex;align-items:center;gap:.65rem;cursor:pointer;font-size:.88rem;color:var(--text-secondary);">
+                                <input type="checkbox" id="settingNotifOrder" style="width:16px;height:16px;accent-color:var(--accent);">
+                                <span>Notify on new orders</span>
+                            </label>
+                            <label style="display:flex;align-items:center;gap:.65rem;cursor:pointer;font-size:.88rem;color:var(--text-secondary);">
+                                <input type="checkbox" id="settingNotifReview" style="width:16px;height:16px;accent-color:var(--accent);">
+                                <span>Notify on new reviews</span>
+                            </label>
+                            <label style="display:flex;align-items:center;gap:.65rem;cursor:pointer;font-size:.88rem;color:var(--text-secondary);">
+                                <input type="checkbox" id="settingNotifQuotation" style="width:16px;height:16px;accent-color:var(--accent);">
+                                <span>Notify on new quotations</span>
+                            </label>
+                        </div>
                     </div>
                 </div>
-            </div>
-
-            <!-- Charge Configuration -->
-            <div class="table-wrap" style="padding:1.5rem;">
-                <h3 style="font-size:1.1rem;margin-bottom:1.25rem;color:var(--text);font-family:var(--font-display);font-weight:400;">Charge Configuration</h3>
-                <div style="display:flex;flex-direction:column;gap:1rem;">
-                    <div>
-                        <label style="display:block;font-size:.68rem;color:var(--text-muted);margin-bottom:.35rem;font-weight:600;text-transform:uppercase;letter-spacing:.6px">Service Charge Type</label>
-                        <select id="settingServiceType" style="width:100%;padding:.65rem;border:1.5px solid var(--border);border-radius:8px;font-size:.88rem;outline:none;font-family:var(--font-body);background:var(--surface-raised);">
-                            <option value="percentage">Percentage (%)</option>
-                            <option value="fixed">Fixed Amount (Nu.)</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label style="display:block;font-size:.68rem;color:var(--text-muted);margin-bottom:.35rem;font-weight:600;text-transform:uppercase;letter-spacing:.6px">Service Charge Value</label>
-                        <input type="number" id="settingServiceValue" placeholder="e.g. 10" style="width:100%;padding:.65rem;border:1.5px solid var(--border);border-radius:8px;font-size:.88rem;outline:none;font-family:var(--font-body);background:var(--surface-raised);">
-                        <small style="color:var(--text-muted);font-size:.78rem;">If percentage, enter 10 for 10%. If fixed, enter amount. Leave 0 to use default tiered pricing.</small>
-                    </div>
-                    <div>
-                        <label style="display:block;font-size:.68rem;color:var(--text-muted);margin-bottom:.35rem;font-weight:600;text-transform:uppercase;letter-spacing:.6px">Default Shipping Charge (Nu.)</label>
-                        <input type="number" id="settingShipping" placeholder="0" style="width:100%;padding:.65rem;border:1.5px solid var(--border);border-radius:8px;font-size:.88rem;outline:none;font-family:var(--font-body);background:var(--surface-raised);">
-                    </div>
-                    <div style="display:flex;align-items:center;gap:1rem;flex-wrap:wrap;">
-                        <label style="display:flex;align-items:center;gap:.5rem;cursor:pointer;font-size:.88rem;color:var(--text-secondary);font-weight:500;">
-                            <input type="checkbox" id="settingGstEnabled" style="width:16px;height:16px;accent-color:var(--accent);">
-                            <span>Enable GST</span>
-                        </label>
-                        <div style="display:flex;align-items:center;gap:.35rem;">
-                            <input type="number" id="settingGstRate" value="5" style="width:65px;padding:.5rem;border:1.5px solid var(--border);border-radius:8px;font-size:.88rem;outline:none;font-family:var(--font-body);background:var(--surface-raised);">
-                            <span style="color:var(--text-muted);font-size:.88rem;">%</span>
+                <div style="display:flex;flex-direction:column;gap:1.25rem;">
+                    <div class="table-wrap" style="padding:1.5rem;">
+                        <h3 style="font-size:1.1rem;margin-bottom:1.25rem;color:var(--text);font-family:var(--font-display);font-weight:400;">WhatsApp Message Templates</h3>
+                        <div style="display:flex;flex-direction:column;gap:1rem;">
+                            <div>
+                                <label style="display:block;font-size:.68rem;color:var(--text-muted);margin-bottom:.35rem;font-weight:600;text-transform:uppercase;letter-spacing:.6px">Quotation Ready</label>
+                                <textarea id="settingWaQuotation" style="width:100%;padding:.65rem;border:1.5px solid var(--border);border-radius:8px;font-size:.85rem;outline:none;font-family:var(--font-body);background:var(--surface-raised);resize:vertical;min-height:70px;"></textarea>
+                                <small style="color:var(--text-muted);font-size:.75rem;">Variables: <code>{{name}}</code>, <code>{{link}}</code>, <code>{{valid_until}}</code></small>
+                            </div>
+                            <div>
+                                <label style="display:block;font-size:.68rem;color:var(--text-muted);margin-bottom:.35rem;font-weight:600;text-transform:uppercase;letter-spacing:.6px">Order Confirmed</label>
+                                <textarea id="settingWaConfirmed" style="width:100%;padding:.65rem;border:1.5px solid var(--border);border-radius:8px;font-size:.85rem;outline:none;font-family:var(--font-body);background:var(--surface-raised);resize:vertical;min-height:70px;"></textarea>
+                                <small style="color:var(--text-muted);font-size:.75rem;">Variables: <code>{{name}}</code>, <code>{{code}}</code>, <code>{{trip_date}}</code></small>
+                            </div>
+                            <div>
+                                <label style="display:block;font-size:.68rem;color:var(--text-muted);margin-bottom:.35rem;font-weight:600;text-transform:uppercase;letter-spacing:.6px">Payment Reminder</label>
+                                <textarea id="settingWaPayment" style="width:100%;padding:.65rem;border:1.5px solid var(--border);border-radius:8px;font-size:.85rem;outline:none;font-family:var(--font-body);background:var(--surface-raised);resize:vertical;min-height:70px;"></textarea>
+                                <small style="color:var(--text-muted);font-size:.75rem;">Variables: <code>{{name}}</code>, <code>{{code}}</code>, <code>{{amount}}</code></small>
+                            </div>
                         </div>
                     </div>
-                    <button onclick="saveSettings()" id="saveSettingsBtn" class="btn-primary" style="margin-top:.5rem;">Save Settings</button>
-                </div>
-            </div>
-
-            <!-- Notification Preferences -->
-            <div class="table-wrap" style="padding:1.5rem;">
-                <h3 style="font-size:1.1rem;margin-bottom:1.25rem;color:var(--text);font-family:var(--font-display);font-weight:400;">Notifications</h3>
-                <div style="display:flex;flex-direction:column;gap:.85rem;">
-                    <label style="display:flex;align-items:center;gap:.65rem;cursor:pointer;font-size:.88rem;color:var(--text-secondary);">
-                        <input type="checkbox" id="settingNotifSound" style="width:16px;height:16px;accent-color:var(--accent);">
-                        <span>Play sound on new notification</span>
-                    </label>
-                    <label style="display:flex;align-items:center;gap:.65rem;cursor:pointer;font-size:.88rem;color:var(--text-secondary);">
-                        <input type="checkbox" id="settingNotifOrder" style="width:16px;height:16px;accent-color:var(--accent);">
-                        <span>Notify on new orders</span>
-                    </label>
-                    <label style="display:flex;align-items:center;gap:.65rem;cursor:pointer;font-size:.88rem;color:var(--text-secondary);">
-                        <input type="checkbox" id="settingNotifReview" style="width:16px;height:16px;accent-color:var(--accent);">
-                        <span>Notify on new reviews</span>
-                    </label>
-                    <label style="display:flex;align-items:center;gap:.65rem;cursor:pointer;font-size:.88rem;color:var(--text-secondary);">
-                        <input type="checkbox" id="settingNotifQuotation" style="width:16px;height:16px;accent-color:var(--accent);">
-                        <span>Notify on new quotations</span>
-                    </label>
+                    <div class="table-wrap" style="padding:1.5rem;">
+                        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.25rem;">
+                            <h3 style="font-size:1.1rem;color:var(--text);font-family:var(--font-display);font-weight:400;">Delivery Rates by Dzongkhag</h3>
+                            <button onclick="addDeliveryRateRow()" style="background:var(--text);color:#fff;border:none;padding:.35rem .7rem;border-radius:6px;font-size:.78rem;font-weight:600;cursor:pointer;transition:background .15s;font-family:var(--font-body);">+ Add Rate</button>
+                        </div>
+                        <div style="max-height:320px;overflow-y:auto;border:1px solid var(--border-light);border-radius:8px;">
+                            <table style="font-size:.88rem;width:100%;">
+                                <thead style="position:sticky;top:0;background:var(--surface-raised);z-index:1;">
+                                    <tr><th style="text-align:left;padding:.6rem .75rem;border-bottom:1.5px solid var(--border);">Dzongkhag</th><th style="text-align:left;padding:.6rem .75rem;border-bottom:1.5px solid var(--border);">Rate (Nu.)</th><th style="width:50px;border-bottom:1.5px solid var(--border);"></th></tr>
+                                </thead>
+                                <tbody id="deliveryRatesTableBody">
+                                    <tr><td colspan="3" style="text-align:center;padding:1.5rem;color:var(--text-muted);">Loading rates…</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        <button onclick="saveDeliveryRates()" id="saveDeliveryRatesBtn" class="btn-primary" style="margin-top:1rem;width:100%;">Save Delivery Rates</button>
+                    </div>
                 </div>
             </div>
         </div>
-
-        <!-- RIGHT COLUMN -->
-        <div style="display:flex;flex-direction:column;gap:1.25rem;">
-            
-            <!-- WhatsApp Templates -->
-            <div class="table-wrap" style="padding:1.5rem;">
-                <h3 style="font-size:1.1rem;margin-bottom:1.25rem;color:var(--text);font-family:var(--font-display);font-weight:400;">WhatsApp Message Templates</h3>
-                <div style="display:flex;flex-direction:column;gap:1rem;">
-                    <div>
-                        <label style="display:block;font-size:.68rem;color:var(--text-muted);margin-bottom:.35rem;font-weight:600;text-transform:uppercase;letter-spacing:.6px">Quotation Ready</label>
-                        <textarea id="settingWaQuotation" style="width:100%;padding:.65rem;border:1.5px solid var(--border);border-radius:8px;font-size:.85rem;outline:none;font-family:var(--font-body);background:var(--surface-raised);resize:vertical;min-height:70px;"></textarea>
-                        <small style="color:var(--text-muted);font-size:.75rem;">Variables: <code>{{name}}</code>, <code>{{link}}</code>, <code>{{valid_until}}</code></small>
-                    </div>
-                    <div>
-                        <label style="display:block;font-size:.68rem;color:var(--text-muted);margin-bottom:.35rem;font-weight:600;text-transform:uppercase;letter-spacing:.6px">Order Confirmed</label>
-                        <textarea id="settingWaConfirmed" style="width:100%;padding:.65rem;border:1.5px solid var(--border);border-radius:8px;font-size:.85rem;outline:none;font-family:var(--font-body);background:var(--surface-raised);resize:vertical;min-height:70px;"></textarea>
-                        <small style="color:var(--text-muted);font-size:.75rem;">Variables: <code>{{name}}</code>, <code>{{code}}</code>, <code>{{trip_date}}</code></small>
-                    </div>
-                    <div>
-                        <label style="display:block;font-size:.68rem;color:var(--text-muted);margin-bottom:.35rem;font-weight:600;text-transform:uppercase;letter-spacing:.6px">Payment Reminder</label>
-                        <textarea id="settingWaPayment" style="width:100%;padding:.65rem;border:1.5px solid var(--border);border-radius:8px;font-size:.85rem;outline:none;font-family:var(--font-body);background:var(--surface-raised);resize:vertical;min-height:70px;"></textarea>
-                        <small style="color:var(--text-muted);font-size:.75rem;">Variables: <code>{{name}}</code>, <code>{{code}}</code>, <code>{{amount}}</code></small>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Delivery Rates -->
-            <div class="table-wrap" style="padding:1.5rem;">
-                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.25rem;">
-                    <h3 style="font-size:1.1rem;color:var(--text);font-family:var(--font-display);font-weight:400;">Delivery Rates by Dzongkhag</h3>
-                    <button onclick="addDeliveryRateRow()" style="background:var(--text);color:#fff;border:none;padding:.35rem .7rem;border-radius:6px;font-size:.78rem;font-weight:600;cursor:pointer;transition:background .15s;font-family:var(--font-body);">+ Add Rate</button>
-                </div>
-                <div style="max-height:320px;overflow-y:auto;border:1px solid var(--border-light);border-radius:8px;">
-                    <table style="font-size:.88rem;width:100%;">
-                        <thead style="position:sticky;top:0;background:var(--surface-raised);z-index:1;">
-                            <tr><th style="text-align:left;padding:.6rem .75rem;border-bottom:1.5px solid var(--border);">Dzongkhag</th><th style="text-align:left;padding:.6rem .75rem;border-bottom:1.5px solid var(--border);">Rate (Nu.)</th><th style="width:50px;border-bottom:1.5px solid var(--border);"></th></tr>
-                        </thead>
-                        <tbody id="deliveryRatesTableBody">
-                            <tr><td colspan="3" style="text-align:center;padding:1.5rem;color:var(--text-muted);">Loading rates…</td></tr>
-                        </tbody>
-                    </table>
-                </div>
-                <button onclick="saveDeliveryRates()" id="saveDeliveryRatesBtn" class="btn-primary" style="margin-top:1rem;width:100%;">Save Delivery Rates</button>
-            </div>
-        </div>
-    </div>
-</div>
     </main>
 </div>
 
@@ -1143,12 +1273,108 @@ function showSection(section) {
         quotations: 'Quotations',
         reviews: 'Review Moderation',
         payments: 'Payment Management',
+        drivers: 'Drivers',
         settings: 'Settings'
     };
     document.getElementById('pageTitle').textContent = titles[section] || 'Dashboard';
 
     if (typeof window.onSectionChange === 'function') {
         window.onSectionChange(section);
+    }
+}
+
+/* ============ CHARTS ============ */
+let ordersTrendChart, revenueChart, dzongkhagChart;
+
+function initCharts() {
+    // Orders Trend Chart
+    const ctx1 = document.getElementById('ordersTrendChart');
+    if (ctx1) {
+        ordersTrendChart = new Chart(ctx1, {
+            type: 'line',
+            data: {
+                labels: ['Sat', 'Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri'],
+                datasets: [{
+                    label: 'Orders',
+                    data: [1, 1, 1, 2, 3, 2, 1],
+                    borderColor: '#ea580c',
+                    backgroundColor: 'rgba(234, 88, 12, 0.1)',
+                    fill: true,
+                    tension: 0.4,
+                    pointRadius: 3,
+                    pointBackgroundColor: '#ea580c',
+                    borderWidth: 2
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false } },
+                scales: {
+                    x: { grid: { display: false }, ticks: { font: { size: 11 }, color: '#94a3b8' } },
+                    y: { beginAtZero: true, ticks: { font: { size: 11 }, color: '#94a3b8', stepSize: 1 }, grid: { color: '#f1f5f9' } }
+                }
+            }
+        });
+    }
+
+    // Revenue Chart
+    const ctx2 = document.getElementById('revenueChart');
+    if (ctx2) {
+        revenueChart = new Chart(ctx2, {
+            type: 'line',
+            data: {
+                labels: ['Sat', 'Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri'],
+                datasets: [{
+                    label: 'Revenue',
+                    data: [0, 0, 0, 0, 0, 0, 0],
+                    borderColor: '#16a34a',
+                    backgroundColor: 'rgba(22, 163, 74, 0.1)',
+                    fill: true,
+                    tension: 0.4,
+                    pointRadius: 3,
+                    pointBackgroundColor: '#16a34a',
+                    borderWidth: 2
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false } },
+                scales: {
+                    x: { grid: { display: false }, ticks: { font: { size: 11 }, color: '#94a3b8' } },
+                    y: { beginAtZero: true, ticks: { font: { size: 11 }, color: '#94a3b8' }, grid: { color: '#f1f5f9' } }
+                }
+            }
+        });
+    }
+
+    // Dzongkhag Chart
+    const ctx3 = document.getElementById('dzongkhagChart');
+    if (ctx3) {
+        dzongkhagChart = new Chart(ctx3, {
+            type: 'doughnut',
+            data: {
+                labels: ['Thimphu', 'Paro', 'Punakha', 'Chhukha', 'Others'],
+                datasets: [{
+                    data: [0, 0, 0, 0, 0],
+                    backgroundColor: ['#3b82f6', '#22c55e', '#f59e0b', '#8b5cf6', '#94a3b8'],
+                    borderWidth: 0,
+                    hoverOffset: 4
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                cutout: '65%',
+                plugins: {
+                    legend: {
+                        position: 'right',
+                        labels: { boxWidth: 12, padding: 15, font: { size: 11 }, color: '#64748b', usePointStyle: true }
+                    }
+                }
+            }
+        });
     }
 }
 
@@ -1221,9 +1447,19 @@ document.addEventListener('click', function(e) {
     if (confirmModal && confirmModal.classList.contains('active') && e.target === confirmModal) closeConfirmModal();
 });
 
+/* ============ COPY ORDER ID ============ */
+function copyOrderId(text) {
+    navigator.clipboard.writeText(text).then(() => {
+        toast('Order ID copied', 'success');
+    }).catch(() => {
+        toast('Failed to copy', 'error');
+    });
+}
+
 /* ============ INIT ============ */
 document.addEventListener('DOMContentLoaded', () => {
     initSidebar();
+    initCharts();
 });
 </script>
 
