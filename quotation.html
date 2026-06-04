@@ -1053,11 +1053,10 @@
                     .from('payment-screenshots')
                     .getPublicUrl(fileName);
 
-                // Update quotation
+                // Update quotation (keep status as 'accepted'; track payment via payment_status)
                 const { error: updateError } = await supabase
                     .from('quotations')
                     .update({
-                        status: 'paid',
                         payment_status: 'pending_verification',
                         payment_screenshot: publicUrl,
                         payment_amount: currentQuotation.total_amount,

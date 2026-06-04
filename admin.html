@@ -219,6 +219,14 @@
         .stat-card.avg-rating::after { background: #7c3aed; }
         .stat-card.avg-rating .stat-icon { background: #f3e8ff; color: #7c3aed; }
 
+        /* Payment stat cards */
+        .stat-card.payment-completed::after { background: var(--success); }
+        .stat-card.payment-completed .stat-icon { background: var(--success-light); color: var(--success); }
+        .stat-card.payment-pending::after { background: var(--warning); }
+        .stat-card.payment-pending .stat-icon { background: var(--warning-light); color: var(--warning); }
+        .stat-card.payment-refunded::after { background: var(--danger); }
+        .stat-card.payment-refunded .stat-icon { background: var(--danger-light); color: var(--danger); }
+
         /* ═══════════════ FILTERS ═══════════════ */
         .filters {
             background: #fff; padding: 1.15rem 1.25rem; border-radius: var(--radius-lg); margin-bottom: 1rem;
@@ -273,6 +281,10 @@
         .badge-accepted { background: var(--success-light); color: var(--success); }
         .badge-expired { background: #f5f5f4; color: var(--text-muted); }
         .badge-50_50 { background: #fef3c7; color: #92400e; }
+        .badge-bank_transfer { background: #e0e7ff; color: #3730a3; }
+        .badge-cash { background: var(--success-light); color: var(--success); }
+        .badge-online { background: var(--info-light); color: var(--info); }
+        .badge-other { background: #f5f5f4; color: var(--text-secondary); }
 
         .customer-info { line-height: 1.45; }
         .customer-info small { display: block; color: var(--text-muted); font-size: .78rem; }
@@ -453,20 +465,6 @@
             .admin-main { padding: 1.25rem 1rem; }
             .stats-grid { grid-template-columns: 1fr 1fr; }
         }
-
-        /* Payment stat cards */
-.stat-card.payment-completed::after { background: var(--success); }
-.stat-card.payment-completed .stat-icon { background: var(--success-light); color: var(--success); }
-.stat-card.payment-pending::after { background: var(--warning); }
-.stat-card.payment-pending .stat-icon { background: var(--warning-light); color: var(--warning); }
-.stat-card.payment-refunded::after { background: var(--danger); }
-.stat-card.payment-refunded .stat-icon { background: var(--danger-light); color: var(--danger); }
-
-/* Payment method badges */
-.badge-bank_transfer { background: #e0e7ff; color: #3730a3; }
-.badge-cash { background: var(--success-light); color: var(--success); }
-.badge-online { background: var(--info-light); color: var(--info); }
-.badge-other { background: #f5f5f4; color: var(--text-secondary); }
     </style>
 </head>
 <body>
@@ -508,7 +506,7 @@
         <div class="sidebar-logo-area">
             <div class="sidebar-logo">
                 <img src="/image/logo.svg" alt="Shop2Bhutan" width="34" height="34">
-                
+                <span class="sidebar-logo-text">Shop2Bhutan</span>
             </div>
             <div class="sidebar-controls">
                 <button type="button" class="sidebar-btn" id="pinSidebarBtn" onclick="togglePinSidebar()" title="Pin sidebar"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="17" x2="12" y2="3"/><path d="M5 17h14"/><path d="M15 3l-3-3-3 3"/></svg></button>
@@ -824,86 +822,85 @@
         </div>
 
         <!-- ═══ PAYMENTS SECTION ═══ -->
-     <!-- ═══ PAYMENTS SECTION ═══ -->
-<div class="section-content" id="section-payments">
-    <div class="stats-grid" id="paymentStatsGrid">
-        <div class="stat-card payment-completed">
-            <div class="stat-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg></div>
-            <h4>Total Received</h4>
-            <div class="value" id="statPaymentTotal"><div class="skeleton" style="height:20px;width:50%;"></div></div>
-        </div>
-        <div class="stat-card payment-pending">
-            <div class="stat-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div>
-            <h4>Pending</h4>
-            <div class="value" id="statPaymentPending"><div class="skeleton" style="height:20px;width:50%;"></div></div>
-        </div>
-        <div class="stat-card payment-refunded">
-            <div class="stat-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 14 4 9 9 4"/><path d="M4 9h10a4 4 0 0 1 4 4v4"/></svg></div>
-            <h4>Refunded</h4>
-            <div class="value" id="statPaymentRefunded"><div class="skeleton" style="height:20px;width:50%;"></div></div>
-        </div>
-        <div class="stat-card revenue">
-            <div class="stat-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></div>
-            <h4>This Week</h4>
-            <div class="value" id="statPaymentWeek"><div class="skeleton" style="height:20px;width:50%;"></div></div>
-        </div>
-    </div>
+        <div class="section-content" id="section-payments">
+            <div class="stats-grid" id="paymentStatsGrid">
+                <div class="stat-card payment-completed">
+                    <div class="stat-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg></div>
+                    <h4>Total Received</h4>
+                    <div class="value" id="statPaymentTotal"><div class="skeleton" style="height:20px;width:50%;"></div></div>
+                </div>
+                <div class="stat-card payment-pending">
+                    <div class="stat-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div>
+                    <h4>Pending</h4>
+                    <div class="value" id="statPaymentPending"><div class="skeleton" style="height:20px;width:50%;"></div></div>
+                </div>
+                <div class="stat-card payment-refunded">
+                    <div class="stat-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 14 4 9 9 4"/><path d="M4 9h10a4 4 0 0 1 4 4v4"/></svg></div>
+                    <h4>Refunded</h4>
+                    <div class="value" id="statPaymentRefunded"><div class="skeleton" style="height:20px;width:50%;"></div></div>
+                </div>
+                <div class="stat-card revenue">
+                    <div class="stat-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></div>
+                    <h4>This Week</h4>
+                    <div class="value" id="statPaymentWeek"><div class="skeleton" style="height:20px;width:50%;"></div></div>
+                </div>
+            </div>
 
-    <div class="filters">
-        <div>
-            <label style="display:block;font-size:.68rem;color:var(--text-muted);margin-bottom:.35rem;font-weight:600;text-transform:uppercase;letter-spacing:.6px">Search</label>
-            <input type="text" id="paymentFilterSearch" placeholder="Order ID, customer, txn ref…">
-        </div>
-        <div>
-            <label style="display:block;font-size:.68rem;color:var(--text-muted);margin-bottom:.35rem;font-weight:600;text-transform:uppercase;letter-spacing:.6px">Status</label>
-            <select id="paymentFilterStatus">
-                <option value="">All Status</option>
-                <option value="completed">Completed</option>
-                <option value="pending">Pending</option>
-                <option value="refunded">Refunded</option>
-                <option value="failed">Failed</option>
-            </select>
-        </div>
-        <div>
-            <label style="display:block;font-size:.68rem;color:var(--text-muted);margin-bottom:.35rem;font-weight:600;text-transform:uppercase;letter-spacing:.6px">Method</label>
-            <select id="paymentFilterMethod">
-                <option value="">All Methods</option>
-                <option value="bank_transfer">Bank Transfer</option>
-                <option value="cash">Cash</option>
-                <option value="online">Online</option>
-                <option value="50_50">50/50</option>
-            </select>
-        </div>
-        <div>
-            <label style="display:block;font-size:.68rem;color:var(--text-muted);margin-bottom:.35rem;font-weight:600;text-transform:uppercase;letter-spacing:.6px">Date</label>
-            <input type="date" id="paymentFilterDate">
-        </div>
-        <div style="margin-left:auto;display:flex;gap:.5rem">
-            <button onclick="exportPaymentsCSV()" id="exportPaymentBtn"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:4px"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>Export</button>
-        </div>
-    </div>
+            <div class="filters">
+                <div>
+                    <label style="display:block;font-size:.68rem;color:var(--text-muted);margin-bottom:.35rem;font-weight:600;text-transform:uppercase;letter-spacing:.6px">Search</label>
+                    <input type="text" id="paymentFilterSearch" placeholder="Order ID, customer, txn ref…">
+                </div>
+                <div>
+                    <label style="display:block;font-size:.68rem;color:var(--text-muted);margin-bottom:.35rem;font-weight:600;text-transform:uppercase;letter-spacing:.6px">Status</label>
+                    <select id="paymentFilterStatus">
+                        <option value="">All Status</option>
+                        <option value="completed">Completed</option>
+                        <option value="pending">Pending</option>
+                        <option value="refunded">Refunded</option>
+                        <option value="failed">Failed</option>
+                    </select>
+                </div>
+                <div>
+                    <label style="display:block;font-size:.68rem;color:var(--text-muted);margin-bottom:.35rem;font-weight:600;text-transform:uppercase;letter-spacing:.6px">Method</label>
+                    <select id="paymentFilterMethod">
+                        <option value="">All Methods</option>
+                        <option value="bank_transfer">Bank Transfer</option>
+                        <option value="cash">Cash</option>
+                        <option value="online">Online</option>
+                        <option value="50_50">50/50</option>
+                    </select>
+                </div>
+                <div>
+                    <label style="display:block;font-size:.68rem;color:var(--text-muted);margin-bottom:.35rem;font-weight:600;text-transform:uppercase;letter-spacing:.6px">Date</label>
+                    <input type="date" id="paymentFilterDate">
+                </div>
+                <div style="margin-left:auto;display:flex;gap:.5rem">
+                    <button onclick="exportPaymentsCSV()" id="exportPaymentBtn"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:4px"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>Export</button>
+                </div>
+            </div>
 
-    <div class="table-wrap">
-        <table>
-            <thead>
-                <tr>
-                    <th>Payment ID</th>
-                    <th>Order</th>
-                    <th>Customer</th>
-                    <th>Amount</th>
-                    <th>Method</th>
-                    <th>Status</th>
-                    <th>Reference</th>
-                    <th>Date</th>
-                    <th>Actions</th>
-                </tr>
-            </thead>
-            <tbody id="paymentsTableBody">
-                <tr><td colspan="9" style="text-align:center;padding:2.5rem;color:var(--text-muted)">Loading payments…</td></tr>
-            </tbody>
-        </table>
-    </div>
-</div>
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Payment ID</th>
+                            <th>Order</th>
+                            <th>Customer</th>
+                            <th>Amount</th>
+                            <th>Method</th>
+                            <th>Status</th>
+                            <th>Reference</th>
+                            <th>Date</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="paymentsTableBody">
+                        <tr><td colspan="9" style="text-align:center;padding:2.5rem;color:var(--text-muted)">Loading payments…</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
 
         <!-- ═══ SETTINGS SECTION ═══ -->
 <div class="section-content" id="section-settings">
