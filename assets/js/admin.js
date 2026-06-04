@@ -1271,7 +1271,7 @@ let allQuotations = [];
 async function fetchQuotations() {
     const { data, error } = await supabase
         .from('quotations')
-        .select(`*, order:orders(id, status, trip_date, customer:customers(*), items:order_items(*))`)
+        .select(`*, order:orders(id, order_code, status, trip_date, customer:customers(*), items:order_items(*))`)
         .order('created_at', { ascending: false });
 
     if (error) {
@@ -1350,7 +1350,7 @@ window.renderQuotations = function() {
 
     tbody.innerHTML = filtered.map(q => {
         const c = q.order?.customer || {};
-        const orderIdShort = q.order_id ? String(q.order_id).slice(0, 8).toUpperCase() : '-';
+        const orderIdShort = q.order?.order_code ? String(q.order.order_code).toUpperCase() : (q.order_id ? String(q.order_id).slice(0, 8).toUpperCase() : '-');
         const items = q.items || [];
         const itemCount = items.length;
         const itemSummary = items.slice(0, 2).map(i => i.name).join(', ') + (itemCount > 2 ? ` +${itemCount - 2} more` : '');
@@ -1621,7 +1621,7 @@ window.openQuotationModal = async function(quotationId = null) {
 async function loadOrderDropdown(selectedId) {
     const { data: orders } = await supabase
         .from('orders')
-        .select('id, customer:customers(name, phone)')
+        .select('id, order_code, customer:customers(name, phone)')
         .order('created_at', { ascending: false })
         .limit(100);
 
@@ -1632,7 +1632,7 @@ async function loadOrderDropdown(selectedId) {
         const c = o.customer || {};
         const opt = document.createElement('option');
         opt.value = o.id;
-        opt.textContent = `${String(o.id).slice(0, 8).toUpperCase()} — ${c.name || 'Unknown'} (${c.phone || 'no phone'})`;
+        opt.textContent = `${o.order_code || String(o.id).slice(0, 8).toUpperCase()} — ${c.name || 'Unknown'} (${c.phone || 'no phone'})`;
         if (o.id === selectedId) opt.selected = true;
         select.appendChild(opt);
     });
@@ -1855,7 +1855,7 @@ window.openQuotationDetail = function(id) {
     if (!q) return;
 
     const c = q.order?.customer || {};
-    const orderIdShort = q.order_id ? String(q.order_id).slice(0, 8).toUpperCase() : '-';
+    const orderIdShort = q.order?.order_code ? String(q.order.order_code).toUpperCase() : (q.order_id ? String(q.order_id).slice(0, 8).toUpperCase() : '-');
     const items = q.items || [];
     const validUntil = q.valid_until ? new Date(q.valid_until).toLocaleDateString() : '-';
     const statusClass = `badge-${q.status || 'draft'}`;
