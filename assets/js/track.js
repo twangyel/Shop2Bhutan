@@ -34,6 +34,9 @@ const toastEl = document.getElementById('toast');
 let currentOrder = null;
 let currentQuotation = null;
 let selectedPaymentFile = null;
+// Realtime channel for the currently-tracked order. Held at module scope so we
+// can tear it down when the user looks up a different order (or leaves).
+let realtimeChannel = null;
 // DB-valid values matching the payments_payment_method_check constraint
 // and the quotation.html flow: 'mbob' | 'mpay' | 'bank_transfer'
 let paymentMethod = 'mbob';
@@ -102,6 +105,9 @@ async function trackOrder() {
         return;
     }
 
+    // Tear down any previous realtime subscription — we're starting fresh.
+    teardownRealtime();
+
     localStorage.setItem('lastTrackSearch', input); // kept for compatibility with older clients
     trackBtn.disabled = true;
     trackBtn.innerHTML = '<div class="spinner" style="width:18px;height:18px;border-width:2px;display:inline-block;vertical-align:middle;margin-right:6px;"></div> Searching...';
@@ -112,7 +118,34 @@ async function trackOrder() {
         </div>
     `;
 
-    // Determine search type
+    const { data, error } = await fetchOrderByInput(input);
+
+    trackBtn.disabled = false;
+    trackBtn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="width:20px;height:20px;"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg> Track`;
+
+    if (error || !data || data.length === 0) {
+        resultContainer.innerHTML = `
+            <div class="state-card">
+                <div class="state-icon error">!</div>
+                <h3>Order Not Found</h3>
+                <p>We couldn't find an order matching "${escapeHtml(input)}".<br>Please check your order code or phone number and try again.</p>
+            </div>
+        `;
+        return;
+    }
+
+    currentOrder = data[0];
+    currentQuotation = pickVisibleQuotation(currentOrder.quotation);
+    renderTracking(currentOrder);
+
+    // Subscribe to live updates so the timeline + progress reflect admin
+    // changes (order status, new history rows, quotation/payment moves)
+    // without the customer having to refresh.
+    subscribeToOrderUpdates(currentOrder.id);
+}
+
+// Shared fetch used by initial track + realtime re-fetch.
+async function fetchOrderByInput(input) {
     const isPhone = /^\d+$/.test(input);
     const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(input);
 
@@ -136,26 +169,73 @@ async function trackOrder() {
         query = query.eq('order_code', input);
     }
 
-    const { data, error } = await query.limit(1);
-
-    trackBtn.disabled = false;
-    trackBtn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="width:20px;height:20px;"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg> Track`;
-
-    if (error || !data || data.length === 0) {
-        resultContainer.innerHTML = `
-            <div class="state-card">
-                <div class="state-icon error">!</div>
-                <h3>Order Not Found</h3>
-                <p>We couldn't find an order matching "${escapeHtml(input)}".<br>Please check your order code or phone number and try again.</p>
-            </div>
-        `;
-        return;
-    }
-
-    currentOrder = data[0];
-    currentQuotation = pickVisibleQuotation(currentOrder.quotation);
-    renderTracking(currentOrder);
+    return await query.limit(1);
 }
+
+// Re-fetch the order by its ID and re-render. Used by the realtime channel.
+// Debounced lightly so a burst of related row changes (orders + history rows
+// arriving from the same admin action) only causes one re-render.
+let refetchTimer = null;
+function scheduleRefetch() {
+    if (refetchTimer) return;
+    refetchTimer = setTimeout(async () => {
+        refetchTimer = null;
+        if (!currentOrder?.id) return;
+        const { data, error } = await supabase
+            .from('orders')
+            .select(`
+                *,
+                customer:customers(*),
+                items:order_items(*),
+                history:order_status_history(*),
+                quotation:quotations(*),
+                payments:payments(*)
+            `)
+            .eq('id', currentOrder.id)
+            .order('created_at', { ascending: false, foreignTable: 'order_status_history' })
+            .limit(1);
+        if (error || !data || data.length === 0) return;
+        currentOrder = data[0];
+        currentQuotation = pickVisibleQuotation(currentOrder.quotation);
+        renderTracking(currentOrder);
+    }, 250);
+}
+
+// Subscribe to postgres changes for this order on relevant tables.
+function subscribeToOrderUpdates(orderId) {
+    if (!orderId) return;
+    teardownRealtime();
+
+    realtimeChannel = supabase
+        .channel(`order-track-${orderId}`)
+        .on('postgres_changes',
+            { event: '*', schema: 'public', table: 'orders', filter: `id=eq.${orderId}` },
+            () => scheduleRefetch())
+        .on('postgres_changes',
+            { event: '*', schema: 'public', table: 'order_status_history', filter: `order_id=eq.${orderId}` },
+            () => scheduleRefetch())
+        .on('postgres_changes',
+            { event: '*', schema: 'public', table: 'quotations', filter: `order_id=eq.${orderId}` },
+            () => scheduleRefetch())
+        .on('postgres_changes',
+            { event: '*', schema: 'public', table: 'payments', filter: `order_id=eq.${orderId}` },
+            () => scheduleRefetch())
+        .subscribe();
+}
+
+function teardownRealtime() {
+    if (realtimeChannel) {
+        try { supabase.removeChannel(realtimeChannel); } catch (_) {}
+        realtimeChannel = null;
+    }
+    if (refetchTimer) {
+        clearTimeout(refetchTimer);
+        refetchTimer = null;
+    }
+}
+
+// Best-effort cleanup if the page unloads.
+window.addEventListener('beforeunload', teardownRealtime);
 
 // ===== RENDER TRACKING =====
 function renderTracking(order) {
@@ -191,20 +271,25 @@ function renderTracking(order) {
 
     timelineItems.reverse();
 
-    const paidAmount = payments.filter(p => p.status === 'completed').reduce((s, p) => s + (parseFloat(p.amount) || 0), 0);
+    const verifiedPayments = payments.filter(p => p.status === 'completed');
+    const paidAmount = verifiedPayments.reduce((s, p) => s + (parseFloat(p.amount) || 0), 0);
+    // Treat the quotation as "paid & verified" if there's at least one completed
+    // payment OR the quotation row itself was flagged verified by admin.
+    const isPaymentVerified = verifiedPayments.length > 0 || (quotation && quotation.payment_status === 'verified');
 
     // Check if quotation is accepted but payment not yet verified
-    const showPaymentSection = quotation && quotation.status === 'accepted' && quotation.payment_status !== 'verified';
+    const showPaymentSection = quotation && quotation.status === 'accepted' && !isPaymentVerified;
 
     resultContainer.innerHTML = `
         <div class="tracking-card">
             <!-- Header -->
             <div class="tracking-header">
-                <div class="tracking-id">
-                    <div>
-                        <div class="label">Order ID</div>
-                        <div class="value">${escapeHtml(order.order_code || String(order.id).slice(0, 8).toUpperCase())}</div>
+                <div class="order-id-block">
+                    <div class="order-id-label">
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11H5a2 2 0 0 0-2 2v7a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7a2 2 0 0 0-2-2h-4"/><path d="M9 11V7a3 3 0 0 1 6 0v4"/></svg>
+                        Order ID
                     </div>
+                    ${renderOrderIdChip(order.order_code || String(order.id).slice(0, 8).toUpperCase())}
                 </div>
                 <div class="status-badge status-${status}">
                     ${status.replace(/_/g, ' ')}
@@ -259,7 +344,7 @@ function renderTracking(order) {
             </div>
 
             <!-- Quotation Card (if exists and not yet fully processed) -->
-            ${quotation ? renderQuotationCard(quotation, c) : ''}
+            ${quotation ? renderQuotationCard(quotation, c, isPaymentVerified) : ''}
 
             <!-- Payment Section (if quotation accepted, awaiting payment) -->
             ${showPaymentSection ? renderPaymentSection(quotation) : ''}
@@ -351,7 +436,7 @@ function renderTracking(order) {
 }
 
 // ===== QUOTATION CARD =====
-function renderQuotationCard(quotation, customer) {
+function renderQuotationCard(quotation, customer, isPaymentVerified = false) {
     const items = quotation.items || [];
     const isPending = quotation.status === 'sent';
     const isAccepted = quotation.status === 'accepted' || quotation.status === 'paid';
@@ -366,6 +451,11 @@ function renderQuotationCard(quotation, customer) {
                 <button class="btn btn-primary" onclick="window.respondToQuotation('${quotation.id}', 'accept')">✓ Accept & Pay</button>
             </div>
         `;
+    } else if (isPaymentVerified) {
+        statusHtml = `<div style="color:var(--success);font-weight:700;font-size:0.9rem;margin-top:0.5rem;display:flex;align-items:center;gap:0.4rem;">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+            Payment Verified
+        </div>`;
     } else if (isAccepted) {
         statusHtml = `<div style="color:var(--success);font-weight:700;font-size:0.9rem;margin-top:0.5rem;">✓ Quotation Accepted</div>`;
     } else if (isRejected) {
@@ -374,6 +464,64 @@ function renderQuotationCard(quotation, customer) {
         statusHtml = `<div style="color:var(--text-muted);font-weight:700;font-size:0.9rem;margin-top:0.5rem;">⏰ Quotation Expired</div>`;
     }
 
+    const breakdownHtml = `
+        <div class="quotation-body">
+            <div class="quotation-row">
+                <span>Subtotal</span>
+                <span>Nu. ${(quotation.subtotal || 0).toLocaleString()}</span>
+            </div>
+            <div class="quotation-row">
+                <span>Service Charge</span>
+                <span>Nu. ${(quotation.service_charge_amount || 0).toLocaleString()}</span>
+            </div>
+            <div class="quotation-row">
+                <span>Shipping</span>
+                <span>Nu. ${(quotation.shipping_charge || 0).toLocaleString()}</span>
+            </div>
+            <div class="quotation-row">
+                <span>Delivery</span>
+                <span>Nu. ${(quotation.delivery_charge || 0).toLocaleString()}</span>
+            </div>
+            ${quotation.gst_applicable ? `
+            <div class="quotation-row">
+                <span>GST (5%)</span>
+                <span>Nu. ${(quotation.gst_amount || 0).toLocaleString()}</span>
+            </div>
+            ` : ''}
+            <div class="quotation-row">
+                <span>Total Amount</span>
+                <span>Nu. ${(quotation.total_amount || 0).toLocaleString()}</span>
+            </div>
+            ${quotation.notes ? `<p style="font-size:0.85rem;color:var(--text-muted);margin-top:0.75rem;line-height:1.6;">${escapeHtml(quotation.notes)}</p>` : ''}
+            ${statusHtml}
+        </div>
+    `;
+
+    // When payment is verified, render a collapsible card (collapsed by default).
+    if (isPaymentVerified) {
+        return `
+            <div class="quotation-card collapsible collapsed" id="quotationCard">
+                <button type="button" class="quotation-header" onclick="window.toggleQuotationCard()" aria-expanded="false" aria-controls="quotationBody">
+                    <div class="quotation-header-left">
+                        <h3>📋 Quotation Summary</h3>
+                        <span class="quotation-paid-pill">
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                            Paid
+                        </span>
+                    </div>
+                    <div class="quotation-header-right">
+                        <span class="quotation-total-inline">Nu. ${(quotation.total_amount || 0).toLocaleString()}</span>
+                        <svg class="quotation-chevron" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+                    </div>
+                </button>
+                <div class="quotation-collapse" id="quotationBody">
+                    ${breakdownHtml}
+                </div>
+            </div>
+        `;
+    }
+
+    // Default (non-collapsible) card — same look as before.
     return `
         <div class="quotation-card">
             <h3>📋 Quotation Summary</h3>
@@ -408,6 +556,16 @@ function renderQuotationCard(quotation, customer) {
         </div>
     `;
 }
+
+// Toggle handler for the collapsible quotation card (exposed globally so the
+// inline onclick in the rendered HTML can reach it).
+window.toggleQuotationCard = function() {
+    const card = document.getElementById('quotationCard');
+    if (!card) return;
+    const header = card.querySelector('.quotation-header');
+    const isCollapsed = card.classList.toggle('collapsed');
+    if (header) header.setAttribute('aria-expanded', String(!isCollapsed));
+};
 
 // ===== PAYMENT SECTION =====
 function renderPaymentSection(quotation) {
@@ -869,6 +1027,46 @@ window.submitPayment = async function() {
 function getStepIndex(status) {
     return STATUS_ORDER.indexOf(status);
 }
+
+// Render the order code as a polished chip. If the code matches our
+// S2B-DATE-DZO-SEQ format we colorize the segments for at-a-glance reading;
+// otherwise we just show the raw code in monospace.
+function renderOrderIdChip(code) {
+    const safe = escapeHtml(code);
+    const parts = code.split('-');
+    let segmentsHtml;
+    if (parts.length === 4 && parts[0].toUpperCase() === 'S2B') {
+        segmentsHtml = `
+            <span class="order-id-seg prefix">${escapeHtml(parts[0])}</span>
+            <span class="order-id-sep">·</span>
+            <span class="order-id-seg date">${escapeHtml(parts[1])}</span>
+            <span class="order-id-sep">·</span>
+            <span class="order-id-seg dzo">${escapeHtml(parts[2])}</span>
+            <span class="order-id-sep">·</span>
+            <span class="order-id-seg seq">${escapeHtml(parts[3])}</span>
+        `;
+    } else {
+        segmentsHtml = `<span class="order-id-seg">${safe}</span>`;
+    }
+    return `
+        <div class="order-id-chip">
+            <div class="order-id-code">${segmentsHtml}</div>
+            <button type="button" class="order-id-copy" onclick="window.copyOrderId('${safe}', this)" aria-label="Copy order ID" title="Copy order ID">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+            </button>
+        </div>
+    `;
+}
+
+window.copyOrderId = function(code, btn) {
+    navigator.clipboard.writeText(code).then(() => {
+        showToast('Order ID copied', false);
+        if (btn) {
+            btn.classList.add('copied');
+            setTimeout(() => btn.classList.remove('copied'), 1200);
+        }
+    }).catch(() => showToast('Could not copy', true));
+};
 
 function escapeHtml(text) {
     if (text == null) return '';

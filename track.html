@@ -423,24 +423,100 @@
             flex-wrap: wrap;
             gap: 1rem;
         }
-        .tracking-id {
+        /* ===== ORDER ID CHIP ===== */
+        .order-id-block {
             display: flex;
-            align-items: center;
-            gap: 0.75rem;
+            flex-direction: column;
+            gap: 0.55rem;
+            min-width: 0;
         }
-        .tracking-id .label {
-            font-size: 0.75rem;
+        .order-id-label {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+            font-size: 0.7rem;
             color: var(--text-muted);
             text-transform: uppercase;
-            letter-spacing: 0.1em;
+            letter-spacing: 0.12em;
+            font-weight: 700;
+        }
+        .order-id-label svg {
+            opacity: 0.7;
+        }
+        .order-id-chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            background: linear-gradient(135deg, #f8fafc 0%, #ffffff 100%);
+            border: 1.5px solid var(--border);
+            border-radius: 100px;
+            padding: 0.45rem 0.55rem 0.45rem 0.95rem;
+            box-shadow: var(--shadow-sm);
+            transition: var(--transition);
+            max-width: 100%;
+        }
+        .order-id-chip:hover {
+            border-color: rgba(233, 69, 96, 0.3);
+            box-shadow: 0 4px 12px rgba(233, 69, 96, 0.08);
+            transform: translateY(-1px);
+        }
+        .order-id-code {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.35rem;
+            font-family: 'JetBrains Mono', 'SF Mono', 'Courier New', monospace;
+            font-size: 0.95rem;
+            font-weight: 700;
+            letter-spacing: 0.02em;
+            color: var(--text);
+            min-width: 0;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        .order-id-seg.prefix { color: var(--primary); }
+        .order-id-seg.date { color: var(--text); }
+        .order-id-seg.dzo {
+            color: var(--info);
+            background: #eff6ff;
+            padding: 0.05em 0.4em;
+            border-radius: 5px;
+            font-size: 0.85em;
+        }
+        .order-id-seg.seq {
+            color: var(--text-muted);
             font-weight: 600;
         }
-        .tracking-id .value {
-            font-family: 'Courier New', monospace;
-            font-size: 1.5rem;
-            font-weight: 700;
-            color: var(--text);
-            letter-spacing: -0.02em;
+        .order-id-sep {
+            color: var(--border);
+            font-weight: 400;
+            user-select: none;
+        }
+        .order-id-copy {
+            background: var(--bg);
+            border: none;
+            color: var(--text-muted);
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: var(--transition);
+            flex-shrink: 0;
+        }
+        .order-id-copy:hover {
+            background: var(--primary);
+            color: #fff;
+            transform: scale(1.08);
+        }
+        .order-id-copy.copied {
+            background: var(--success);
+            color: #fff;
+        }
+        .order-id-copy.copied::after {
+            content: '';
         }
         .status-badge {
             display: inline-flex;
@@ -799,6 +875,86 @@
             margin-bottom: 1rem;
             color: var(--text);
         }
+
+        /* Collapsible variant — used once payment is verified. */
+        .quotation-card.collapsible {
+            padding: 0;
+            overflow: hidden;
+            background: linear-gradient(135deg, #f0fdf4 0%, #fff 100%);
+            border-color: rgba(37, 211, 102, 0.25);
+        }
+        .quotation-header {
+            width: 100%;
+            background: none;
+            border: none;
+            font-family: inherit;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 1rem;
+            padding: 1.1rem 1.5rem;
+            cursor: pointer;
+            text-align: left;
+            transition: background 0.2s ease;
+        }
+        .quotation-header:hover {
+            background: rgba(37, 211, 102, 0.06);
+        }
+        .quotation-header h3 {
+            margin: 0;
+            font-size: 1rem;
+        }
+        .quotation-header-left {
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+            flex-wrap: wrap;
+        }
+        .quotation-header-right {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            flex-shrink: 0;
+        }
+        .quotation-paid-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.3rem;
+            background: var(--success);
+            color: #fff;
+            font-size: 0.7rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            padding: 0.25rem 0.6rem;
+            border-radius: 100px;
+        }
+        .quotation-total-inline {
+            font-weight: 700;
+            color: var(--text);
+            font-size: 0.95rem;
+        }
+        .quotation-chevron {
+            color: var(--text-muted);
+            transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+            flex-shrink: 0;
+        }
+        .quotation-card.collapsible:not(.collapsed) .quotation-chevron {
+            transform: rotate(180deg);
+        }
+        .quotation-collapse {
+            display: grid;
+            grid-template-rows: 1fr;
+            transition: grid-template-rows 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        .quotation-card.collapsible.collapsed .quotation-collapse {
+            grid-template-rows: 0fr;
+        }
+        .quotation-collapse > .quotation-body {
+            overflow: hidden;
+            min-height: 0;
+            padding: 0 1.5rem 1.25rem;
+        }
         .quotation-row {
             display: flex;
             justify-content: space-between;
@@ -1059,7 +1215,13 @@
             .step-label { font-size: 0.6rem; max-width: 60px; }
             .step-dot { width: 22px; height: 22px; font-size: 0.65rem; }
             .quotation-card { margin-left: 1.5rem; margin-right: 1.5rem; }
+            .quotation-card.collapsible { padding: 0; }
+            .quotation-header { padding: 0.9rem 1.1rem; }
+            .quotation-collapse > .quotation-body { padding: 0 1.1rem 1rem; }
             .modal-footer { flex-direction: column; }
+            .order-id-chip { padding: 0.4rem 0.4rem 0.4rem 0.75rem; }
+            .order-id-code { font-size: 0.85rem; gap: 0.25rem; }
+            .order-id-copy { width: 28px; height: 28px; }
         }
 
         /* ===== REDUCED MOTION ===== */
