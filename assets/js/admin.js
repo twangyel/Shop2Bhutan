@@ -166,17 +166,21 @@ window.__currentSection = currentSection;   // expose to global scope
 // ===== NOTIFICATION STATE =====
 let unreadNotifications = [];
 let notificationSoundEnabled = true;
-let currentAdminId = null;  // Store current admin user ID for Supabase queries
+// Track IDs we've already alerted on locally, so the realtime echo of our
+// own INSERT doesn't trigger a second toast/chime.
+let currentAdminId = null;
+const _alertedNotifIds = new Set();
 
-// Wrapper around the global toast() function defined in admin.html.
-// Resolves window.toast at call time to avoid any load-order edge cases.
-function toast(msg, type) {
-    if (typeof window.toast === 'function') {
-        window.toast(msg, type);
-    } else {
-        console.warn('toast() unavailable:', msg, type);
-    }
+function _alertNewNotification(notif) {
+    if (!notif || notif.id == null) return;
+    const key = String(notif.id);
+    if (_alertedNotifIds.has(key)) return;
+    _alertedNotifIds.add(key);
+    try { playChime(); } catch (e) { console.warn('playChime failed:', e); }
+    try { toast(`🔔 ${notif.title}: ${notif.message}`, notif.type || 'info'); }
+    catch (e) { console.warn('toast failed:', e); }
 }
+
 
 /* ============================================================
    PERSISTENT NOTIFICATIONS (Supabase-backed)
@@ -225,6 +229,7 @@ async function createNotification(title, message, type = 'info', linkAction = nu
         unreadNotifications.unshift(notif);
         updateNotificationBadge();
         renderNotifications();
+        _alertNewNotification(notif);
         return notif;
     }
 
@@ -250,6 +255,7 @@ async function createNotification(title, message, type = 'info', linkAction = nu
     unreadNotifications.unshift(notif);
     updateNotificationBadge();
     renderNotifications();
+    _alertNewNotification(notif);
     return notif;
 }
 
@@ -299,19 +305,15 @@ function subscribeToAdminNotifications() {
 
     supabase
         .channel('admin-notifications-' + currentAdminId)
-        .on('postgres_changes',
-            { event: 'INSERT', schema: 'public', table: 'notifications', filter: `admin_id=eq.${currentAdminId}` },
-            (payload) => {
-                const newNotif = payload.new;
-                // Only show toast/chime if it's from another session (not self)
-                if (newNotif.admin_id === currentAdminId) {
-                    playChime();
-                    toast(`🔔 ${newNotif.title}: ${newNotif.message}`, 'info');
-                    loadNotifications(); // Refresh list
-                }
-            }
-        )
-        .subscribe();
+       .on('postgres_changes',
+    { event: 'INSERT', schema: 'public', table: 'notifications', filter: `admin_id=eq.${currentAdminId}` },
+    (payload) => {
+        const newNotif = payload.new;
+        _alertNewNotification(newNotif);
+        loadNotifications();
+    }
+)
+.subscribe();
 }
 
 // Legacy wrapper — now persists to Supabase
@@ -398,29 +400,27 @@ window.clearNotifications = async function() {
 };
 
 // Initialize notification panel (bell click, panel toggle, etc.)
+// NOTE: The admin.html UI was redesigned. The bell button is now
+// `.notification-btn` (no id) with an inline `onclick="toggleNotifications(event)"`
+// handler that toggles the `#notifDropdown` panel's `.active` class. The
+// "Clear all" link is also an inline `onclick="clearNotifications(event)"`
+// which resolves to `window.clearNotifications` defined earlier in this file
+// (the Supabase-aware version). All we need to add here is a refresh of the
+// notification list whenever the bell is clicked.
 function initNotificationPanel() {
-    const bellBtn = document.getElementById('notifBell');
-    const panel = document.getElementById('notifPanel');
-    const clearBtn = document.getElementById('notifClear');
+    const bellBtn = document.querySelector('.notification-btn');
+    const panel = document.getElementById('notifDropdown');
 
     if (bellBtn && panel) {
-        bellBtn.addEventListener('click', (e) => {
-            e.stopPropagation();
-            panel.classList.toggle('active');
-            if (panel.classList.contains('active')) {
-                loadNotifications();
-            }
+        bellBtn.addEventListener('click', () => {
+            // The inline onclick handler runs first (toggles .active),
+            // so by the time this fires the panel state is already updated.
+            // Reload either way — it's cheap and keeps the list fresh.
+            loadNotifications();
         });
-
-        document.addEventListener('click', (e) => {
-            if (!panel.contains(e.target) && !bellBtn.contains(e.target)) {
-                panel.classList.remove('active');
-            }
-        });
-    }
-
-    if (clearBtn) {
-        clearBtn.addEventListener('click', clearNotifications);
+    } else {
+        // Helps catch future UI renames before they become silent no-ops.
+        console.warn('[notifications] bell or panel element not found — UI may have changed.');
     }
 }
 

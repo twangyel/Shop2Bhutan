@@ -717,6 +717,52 @@ function renderCheckoutSummary(container) {
   });
 }
 
+/* ============ PHONE CLEAR BEHAVIOR ============ */
+function initPhoneClearBehavior() {
+  const phoneInput = document.getElementById('orderPhone');
+  if (!phoneInput) return;
+
+  let hadValue = phoneInput.value.trim() !== '';
+
+  phoneInput.addEventListener('input', () => {
+    const currentValue = phoneInput.value.trim();
+
+    // If user just erased a previously non-empty phone field
+    if (hadValue && currentValue === '') {
+      // Clear all customer detail fields
+      ['orderName', 'orderAddress', 'orderVariant', 'orderNotes'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.value = '';
+      });
+
+      // Reset dzongkhag cards + hidden input
+      const dzHidden = document.getElementById('orderDzongkhag');
+      if (dzHidden) dzHidden.value = '';
+      document.querySelectorAll('#dzongkhagCards .dz-card').forEach(c => {
+        c.classList.remove('active', 'input-error', 'auto-filled');
+      });
+      const dzError = document.getElementById('dzongkhagError');
+      if (dzError) dzError.hidden = true;
+
+      // Uncheck payment method
+      document.querySelectorAll('input[name="paymentMethod"]').forEach(r => r.checked = false);
+
+      // Hide phone hint
+      const phoneHint = document.getElementById('phoneHint');
+      if (phoneHint) {
+        phoneHint.hidden = true;
+        phoneHint.textContent = '';
+      }
+
+      // Strip validation errors
+      const form = document.getElementById('orderForm');
+      if (form) clearFormErrors(form);
+    }
+
+    hadValue = currentValue !== '';
+  });
+}
+
 /* ============ DZONGKHAG CARDS ============ */
 function initDzongkhagCards() {
   const container = document.getElementById('dzongkhagCards');
@@ -843,6 +889,12 @@ function initCustomerAutoFill() {
   const doAutoFill = debounce(async () => {
     const cleanPhone = phoneInput.value.replace(/\s/g, '');
 
+    // KEY FIX: reset tracker when field is cleared so re-typing works
+    if (!cleanPhone) {
+      lastCheckedPhone = '';
+      return;
+    }
+
     if (!/^(17|77)\d{6}$/.test(cleanPhone) || cleanPhone === lastCheckedPhone) return;
     lastCheckedPhone = cleanPhone;
 
@@ -874,7 +926,7 @@ function initCustomerAutoFill() {
           setTimeout(() => nameInput.classList.remove('auto-filled'), 1000);
           filledAny = true;
         }
-              const hiddenDz = document.getElementById('orderDzongkhag');
+        const hiddenDz = document.getElementById('orderDzongkhag');
         if (hiddenDz && !hiddenDz.value && ['Thimphu','Chukha','Paro'].includes(customer.dzongkhag)) {
           selectDzongkhagCard(customer.dzongkhag);
           filledAny = true;
@@ -1380,6 +1432,7 @@ document.addEventListener('DOMContentLoaded', () => {
     initDzongkhagCards();
   initTrendingFilters();
   initCustomerAutoFill();
+  initPhoneClearBehavior();
 
   supabaseReady.then(() => {
     loadReviews();
