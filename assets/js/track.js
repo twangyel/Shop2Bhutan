@@ -62,9 +62,39 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 });
 
+    // Auto-capitalize and auto-format order ID as user types
+    trackInput.addEventListener('input', (e) => {
+        let val = e.target.value;
+        
+        // Don't format if it looks like a phone number (digits only)
+        if (/^\d*$/.test(val.replace(/\s/g, ''))) return;
+        
+        // Convert to uppercase
+        val = val.toUpperCase();
+        
+        // Remove all existing hyphens first
+        let raw = val.replace(/-/g, '');
+        
+        // Auto-insert hyphens for S2B-XXXXXX-XXX-XXX format
+        // Only apply if it starts with S2B (or partial match)
+        if (raw.startsWith('S2B') || raw.length <= 3) {
+            let parts = [];
+            if (raw.length > 0) parts.push(raw.slice(0, 3));           // S2B
+            if (raw.length > 3) parts.push(raw.slice(3, 9));            // 6 digits
+            if (raw.length > 9) parts.push(raw.slice(9, 12));           // 3 letters
+            if (raw.length > 12) parts.push(raw.slice(12, 15));         // 3 digits
+            val = parts.join('-');
+        }
+        
+        // Update value if changed
+        if (val !== e.target.value) {
+            e.target.value = val;
+        }
+    });
+
 // ===== TRACKING =====
 async function trackOrder() {
-    const input = trackInput.value.trim();
+    const input = trackInput.value.trim().toUpperCase();
     if (!input) {
         showToast('Please enter an order code or phone number', true);
         return;
@@ -551,6 +581,36 @@ function handlePaymentFile(file) {
 
     window.clearPaymentFile = function(e) {
     if (e) e.stopPropagation();
+    selectedPaymentFile = null;
+    const fileInput = document.getElementById('fileInput');
+    if (fileInput) fileInput.value = '';
+    const img = document.getElementById('previewImg');
+    const placeholder = document.getElementById('uploadPlaceholder');
+    const previewWrap = document.getElementById('uploadPreviewWrap');
+    const uploadArea = document.getElementById('uploadArea');
+    if (img) img.src = '';
+    if (placeholder) placeholder.style.display = 'block';
+    if (previewWrap) previewWrap.style.display = 'none';
+    if (uploadArea) uploadArea.classList.remove('has-file');
+};
+
+function handlePaymentFile(file) {
+    // ... validation stays here ...
+    selectedPaymentFile = file;
+    const reader = new FileReader();
+    reader.onload = (e) => {
+        const img = document.getElementById('previewImg');
+        const placeholder = document.getElementById('uploadPlaceholder');
+        const previewWrap = document.getElementById('uploadPreviewWrap');
+        const uploadArea = document.getElementById('uploadArea');
+        if (img) img.src = e.target.result;
+        if (placeholder) placeholder.style.display = 'none';
+        if (previewWrap) previewWrap.style.display = 'flex';
+        if (uploadArea) uploadArea.classList.add('has-file');
+    };
+    reader.readAsDataURL(file);
+
+
 
     selectedPaymentFile = null;
     const fileInput = document.getElementById('fileInput');
@@ -588,37 +648,68 @@ window.trackOrder = trackOrder;
 
 window.respondToQuotation = async function(quotationId, action) {
     if (action === 'reject') {
-        if (!confirm('Are you sure you want to decline this quotation?')) return;
+        const confirmed = await showModal({
+            title: 'Decline Quotation?',
+            message: 'Are you sure you want to decline this quotation? This action cannot be undone.',
+            icon: 'error',
+            confirmText: 'Yes, Decline',
+            cancelText: 'Cancel',
+            confirmClass: 'btn-danger',
+            bodyHtml: '<textarea id="rejectRemark" placeholder="Please tell us why you are declining this quotation (optional)..." style="width:100%;padding:0.75rem;border:2px solid var(--border);border-radius:var(--radius-sm);font-family:inherit;font-size:0.9rem;resize:vertical;min-height:80px;outline:none;margin-top:0.5rem;"></textarea>'
+        });
+        if (!confirmed) return;
 
-        const { error } = await supabase
+        const remark = document.getElementById('rejectRemark')?.value?.trim() || '';
+
+        if (currentOrder) {
+            await supabase
+                .from('orders')
+                .update({
+                    status: 'cancelled',
+                    customer_response: 'rejected',
+                    rejection_reason: remark,
+                    updated_at: new Date().toISOString()
+                })
+                .eq('id', currentOrder.id);
+        }
+
+        await supabase
             .from('quotations')
-            .update({ status: 'rejected', updated_at: new Date().toISOString() })
+            .update({
+                status: 'rejected',
+                customer_notes: remark,
+                updated_at: new Date().toISOString()
+            })
             .eq('id', quotationId);
 
-        if (error) {
-            showToast('Error: ' + error.message, true);
-            return;
-        }
         showToast('Quotation declined.', false);
-        trackOrder(); // Refresh
+        trackOrder();
         return;
     }
 
     if (action === 'accept') {
-        if (!confirm('Accept this quotation and proceed to payment?')) return;
+        const confirmed = await showModal({
+            title: 'Accept Quotation',
+            message: 'Accept this quotation and proceed to payment?',
+            icon: 'confirm',
+            confirmText: 'Accept & Pay',
+            cancelText: 'Cancel',
+            confirmClass: 'btn-primary'
+        });
+        if (!confirmed) return;
 
-        const { error } = await supabase
+        // Update quotation status to accepted
+        const { error: qError } = await supabase
             .from('quotations')
             .update({
                 status: 'accepted',
                 accepted_at: new Date().toISOString(),
                 updated_at: new Date().toISOString()
             })
-            .eq('id', quotationId)
-            .eq('status', 'sent');
+            .eq('id', quotationId);
 
-        if (error) {
-            showToast('Error: ' + error.message, true);
+        if (qError) {
+            showToast('Error updating quotation: ' + qError.message, true);
             return;
         }
 
@@ -635,9 +726,10 @@ window.respondToQuotation = async function(quotationId, action) {
         }
 
         showToast('Quotation accepted! Please complete payment.', false);
-        trackOrder(); // Refresh to show payment section
+        trackOrder();
     }
-};
+}
+
 
 window.switchPaymentTab = function(method) {
     paymentMethod = method;
@@ -694,7 +786,8 @@ window.submitPayment = async function() {
                 quotation_id: currentQuotation.id,
                 amount: currentQuotation.total_amount,
                 status: 'pending',
-                method: paymentMethod,
+                payment_method: paymentMethod,
+                payment_type: currentOrder?.payment_method === '50_50' ? '50_50' : 'full',
                 screenshot_url: publicUrl,
                 notes: customerNote,
                 created_at: new Date().toISOString()
