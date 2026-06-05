@@ -21,7 +21,48 @@ let carouselIntervalId = null;
 
 /* ============ CONFIG ============ */
 const CART_KEY = 's2b_cart_v1';
-const WHATSAPP_NUMBER = '975XXXXXXXX';
+const WHATSAPP_NUMBER = '97577113302';
+
+/* ============ APP SETTINGS (cached) ============ */
+// Fetched once from Supabase; reused for WhatsApp templates etc.
+// Falls back to defaults if the table or row is unavailable.
+let appSettings = null;
+async function getAppSettings() {
+    if (appSettings) return appSettings;
+    try {
+        if (!supabase) await supabaseReady;
+        if (!supabase) { appSettings = {}; return appSettings; }
+        const { data } = await supabase.from('app_settings').select('*').limit(1).maybeSingle();
+        appSettings = data || {};
+    } catch (e) {
+        console.warn('app_settings fetch failed, using defaults:', e);
+        appSettings = {};
+    }
+    return appSettings;
+}
+
+const DEFAULT_WA_ORDER_PLACED =
+'🛒 *New Order — Shop2Bhutan*\n\n' +
+'Hi! I just placed a new order and would like to confirm it.\n\n' +
+'📋 *Order ID:* {{code}}\n' +
+'👤 *Customer:* {{customer_name}}\n\n' +
+'📦 *Items Ordered:*\n{{items}}\n\n' +
+'🔢 *Total Quantity:* {{qty}}\n\n' +
+'Please confirm at your earliest convenience. Thank you! 🙏';
+
+function renderTemplate(tpl, vars) {
+    return Object.entries(vars).reduce(
+        (acc, [k, v]) => acc.replace(new RegExp('{{\\s*' + k + '\\s*}}', 'g'), String(v ?? '')),
+        tpl
+    );
+}
+
+function formatItemsForWa(items) {
+    return items.map(it => {
+        const q = parseInt(it.qty, 10) || 1;
+        return '• ' + (it.name || 'Item') + (q > 1 ? ' × ' + q : '');
+    }).join('\n');
+}
 const PLATFORMS = {
   'amazon.in': 'Amazon',
   'amazon.com': 'Amazon',
@@ -438,8 +479,8 @@ function showDetectedUrl(url, platform) {
       <div class="detected-card-header">
         <div class="detected-card-info">
           <span class="detected-badge">${escapeHtml(platform)}</span>
-          <span class="detected-url" title="${escapeHtml(url)}" style="white-space:normal;overflow:visible;text-overflow:clip;font-weight:500;color:#222;font-size:14px;">${escapeHtml(productName)}</span>
-          <span class="detected-url" style="font-size:11px;color:#999;margin-top:2px;">${escapeHtml(url)}</span>
+          <span class="detected-name" title="${escapeHtml(productName)}">${escapeHtml(productName)}</span>
+          <span class="detected-url" title="${escapeHtml(url)}">${escapeHtml(url)}</span>
         </div>
         <div style="display:flex;flex-direction:column;align-items:center;gap:6px;">
           <div class="product-summary-qty" style="flex-direction:row;gap:4px;">
@@ -1107,6 +1148,7 @@ async function submitOrder(e) {
     const successEl = document.getElementById('orderSuccess');
     const successProduct = document.getElementById('successProduct');
     const successOrderId = document.getElementById('successOrderId');
+    const successOrderIdChip = document.getElementById('successOrderIdChip');
     const waBtn = document.getElementById('waConfirmBtn');
 
     formEl.hidden = true;
@@ -1116,11 +1158,39 @@ async function submitOrder(e) {
       ? `${items.length} items ordered`
       : (items[0]?.name || 'Your product');
     if (successProduct) successProduct.textContent = productText;
-       if (successOrderId) successOrderId.textContent = customOrderId;
+    if (successOrderId) successOrderId.textContent = orderCode;
 
-        if (successOrderId) successOrderId.textContent = orderCode;
+    // Click-to-copy on the Order ID chip
+    if (successOrderIdChip) {
+      successOrderIdChip.onclick = async () => {
+        try {
+          await navigator.clipboard.writeText(orderCode);
+        } catch (e) {
+          // Fallback for older browsers / non-secure contexts
+          const ta = document.createElement('textarea');
+          ta.value = orderCode;
+          ta.style.position = 'fixed'; ta.style.opacity = '0';
+          document.body.appendChild(ta);
+          ta.select();
+          try { document.execCommand('copy'); } catch (_) {}
+          document.body.removeChild(ta);
+        }
+        successOrderIdChip.classList.add('copied');
+        toast('Order ID copied to clipboard', 'success');
+        setTimeout(() => successOrderIdChip.classList.remove('copied'), 1500);
+      };
+    }
 
-    const waMsg = `Hi Shop2Bhutan! I just placed an order (${orderCode}). Please confirm my order.`;
+    const settings = await getAppSettings();
+    const tpl = (settings && settings.wa_template_order_placed) || DEFAULT_WA_ORDER_PLACED;
+    const totalQty = items.reduce((s, it) => s + (parseInt(it.qty, 10) || 1), 0);
+    const waMsg = renderTemplate(tpl, {
+      code: orderCode,
+      customer_name: name,
+      items: formatItemsForWa(items),
+      qty: totalQty,
+      count: items.length
+    });
     if (waBtn) waBtn.href = `https://wa.me/${WHATSAPP_NUMBER.replace(/\D/g,'')}?text=${encodeURIComponent(waMsg)}`;
 
     if (orderFromCart) clearCart();

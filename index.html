@@ -35,16 +35,73 @@
   .cart-qty { width: 56px; padding: 4px 6px; font-size: 14px; border: 1px solid #ddd; border-radius: 6px; text-align: center; background: #fff; }
   .cart-qty:focus { outline: none; border-color: #e94560; }
 
-  /* --- Detected URL Card (Clean) --- */
+  /* ──────────────────────────────────────────────────────────────
+     UNIFIED SEARCH PANEL
+     Search box + detected card share one design language:
+     same radius, same shadow, same border, same paddings.
+     ────────────────────────────────────────────────────────────── */
+
+  /* Search box: rounded rectangle (matches card), unified shadow */
+  .search-box {
+    background: #ffffff;
+    border-radius: 14px;
+    border: 1px solid #e5e7eb;
+    box-shadow: 0 8px 30px rgba(0,0,0,0.08);
+    padding: 6px;
+    display: flex;
+    align-items: stretch;
+    gap: 6px;
+    overflow: hidden;
+  }
+  .search-box input,
+  .search-box #searchInput {
+    flex: 1;
+    min-width: 0;
+    border: none;
+    outline: none;
+    background: transparent;
+    padding: 14px 18px;
+    font-size: 15px;
+    font-family: inherit;
+    color: #1a1a1a;
+    border-radius: 10px;
+  }
+  .search-box input::placeholder { color: #9aa0a6; }
+  .search-box input:focus { background: #fafafa; }
+
+  .search-btn {
+    background: #e94560;
+    color: #fff;
+    border: none;
+    padding: 0 22px;
+    border-radius: 10px;
+    font-weight: 700;
+    font-size: 15px;
+    font-family: inherit;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    white-space: nowrap;
+    transition: background .2s ease, transform .15s ease;
+    flex-shrink: 0;
+  }
+  .search-btn:hover { background: #d63a54; }
+  .search-btn:active { transform: scale(0.98); }
+  .search-btn svg { width: 18px; height: 18px; }
+
+  /* --- Detected URL Card (matches search box) --- */
   .detected-card {
     background: #ffffff;
-    border-radius: 16px;
-    border: 1px solid #e5e5e5;
+    border-radius: 14px;
+    border: 1px solid #e5e7eb;
     padding: 20px;
-    margin-top: 16px;
+    margin-top: 14px;
     box-shadow: 0 8px 30px rgba(0,0,0,0.08);
     max-width: 100%;
     box-sizing: border-box;
+    text-align: left; /* hero section is centered; reset for card content */
   }
 
   .detected-card-header {
@@ -83,9 +140,19 @@
     border-color: #b3d7ff;
   }
 
+  /* Product name — left-aligned, primary anchor of the card */
+  .detected-name {
+    font-size: 15px;
+    font-weight: 700;
+    color: #1a1a1a;
+    line-height: 1.35;
+    text-align: left;
+    word-break: break-word;
+  }
+
   .detected-url {
-    font-size: 13px;
-    color: #666;
+    font-size: 12.5px;
+    color: #6b7280;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -94,42 +161,36 @@
     font-family: inherit;
   }
 
+  /* Add-to-cart button — matches Search button exactly */
   .btn-detected-add {
     background: #e94560;
     color: #fff;
     border: none;
-    padding: 10px 20px;
+    padding: 11px 20px;
     border-radius: 10px;
     font-weight: 700;
     font-size: 14px;
     cursor: pointer;
     white-space: nowrap;
-    box-shadow: 0 4px 14px rgba(233,69,96,0.25);
-    transition: all 0.2s ease;
+    transition: background .2s ease, transform .15s ease;
     flex-shrink: 0;
     height: fit-content;
   }
-
-  .btn-detected-add:hover {
-    background: #d63a54;
-    transform: translateY(-1px);
-    box-shadow: 0 6px 20px rgba(233,69,96,0.35);
-  }
+  .btn-detected-add:hover { background: #d63a54; }
+  .btn-detected-add:active { transform: scale(0.98); }
 
   .btn-detected-add.custom-request-btn {
     background: linear-gradient(135deg, #047BD5, #0968C0);
-    box-shadow: 0 4px 14px rgba(4,123,213,0.25);
   }
   .btn-detected-add.custom-request-btn:hover {
     background: linear-gradient(135deg, #0968C0, #0559a8);
-    box-shadow: 0 6px 20px rgba(4,123,213,0.35);
   }
 
   /* --- Screenshot Row --- */
   .detected-screenshot-row {
     display: flex;
     align-items: center;
-    gap: 16px;
+    gap: 14px;
     flex-wrap: wrap;
   }
 
@@ -137,15 +198,15 @@
     display: inline-flex;
     align-items: center;
     gap: 8px;
-    padding: 12px 18px;
+    padding: 11px 16px;
     font-size: 13px;
     font-weight: 500;
-    color: #555;
-    border: 1.5px dashed #ccc;
+    color: #6b7280;
+    border: 1.5px dashed #d1d5db;
     border-radius: 10px;
     cursor: pointer;
     transition: all 0.2s ease;
-    background: #fafafa;
+    background: #f9fafb;
     flex-shrink: 0;
   }
 
@@ -166,11 +227,11 @@
   }
 
   .detected-preview-wrap img {
-    width: 90px;
-    height: 90px;
+    width: 80px;
+    height: 80px;
     object-fit: cover;
     border-radius: 10px;
-    border: 1.5px solid #e8e8e8;
+    border: 1.5px solid #e5e7eb;
     display: block;
   }
 
@@ -198,6 +259,38 @@
   .detected-preview-remove:hover {
     background: #c0392b;
     transform: scale(1.1);
+  }
+
+  /* QTY control inside detected card — tighten + align with right rail */
+  .detected-card .product-summary-qty,
+  .detected-card .detected-qty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    margin-bottom: 8px;
+  }
+  .detected-card .detected-qty label {
+    font-size: 10.5px;
+    color: #9aa0a6;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  .detected-card .detected-qty input {
+    width: 60px;
+    padding: 6px 8px;
+    font-size: 14px;
+    font-weight: 600;
+    text-align: center;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    background: #fff;
+  }
+  .detected-card .detected-qty input:focus {
+    outline: none;
+    border-color: #e94560;
+    box-shadow: 0 0 0 3px rgba(233,69,96,0.12);
   }
 
   /* Custom Request specific styles */
@@ -233,16 +326,24 @@
     color: #047BD5;
   }
 
-  /* Auto-fill highlight animation */
-.auto-filled {
-  animation: autoFillPulse 1s ease;
-}
+  /* Auto-fill highlight — subtle green glow instead of full bg swap
+     (avoids the white flash on the new card surface) */
+  .auto-filled {
+    animation: autoFillPulse 1s ease;
+  }
+  @keyframes autoFillPulse {
+    0%   { box-shadow: 0 0 0 0 rgba(40,167,69,0); }
+    50%  { box-shadow: 0 0 0 4px rgba(40,167,69,0.25); border-color: #28a745; }
+    100% { box-shadow: 0 0 0 0 rgba(40,167,69,0); }
+  }
 
-@keyframes autoFillPulse {
-  0% { background-color: #fff; }
-  50% { background-color: #d4edda; border-color: #28a745; }
-  100% { background-color: #fff; }
-}
+  /* Mobile: stack search button under input for breathing room */
+  @media (max-width: 560px) {
+    .search-box { flex-direction: column; padding: 8px; gap: 8px; }
+    .search-btn { padding: 14px; width: 100%; }
+    .detected-card-header { flex-direction: column; }
+    .btn-detected-add { width: 100%; }
+  }
 
   /* --- Modal product summary --- */
   .product-summary-box { display: flex; align-items: center; gap: 12px; padding: 12px; background: #f9f9f9; border-radius: 10px; border: 1px solid #eee; }
@@ -269,6 +370,113 @@
 
   /* --- Field-level validation errors --- */
   .input-error { border-color: #e94560 !important; box-shadow: 0 0 0 2px rgba(233,69,96,0.15) !important; }
+
+  /* ──────────────────────────────────────────────────────────────
+     ORDER SUCCESS VIEW — compact, modern, no scroll
+     ────────────────────────────────────────────────────────────── */
+
+  /* When the modal is showing the success view, stop it from scrolling
+     and let it size to its content. */
+  .modal:has(.success-view:not([hidden])) {
+    max-height: none !important;
+    height: auto !important;
+    overflow: visible !important;
+  }
+  .modal:has(.success-view:not([hidden])) .modal-header { display: none; }
+
+  .success-view[hidden] { display: none !important; }
+
+  .success-view {
+    padding: 32px 28px 28px;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    overflow: visible;
+  }
+  .success-view .success-icon {
+    width: 72px; height: 72px;
+    border-radius: 50%;
+    background: #e8f9ee;
+    display: flex; align-items: center; justify-content: center;
+    margin-bottom: 4px;
+  }
+  .success-view .success-icon svg { width: 40px; height: 40px; }
+  .success-view h3 {
+    margin: 0;
+    font-size: 22px;
+    font-weight: 700;
+    color: #1a1a1a;
+    letter-spacing: -0.2px;
+  }
+  .success-view .success-product {
+    margin: 0;
+    font-size: 14px;
+    color: #6b7280;
+    max-width: 100%;
+    overflow-wrap: anywhere;
+  }
+  .success-view .success-message {
+    margin: 4px 0 8px;
+    font-size: 13.5px;
+    color: #6b7280;
+    line-height: 1.5;
+    max-width: 340px;
+  }
+
+  /* Click-to-copy Order ID chip */
+  .order-id-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 14px;
+    background: #f9fafb;
+    border: 1px solid #e5e7eb;
+    border-radius: 10px;
+    cursor: pointer;
+    font-family: inherit;
+    transition: background .15s ease, border-color .15s ease, transform .1s ease;
+    margin: 4px 0 2px;
+  }
+  .order-id-chip:hover {
+    background: #fff5f7;
+    border-color: #ffd6dc;
+  }
+  .order-id-chip:active { transform: scale(0.98); }
+  .order-id-chip .order-id-label {
+    font-size: 10.5px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    color: #9aa0a6;
+  }
+  .order-id-chip .order-id-value {
+    font-family: 'SF Mono', 'Menlo', 'Consolas', monospace;
+    font-size: 14px;
+    font-weight: 700;
+    color: #1a1a1a;
+    letter-spacing: 0.3px;
+  }
+  .order-id-chip .order-id-copy-icon {
+    color: #9aa0a6;
+    transition: color .15s ease;
+  }
+  .order-id-chip:hover .order-id-copy-icon { color: #e94560; }
+  .order-id-chip.copied {
+    background: #e8f9ee;
+    border-color: #b6e8c6;
+  }
+  .order-id-chip.copied .order-id-copy-icon { color: #16a34a; }
+
+  .success-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    width: 100%;
+    max-width: 320px;
+    margin-top: 8px;
+  }
 
   /* --- Verified Purchase Badge --- */
   .verified-badge {
@@ -705,10 +913,14 @@
         </div>
         <h3>Order Placed!</h3>
         <p class="success-product" id="successProduct"></p>
-        <div class="success-order-id">
-          <span>Order ID</span>
-          <strong id="successOrderId"></strong>
-        </div>
+        <button type="button" class="order-id-chip" id="successOrderIdChip" title="Click to copy">
+          <span class="order-id-label">Order ID</span>
+          <span class="order-id-value" id="successOrderId">—</span>
+          <svg class="order-id-copy-icon" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true">
+            <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
+            <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+          </svg>
+        </button>
         <p class="success-message">We'll check availability, confirm the price, and notify you via WhatsApp</p>
         <div class="success-actions">
           <a href="#" class="btn-whatsapp-lg" id="waConfirmBtn" target="_blank" rel="noopener noreferrer nofollow">

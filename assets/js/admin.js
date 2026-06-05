@@ -478,66 +478,101 @@ window.openScreenshot = function(url) {
 };
 
 // ===== AUDIO =====
-// Browser autoplay policy: a new AudioContext starts suspended and can only
-// be resumed from within a real user-gesture handler. Realtime callbacks are
-// not user gestures, so we create ONE AudioContext and unlock it on the
-// user's first click/keypress, then reuse it for every chime.
+// Robust chime that survives the three things that usually break it:
+//   1. Autoplay policy — AudioContext starts 'suspended' until a user gesture.
+//   2. Tab backgrounding — browsers may suspend the context when hidden.
+//   3. Chimes firing before any user interaction — queued, not dropped.
 let audioCtx = null;
-function ensureAudioCtx() {
-    if (!audioCtx) {
-        const AC = window.AudioContext || window.webkitAudioContext;
-        if (!AC) return null;
-        try { audioCtx = new AC(); } catch (e) { return null; }
-    }
-    if (audioCtx.state === 'suspended') {
-        audioCtx.resume().catch(() => {});
-    }
+let pendingChime = false; // a chime fired before unlock — play it on next gesture
+const CHIME_NOTES = [
+    { freqStart: 523.25, freqEnd: 659.25, gain: 0.15, start: 0.00, dur: 0.60, rampDur: 0.10 },
+    { freqStart: 659.25, freqEnd: 783.99, gain: 0.12, start: 0.08, dur: 0.62, rampDur: 0.10 }
+];
+
+function getAudioCtx() {
+    if (audioCtx) return audioCtx;
+    const AC = window.AudioContext || window.webkitAudioContext;
+    if (!AC) return null;
+    try { audioCtx = new AC(); } catch (e) { return null; }
     return audioCtx;
 }
+
+function playChimeNow() {
+    const ctx = getAudioCtx();
+    if (!ctx || ctx.state !== 'running') return false;
+    try {
+        const now = ctx.currentTime;
+        for (const n of CHIME_NOTES) {
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(n.freqStart, now + n.start);
+            osc.frequency.exponentialRampToValueAtTime(n.freqEnd, now + n.start + n.rampDur);
+            gain.gain.setValueAtTime(n.gain, now + n.start);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + n.start + n.dur);
+            osc.connect(gain);
+            gain.connect(ctx.destination);
+            osc.start(now + n.start);
+            osc.stop(now + n.start + n.dur);
+        }
+        return true;
+    } catch (e) {
+        console.warn('Audio chime failed:', e);
+        return false;
+    }
+}
+
 function unlockAudio() {
-    ensureAudioCtx();
-    document.removeEventListener('click', unlockAudio);
-    document.removeEventListener('keydown', unlockAudio);
-    document.removeEventListener('touchstart', unlockAudio);
+    const ctx = getAudioCtx();
+    if (!ctx) return;
+    const finish = () => {
+        // iOS Safari sometimes needs a silent buffer to fully unlock.
+        try {
+            const buf = ctx.createBuffer(1, 1, 22050);
+            const src = ctx.createBufferSource();
+            src.buffer = buf;
+            src.connect(ctx.destination);
+            src.start(0);
+        } catch (e) { /* ignore */ }
+        if (ctx.state === 'running') {
+            // Flush any chime that fired before unlock.
+            if (pendingChime) { pendingChime = false; playChimeNow(); }
+            document.removeEventListener('click', unlockAudio);
+            document.removeEventListener('keydown', unlockAudio);
+            document.removeEventListener('touchstart', unlockAudio);
+            document.removeEventListener('pointerdown', unlockAudio);
+        }
+    };
+    if (ctx.state === 'suspended') {
+        ctx.resume().then(finish).catch(() => {});
+    } else {
+        finish();
+    }
 }
 document.addEventListener('click', unlockAudio);
 document.addEventListener('keydown', unlockAudio);
 document.addEventListener('touchstart', unlockAudio);
+document.addEventListener('pointerdown', unlockAudio);
+
+// Tab regained focus — context may have been auto-suspended; wake it up.
+document.addEventListener('visibilitychange', () => {
+    if (!document.hidden && audioCtx && audioCtx.state === 'suspended') {
+        audioCtx.resume().catch(() => {});
+    }
+});
 
 function playChime() {
     if (!notificationSoundEnabled) return;
-    try {
-        const ctx = ensureAudioCtx();
-        if (!ctx || ctx.state !== 'running') return;
-
-        const now = ctx.currentTime;
-
-        const osc1 = ctx.createOscillator();
-        const gain1 = ctx.createGain();
-        osc1.type = 'sine';
-        osc1.frequency.setValueAtTime(523.25, now);
-        osc1.frequency.exponentialRampToValueAtTime(659.25, now + 0.1);
-        gain1.gain.setValueAtTime(0.15, now);
-        gain1.gain.exponentialRampToValueAtTime(0.001, now + 0.6);
-        osc1.connect(gain1);
-        gain1.connect(ctx.destination);
-        osc1.start(now);
-        osc1.stop(now + 0.6);
-
-        const osc2 = ctx.createOscillator();
-        const gain2 = ctx.createGain();
-        osc2.type = 'sine';
-        osc2.frequency.setValueAtTime(659.25, now + 0.08);
-        osc2.frequency.exponentialRampToValueAtTime(783.99, now + 0.18);
-        gain2.gain.setValueAtTime(0.12, now + 0.08);
-        gain2.gain.exponentialRampToValueAtTime(0.001, now + 0.7);
-        osc2.connect(gain2);
-        gain2.connect(ctx.destination);
-        osc2.start(now + 0.08);
-        osc2.stop(now + 0.7);
-    } catch (e) {
-        console.warn('Audio chime failed:', e);
+    const ctx = getAudioCtx();
+    if (!ctx) return;
+    if (ctx.state === 'running') {
+        playChimeNow();
+        return;
     }
+    // Try resuming — works if we happen to be inside a user gesture stack.
+    ctx.resume().then(() => {
+        if (!playChimeNow()) pendingChime = true;
+    }).catch(() => { pendingChime = true; });
 }
 
 
@@ -887,11 +922,18 @@ window.openReviewDetail = function(id) {
 };
 
 function setupRealtime() {
+    // Helper: should we surface a notification for this event type?
+    // Defaults to true so a missing setting never silences things.
+    const notifEnabled = (key) => {
+        if (!appSettings) return true;
+        return appSettings[key] !== false;
+    };
+
     supabase
         .channel('orders-channel')
         .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, (payload) => {
             fetchOrders();
-            if (payload.eventType === 'INSERT') {
+            if (payload.eventType === 'INSERT' && notifEnabled('notif_new_order')) {
                 playChime();
                  addNotification(
                     'New Order Received',
@@ -899,13 +941,13 @@ function setupRealtime() {
                     'order',
                     () => { showSection('orders'); }
                 );
-                toast('New order received!', 'info');
+                toast('New order received!', 'order');
             }
         })
         .on('postgres_changes', { event: '*', schema: 'public', table: 'order_items' }, () => fetchOrders())
         .on('postgres_changes', { event: '*', schema: 'public', table: 'reviews' }, (payload) => {
             fetchReviews();
-            if (payload.eventType === 'INSERT') {
+            if (payload.eventType === 'INSERT' && notifEnabled('notif_new_review')) {
                 playChime();
                 const review = payload.new;
                 const stars = '★'.repeat(review.rating || 0);
@@ -915,12 +957,12 @@ function setupRealtime() {
                     'review',
                     () => { showSection('reviews'); }
                 );
-                toast('New review received!', 'info');
+                toast('New review received!', 'review');
             }
         })
         .on('postgres_changes', { event: '*', schema: 'public', table: 'quotations' }, (payload) => {
             fetchQuotations();
-            if (payload.eventType === 'INSERT') {
+            if (payload.eventType === 'INSERT' && notifEnabled('notif_new_quotation')) {
                 playChime();
                 addNotification(
                     'New Quotation Created',
@@ -928,12 +970,12 @@ function setupRealtime() {
                     'info',
                     () => { showSection('quotations'); }
                 );
-                toast('New quotation created!', 'info');
+                toast('New quotation created!', 'quotation');
             }
         })
         .on('postgres_changes', { event: '*', schema: 'public', table: 'payments' }, (payload) => {
             fetchPayments();
-            if (payload.eventType === 'INSERT') {
+            if (payload.eventType === 'INSERT' && notifEnabled('notif_new_payment')) {
                 playChime();
                 const payment = payload.new;
                 addNotification(
@@ -942,7 +984,7 @@ function setupRealtime() {
                     'info',
                     () => { showSection('payments'); }
                 );
-                toast('New payment received!', 'info');
+                toast('New payment received!', 'payment');
             }
         })
         .subscribe();
@@ -1288,6 +1330,14 @@ window.bulkUpdateStatus = async function(newStatus) {
 let appSettings = null;
 let deliveryRates = [];
 
+// Default WhatsApp templates — used when DB column is empty/missing
+const DEFAULT_TEMPLATES = {
+    order_placed: '🛒 *New Order — Shop2Bhutan*\n\nHi! I just placed a new order and would like to confirm it.\n\n📋 *Order ID:* {{code}}\n👤 *Customer:* {{customer_name}}\n\n📦 *Items Ordered:*\n{{items}}\n\n🔢 *Total Quantity:* {{qty}}\n\nPlease confirm at your earliest convenience. Thank you! 🙏',
+    quotation: 'Hi {{name}}! 👋\n\nYour quotation is ready for review. Please click the link below:\n\n{{link}}\n\nThis link is valid until {{valid_until}}.\n\n- Shop2Bhutan',
+    order_confirmed: 'Hi {{name}},\n\nYour order {{code}} has been confirmed. Trip date: {{trip_date}}.\n\nThank you for shopping with us!\n\n- Shop2Bhutan',
+    payment_reminder: 'Hi {{name}},\n\nFriendly reminder for payment on order {{code}}.\n\nAmount due: Nu. {{amount}}\n\n- Shop2Bhutan'
+};
+
 async function fetchSettings() {
     const { data, error } = await supabase.from('app_settings').select('*').limit(1).single();
     if (error) {
@@ -1304,13 +1354,15 @@ async function fetchSettings() {
             default_shipping: 0,
             gst_enabled: false,
             gst_rate: 5,
-            wa_template_quotation: 'Hi {{name}}! 👋\n\nYour quotation is ready for review. Please click the link below:\n\n{{link}}\n\nThis link is valid until {{valid_until}}.\n\n- Shop2Bhutan',
-            wa_template_order_confirmed: 'Hi {{name}},\n\nYour order {{code}} has been confirmed. Trip date: {{trip_date}}.\n\nThank you for shopping with us!\n\n- Shop2Bhutan',
-            wa_template_payment_reminder: 'Hi {{name}},\n\nFriendly reminder for payment on order {{code}}.\n\nAmount due: Nu. {{amount}}\n\n- Shop2Bhutan',
+            wa_template_order_placed: DEFAULT_TEMPLATES.order_placed,
+            wa_template_quotation: DEFAULT_TEMPLATES.quotation,
+            wa_template_order_confirmed: DEFAULT_TEMPLATES.order_confirmed,
+            wa_template_payment_reminder: DEFAULT_TEMPLATES.payment_reminder,
             notif_sound_enabled: true,
             notif_new_order: true,
             notif_new_review: true,
-            notif_new_quotation: true
+            notif_new_quotation: true,
+            notif_new_payment: true
         };
         return;
     }
@@ -1347,16 +1399,18 @@ function renderSettings() {
     setChecked('settingGstEnabled', s.gst_enabled);
     setVal('settingGstRate', s.gst_rate || 5);
 
-    // WhatsApp Templates
-    setVal('settingWaQuotation', s.wa_template_quotation);
-    setVal('settingWaConfirmed', s.wa_template_order_confirmed);
-    setVal('settingWaPayment', s.wa_template_payment_reminder);
+    // WhatsApp Templates — fall back to defaults if the row's column is empty/null
+    setVal('settingWaOrderPlaced', s.wa_template_order_placed || DEFAULT_TEMPLATES.order_placed);
+    setVal('settingWaQuotation', s.wa_template_quotation || DEFAULT_TEMPLATES.quotation);
+    setVal('settingWaConfirmed', s.wa_template_order_confirmed || DEFAULT_TEMPLATES.order_confirmed);
+    setVal('settingWaPayment', s.wa_template_payment_reminder || DEFAULT_TEMPLATES.payment_reminder);
 
     // Notifications
     setChecked('settingNotifSound', s.notif_sound_enabled !== false);
     setChecked('settingNotifOrder', s.notif_new_order !== false);
     setChecked('settingNotifReview', s.notif_new_review !== false);
     setChecked('settingNotifQuotation', s.notif_new_quotation !== false);
+    setChecked('settingNotifPayment', s.notif_new_payment !== false);
 }
 
 function setVal(id, val) {
@@ -1422,6 +1476,7 @@ window.saveSettings = async function() {
         default_shipping: parseFloat(document.getElementById('settingShipping')?.value) || 0,
         gst_enabled: document.getElementById('settingGstEnabled')?.checked || false,
         gst_rate: parseFloat(document.getElementById('settingGstRate')?.value) || 5,
+        wa_template_order_placed: document.getElementById('settingWaOrderPlaced')?.value || null,
         wa_template_quotation: document.getElementById('settingWaQuotation')?.value || null,
         wa_template_order_confirmed: document.getElementById('settingWaConfirmed')?.value || null,
         wa_template_payment_reminder: document.getElementById('settingWaPayment')?.value || null,
@@ -1429,6 +1484,7 @@ window.saveSettings = async function() {
         notif_new_order: document.getElementById('settingNotifOrder')?.checked !== false,
         notif_new_review: document.getElementById('settingNotifReview')?.checked !== false,
         notif_new_quotation: document.getElementById('settingNotifQuotation')?.checked !== false,
+        notif_new_payment: document.getElementById('settingNotifPayment')?.checked !== false,
         updated_at: new Date().toISOString()
     };
 

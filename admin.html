@@ -371,6 +371,11 @@
         .toast.toast-info { background: linear-gradient(135deg, #1e40af, #3b82f6); }
         .toast.toast-warning { background: linear-gradient(135deg, #92400e, #d97706); }
         .toast.toast-default { background: linear-gradient(135deg, var(--sidebar), #334155); }
+        .toast.toast-order { background: linear-gradient(135deg, #6b21a8, #a855f7); }
+        .toast.toast-review { background: linear-gradient(135deg, #b45309, #f59e0b); }
+        .toast.toast-payment { background: linear-gradient(135deg, #047857, #10b981); }
+        .toast.toast-quotation { background: linear-gradient(135deg, #0e7490, #06b6d4); }
+        .toast.toast-notification { background: linear-gradient(135deg, #4338ca, #6366f1); }
 
         /* ═══════════════ MODAL ═══════════════ */
         .modal-overlay {
@@ -451,6 +456,259 @@
         /* ═══════════════ SECTIONS ═══════════════ */
         .section-content { display: none; }
         .section-content.active { display: block; }
+
+        /* ═══════════════════════════════════════════════════════
+           SETTINGS PAGE — scoped styles for #section-settings
+           ═══════════════════════════════════════════════════════ */
+        #section-settings .settings-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1.25rem;
+            align-items: start;
+        }
+        #section-settings .settings-col {
+            display: flex;
+            flex-direction: column;
+            gap: 1.25rem;
+        }
+        #section-settings .settings-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 1.5rem;
+        }
+        #section-settings .settings-card-header {
+            margin-bottom: 1.25rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid var(--border-light);
+        }
+        #section-settings .settings-card-title {
+            font-size: 1rem;
+            font-weight: 600;
+            color: var(--text);
+            margin: 0;
+            letter-spacing: -0.01em;
+        }
+        #section-settings .settings-card-desc {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            margin: 0.25rem 0 0;
+            line-height: 1.4;
+        }
+        #section-settings .settings-field {
+            display: flex;
+            flex-direction: column;
+            gap: 0.4rem;
+        }
+        #section-settings .settings-field + .settings-field {
+            margin-top: 1rem;
+        }
+        #section-settings .settings-label {
+            font-size: 0.7rem;
+            color: var(--text-secondary);
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        #section-settings .settings-input,
+        #section-settings .settings-textarea,
+        #section-settings .settings-select {
+            width: 100%;
+            padding: 0.7rem 0.85rem;
+            border: 1.5px solid var(--border);
+            border-radius: 8px;
+            font-size: 0.88rem;
+            font-family: var(--font-body);
+            background: var(--surface-raised);
+            color: var(--text);
+            outline: none;
+            transition: border-color 0.15s, box-shadow 0.15s, background 0.15s;
+            box-sizing: border-box;
+        }
+        #section-settings .settings-input:focus,
+        #section-settings .settings-textarea:focus,
+        #section-settings .settings-select:focus {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px var(--accent-glow);
+            background: #fff;
+        }
+        #section-settings .settings-textarea {
+            resize: vertical;
+            min-height: 80px;
+            font-family: 'SF Mono', Menlo, Consolas, monospace;
+            font-size: 0.82rem;
+            line-height: 1.55;
+        }
+        #section-settings .settings-textarea.tall {
+            min-height: 150px;
+        }
+        #section-settings .settings-help {
+            font-size: 0.72rem;
+            color: var(--text-muted);
+            margin-top: 0.35rem;
+            line-height: 1.4;
+        }
+        #section-settings .settings-help code {
+            background: var(--surface-raised);
+            border: 1px solid var(--border);
+            padding: 1px 5px;
+            border-radius: 4px;
+            font-size: 0.7rem;
+            color: var(--text);
+        }
+        #section-settings .settings-row-2 {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0.9rem;
+        }
+        #section-settings .settings-row-2 .settings-field + .settings-field {
+            margin-top: 0;
+        }
+        #section-settings .settings-inline {
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+        }
+        /* Toggle switch (replaces checkbox) */
+        #section-settings .toggle-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 1rem;
+            padding: 0.8rem 0;
+            border-bottom: 1px solid var(--border-light);
+        }
+        #section-settings .toggle-row:first-child { padding-top: 0; }
+        #section-settings .toggle-row:last-child {
+            border-bottom: none;
+            padding-bottom: 0;
+        }
+        #section-settings .toggle-row-label {
+            display: flex;
+            flex-direction: column;
+            gap: 0.15rem;
+        }
+        #section-settings .toggle-row-title {
+            font-size: 0.88rem;
+            font-weight: 500;
+            color: var(--text);
+        }
+        #section-settings .toggle-row-desc {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+        }
+        #section-settings .toggle-switch {
+            position: relative;
+            display: inline-block;
+            width: 40px;
+            height: 22px;
+            flex-shrink: 0;
+        }
+        #section-settings .toggle-switch input {
+            opacity: 0; width: 0; height: 0;
+        }
+        #section-settings .toggle-track {
+            position: absolute;
+            inset: 0;
+            background: #cbd5e1;
+            border-radius: 22px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        #section-settings .toggle-track::before {
+            content: '';
+            position: absolute;
+            height: 16px;
+            width: 16px;
+            left: 3px;
+            top: 3px;
+            background: #fff;
+            border-radius: 50%;
+            transition: transform 0.2s;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+        }
+        #section-settings .toggle-switch input:checked + .toggle-track {
+            background: var(--accent);
+        }
+        #section-settings .toggle-switch input:checked + .toggle-track::before {
+            transform: translateX(18px);
+        }
+        #section-settings .toggle-switch input:focus-visible + .toggle-track {
+            box-shadow: 0 0 0 3px var(--accent-glow);
+        }
+        /* Delivery rates table refinement */
+        #section-settings .rates-wrap {
+            max-height: 340px;
+            overflow-y: auto;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            background: var(--surface-raised);
+        }
+        #section-settings .rates-wrap table {
+            width: 100%;
+            font-size: 0.86rem;
+            border-collapse: collapse;
+        }
+        #section-settings .rates-wrap thead {
+            position: sticky; top: 0;
+            background: var(--surface-raised);
+            z-index: 1;
+        }
+        #section-settings .rates-wrap th {
+            text-align: left;
+            padding: 0.7rem 0.85rem;
+            font-weight: 600;
+            font-size: 0.72rem;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            border-bottom: 1px solid var(--border);
+        }
+        #section-settings .btn-add-rate {
+            background: var(--text);
+            color: #fff;
+            border: none;
+            padding: 0.45rem 0.85rem;
+            border-radius: 7px;
+            font-size: 0.78rem;
+            font-weight: 600;
+            cursor: pointer;
+            font-family: var(--font-body);
+            transition: background 0.15s;
+        }
+        #section-settings .btn-add-rate:hover { background: #1e293b; }
+
+        /* Sticky save bar at bottom of settings page */
+        #section-settings .settings-save-bar {
+            margin-top: 1.5rem;
+            padding: 1rem 1.5rem;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 1rem;
+            box-shadow: 0 6px 20px rgba(15,23,42,0.07);
+            position: sticky;
+            bottom: 1rem;
+            z-index: 5;
+        }
+        #section-settings .settings-save-bar-info {
+            font-size: 0.82rem;
+            color: var(--text-muted);
+        }
+        #section-settings .settings-save-bar .btn-primary {
+            min-width: 200px;
+        }
+
+        @media (max-width: 900px) {
+            #section-settings .settings-grid { grid-template-columns: 1fr; }
+            #section-settings .settings-row-2 { grid-template-columns: 1fr; }
+            #section-settings .settings-row-2 .settings-field + .settings-field { margin-top: 1rem; }
+            #section-settings .settings-save-bar { flex-direction: column; align-items: stretch; }
+            #section-settings .settings-save-bar .btn-primary { width: 100%; }
+        }
 
         .placeholder-card {
             background: #fff; border-radius: var(--radius-lg); padding: 4rem 2rem; text-align: center;
@@ -636,7 +894,7 @@
         <div class="admin-header">
             <div class="admin-header-left">
                 <h1 id="pageTitle">Orders Dashboard</h1>
-                <p>Track and manage all customer orders</p>
+                <p id="pageSubtitle">Track and manage all customer orders</p>
             </div>
             <div class="admin-header-actions">
                 <button class="btn-create" onclick="toast('Create Order coming soon','info')">
@@ -1048,115 +1306,184 @@
 
         <!-- ═══ SETTINGS SECTION ═══ -->
         <div class="section-content" id="section-settings">
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.25rem;align-items:start;">
-                <div style="display:flex;flex-direction:column;gap:1.25rem;">
-                    <div class="table-wrap" style="padding:1.5rem;">
-                        <h3 style="font-size:1.1rem;margin-bottom:1.25rem;color:var(--text);font-family:var(--font-display);font-weight:400;">Store Profile</h3>
-                        <div style="display:flex;flex-direction:column;gap:1rem;">
-                            <div>
-                                <label style="display:block;font-size:.68rem;color:var(--text-muted);margin-bottom:.35rem;font-weight:600;text-transform:uppercase;letter-spacing:.6px">Store Name</label>
-                                <input type="text" id="settingStoreName" placeholder="Shop2Bhutan" style="width:100%;padding:.65rem;border:1.5px solid var(--border);border-radius:8px;font-size:.88rem;outline:none;font-family:var(--font-body);background:var(--surface-raised);">
-                            </div>
-                            <div class="form-row">
-                                <div>
-                                    <label style="display:block;font-size:.68rem;color:var(--text-muted);margin-bottom:.35rem;font-weight:600;text-transform:uppercase;letter-spacing:.6px">Phone</label>
-                                    <input type="text" id="settingStorePhone" placeholder="975 17XX XXXX" style="width:100%;padding:.65rem;border:1.5px solid var(--border);border-radius:8px;font-size:.88rem;outline:none;font-family:var(--font-body);background:var(--surface-raised);">
+            <div class="settings-grid">
+
+                <!-- ───── LEFT COLUMN ───── -->
+                <div class="settings-col">
+
+                    <!-- Store Profile -->
+                    <div class="settings-card">
+                        <div class="settings-card-header">
+                            <h3 class="settings-card-title">Store Profile</h3>
+                            <p class="settings-card-desc">Public information shown to customers across the site and receipts.</p>
+                        </div>
+                        <div class="settings-field">
+                            <label class="settings-label" for="settingStoreName">Store Name</label>
+                            <input type="text" id="settingStoreName" class="settings-input" placeholder="Shop2Bhutan">
+                        </div>
+                        <div class="settings-field">
+                            <div class="settings-row-2">
+                                <div class="settings-field">
+                                    <label class="settings-label" for="settingStorePhone">Phone</label>
+                                    <input type="text" id="settingStorePhone" class="settings-input" placeholder="975 17XX XXXX">
                                 </div>
-                                <div>
-                                    <label style="display:block;font-size:.68rem;color:var(--text-muted);margin-bottom:.35rem;font-weight:600;text-transform:uppercase;letter-spacing:.6px">Email</label>
-                                    <input type="email" id="settingStoreEmail" placeholder="admin@shop2bhutan.com" style="width:100%;padding:.65rem;border:1.5px solid var(--border);border-radius:8px;font-size:.88rem;outline:none;font-family:var(--font-body);background:var(--surface-raised);">
+                                <div class="settings-field">
+                                    <label class="settings-label" for="settingStoreEmail">Email</label>
+                                    <input type="email" id="settingStoreEmail" class="settings-input" placeholder="admin@shop2bhutan.com">
                                 </div>
-                            </div>
-                            <div>
-                                <label style="display:block;font-size:.68rem;color:var(--text-muted);margin-bottom:.35rem;font-weight:600;text-transform:uppercase;letter-spacing:.6px">Address / Tagline</label>
-                                <textarea id="settingStoreAddress" placeholder="Bhutan's trusted shopping partner..." style="width:100%;padding:.65rem;border:1.5px solid var(--border);border-radius:8px;font-size:.88rem;outline:none;font-family:var(--font-body);background:var(--surface-raised);resize:vertical;min-height:60px;"></textarea>
                             </div>
                         </div>
+                        <div class="settings-field">
+                            <label class="settings-label" for="settingStoreAddress">Address / Tagline</label>
+                            <textarea id="settingStoreAddress" class="settings-textarea" style="min-height:64px;font-family:var(--font-body);font-size:.88rem;" placeholder="Bhutan's trusted shopping partner..."></textarea>
+                        </div>
                     </div>
-                    <div class="table-wrap" style="padding:1.5rem;">
-                        <h3 style="font-size:1.1rem;margin-bottom:1.25rem;color:var(--text);font-family:var(--font-display);font-weight:400;">Charge Configuration</h3>
-                        <div style="display:flex;flex-direction:column;gap:1rem;">
-                            <div>
-                                <label style="display:block;font-size:.68rem;color:var(--text-muted);margin-bottom:.35rem;font-weight:600;text-transform:uppercase;letter-spacing:.6px">Service Charge Type</label>
-                                <select id="settingServiceType" style="width:100%;padding:.65rem;border:1.5px solid var(--border);border-radius:8px;font-size:.88rem;outline:none;font-family:var(--font-body);background:var(--surface-raised);">
+
+                    <!-- Billing & Charges -->
+                    <div class="settings-card">
+                        <div class="settings-card-header">
+                            <h3 class="settings-card-title">Billing &amp; Charges</h3>
+                            <p class="settings-card-desc">Service charge, shipping defaults, and tax configuration.</p>
+                        </div>
+                        <div class="settings-row-2">
+                            <div class="settings-field">
+                                <label class="settings-label" for="settingServiceType">Service Charge Type</label>
+                                <select id="settingServiceType" class="settings-select">
                                     <option value="percentage">Percentage (%)</option>
                                     <option value="fixed">Fixed Amount (Nu.)</option>
                                 </select>
                             </div>
-                            <div>
-                                <label style="display:block;font-size:.68rem;color:var(--text-muted);margin-bottom:.35rem;font-weight:600;text-transform:uppercase;letter-spacing:.6px">Service Charge Value</label>
-                                <input type="number" id="settingServiceValue" placeholder="e.g. 10" style="width:100%;padding:.65rem;border:1.5px solid var(--border);border-radius:8px;font-size:.88rem;outline:none;font-family:var(--font-body);background:var(--surface-raised);">
-                                <small style="color:var(--text-muted);font-size:.78rem;">If percentage, enter 10 for 10%. If fixed, enter amount. Leave 0 to use default tiered pricing.</small>
+                            <div class="settings-field">
+                                <label class="settings-label" for="settingServiceValue">Service Charge Value</label>
+                                <input type="number" id="settingServiceValue" class="settings-input" placeholder="e.g. 10">
                             </div>
-                            <div>
-                                <label style="display:block;font-size:.68rem;color:var(--text-muted);margin-bottom:.35rem;font-weight:600;text-transform:uppercase;letter-spacing:.6px">Default Shipping Charge (Nu.)</label>
-                                <input type="number" id="settingShipping" placeholder="0" style="width:100%;padding:.65rem;border:1.5px solid var(--border);border-radius:8px;font-size:.88rem;outline:none;font-family:var(--font-body);background:var(--surface-raised);">
-                            </div>
-                            <div style="display:flex;align-items:center;gap:1rem;flex-wrap:wrap;">
-                                <label style="display:flex;align-items:center;gap:.5rem;cursor:pointer;font-size:.88rem;color:var(--text-secondary);font-weight:500;">
-                                    <input type="checkbox" id="settingGstEnabled" style="width:16px;height:16px;accent-color:var(--accent);">
-                                    <span>Enable GST</span>
+                        </div>
+                        <div class="settings-help" style="margin-top:.5rem;">If percentage, enter <code>10</code> for 10%. If fixed, enter the amount. Leave <code>0</code> for default tiered pricing.</div>
+                        <div class="settings-field">
+                            <label class="settings-label" for="settingShipping">Default Shipping Charge (Nu.)</label>
+                            <input type="number" id="settingShipping" class="settings-input" placeholder="0">
+                        </div>
+                        <div class="settings-field">
+                            <label class="settings-label">Goods &amp; Services Tax</label>
+                            <div class="settings-inline" style="margin-top:.25rem;">
+                                <label class="toggle-switch">
+                                    <input type="checkbox" id="settingGstEnabled">
+                                    <span class="toggle-track"></span>
                                 </label>
-                                <div style="display:flex;align-items:center;gap:.35rem;">
-                                    <input type="number" id="settingGstRate" value="5" style="width:65px;padding:.5rem;border:1.5px solid var(--border);border-radius:8px;font-size:.88rem;outline:none;font-family:var(--font-body);background:var(--surface-raised);">
-                                    <span style="color:var(--text-muted);font-size:.88rem;">%</span>
-                                </div>
+                                <span style="font-size:.88rem;color:var(--text);">Enable GST at</span>
+                                <input type="number" id="settingGstRate" class="settings-input" value="5" style="width:72px;padding:.5rem;">
+                                <span style="font-size:.88rem;color:var(--text-muted);">%</span>
                             </div>
-                            <button onclick="saveSettings()" id="saveSettingsBtn" class="btn-primary" style="margin-top:.5rem;">Save Settings</button>
                         </div>
                     </div>
-                    <div class="table-wrap" style="padding:1.5rem;">
-                        <h3 style="font-size:1.1rem;margin-bottom:1.25rem;color:var(--text);font-family:var(--font-display);font-weight:400;">Notifications</h3>
-                        <div style="display:flex;flex-direction:column;gap:.85rem;">
-                            <label style="display:flex;align-items:center;gap:.65rem;cursor:pointer;font-size:.88rem;color:var(--text-secondary);">
-                                <input type="checkbox" id="settingNotifSound" style="width:16px;height:16px;accent-color:var(--accent);">
-                                <span>Play sound on new notification</span>
+
+                    <!-- Notifications -->
+                    <div class="settings-card">
+                        <div class="settings-card-header">
+                            <h3 class="settings-card-title">Notifications</h3>
+                            <p class="settings-card-desc">Control which events trigger toast alerts and audio chimes in this admin panel.</p>
+                        </div>
+                        <div class="toggle-row">
+                            <div class="toggle-row-label">
+                                <span class="toggle-row-title">Sound chime</span>
+                                <span class="toggle-row-desc">Play an audio chime on every new event</span>
+                            </div>
+                            <label class="toggle-switch">
+                                <input type="checkbox" id="settingNotifSound">
+                                <span class="toggle-track"></span>
                             </label>
-                            <label style="display:flex;align-items:center;gap:.65rem;cursor:pointer;font-size:.88rem;color:var(--text-secondary);">
-                                <input type="checkbox" id="settingNotifOrder" style="width:16px;height:16px;accent-color:var(--accent);">
-                                <span>Notify on new orders</span>
+                        </div>
+                        <div class="toggle-row">
+                            <div class="toggle-row-label">
+                                <span class="toggle-row-title">New orders</span>
+                                <span class="toggle-row-desc">Show a toast and add to bell on incoming orders</span>
+                            </div>
+                            <label class="toggle-switch">
+                                <input type="checkbox" id="settingNotifOrder">
+                                <span class="toggle-track"></span>
                             </label>
-                            <label style="display:flex;align-items:center;gap:.65rem;cursor:pointer;font-size:.88rem;color:var(--text-secondary);">
-                                <input type="checkbox" id="settingNotifReview" style="width:16px;height:16px;accent-color:var(--accent);">
-                                <span>Notify on new reviews</span>
+                        </div>
+                        <div class="toggle-row">
+                            <div class="toggle-row-label">
+                                <span class="toggle-row-title">New reviews</span>
+                                <span class="toggle-row-desc">Alert when customers submit a new review</span>
+                            </div>
+                            <label class="toggle-switch">
+                                <input type="checkbox" id="settingNotifReview">
+                                <span class="toggle-track"></span>
                             </label>
-                            <label style="display:flex;align-items:center;gap:.65rem;cursor:pointer;font-size:.88rem;color:var(--text-secondary);">
-                                <input type="checkbox" id="settingNotifQuotation" style="width:16px;height:16px;accent-color:var(--accent);">
-                                <span>Notify on new quotations</span>
+                        </div>
+                        <div class="toggle-row">
+                            <div class="toggle-row-label">
+                                <span class="toggle-row-title">New quotations</span>
+                                <span class="toggle-row-desc">Alert when a quotation is created or sent</span>
+                            </div>
+                            <label class="toggle-switch">
+                                <input type="checkbox" id="settingNotifQuotation">
+                                <span class="toggle-track"></span>
+                            </label>
+                        </div>
+                        <div class="toggle-row">
+                            <div class="toggle-row-label">
+                                <span class="toggle-row-title">New payments</span>
+                                <span class="toggle-row-desc">Alert when a customer payment is received</span>
+                            </div>
+                            <label class="toggle-switch">
+                                <input type="checkbox" id="settingNotifPayment">
+                                <span class="toggle-track"></span>
                             </label>
                         </div>
                     </div>
                 </div>
-                <div style="display:flex;flex-direction:column;gap:1.25rem;">
-                    <div class="table-wrap" style="padding:1.5rem;">
-                        <h3 style="font-size:1.1rem;margin-bottom:1.25rem;color:var(--text);font-family:var(--font-display);font-weight:400;">WhatsApp Message Templates</h3>
-                        <div style="display:flex;flex-direction:column;gap:1rem;">
-                            <div>
-                                <label style="display:block;font-size:.68rem;color:var(--text-muted);margin-bottom:.35rem;font-weight:600;text-transform:uppercase;letter-spacing:.6px">Quotation Ready</label>
-                                <textarea id="settingWaQuotation" style="width:100%;padding:.65rem;border:1.5px solid var(--border);border-radius:8px;font-size:.85rem;outline:none;font-family:var(--font-body);background:var(--surface-raised);resize:vertical;min-height:70px;"></textarea>
-                                <small style="color:var(--text-muted);font-size:.75rem;">Variables: <code>{{name}}</code>, <code>{{link}}</code>, <code>{{valid_until}}</code></small>
-                            </div>
-                            <div>
-                                <label style="display:block;font-size:.68rem;color:var(--text-muted);margin-bottom:.35rem;font-weight:600;text-transform:uppercase;letter-spacing:.6px">Order Confirmed</label>
-                                <textarea id="settingWaConfirmed" style="width:100%;padding:.65rem;border:1.5px solid var(--border);border-radius:8px;font-size:.85rem;outline:none;font-family:var(--font-body);background:var(--surface-raised);resize:vertical;min-height:70px;"></textarea>
-                                <small style="color:var(--text-muted);font-size:.75rem;">Variables: <code>{{name}}</code>, <code>{{code}}</code>, <code>{{trip_date}}</code></small>
-                            </div>
-                            <div>
-                                <label style="display:block;font-size:.68rem;color:var(--text-muted);margin-bottom:.35rem;font-weight:600;text-transform:uppercase;letter-spacing:.6px">Payment Reminder</label>
-                                <textarea id="settingWaPayment" style="width:100%;padding:.65rem;border:1.5px solid var(--border);border-radius:8px;font-size:.85rem;outline:none;font-family:var(--font-body);background:var(--surface-raised);resize:vertical;min-height:70px;"></textarea>
-                                <small style="color:var(--text-muted);font-size:.75rem;">Variables: <code>{{name}}</code>, <code>{{code}}</code>, <code>{{amount}}</code></small>
-                            </div>
+
+                <!-- ───── RIGHT COLUMN ───── -->
+                <div class="settings-col">
+
+                    <!-- WhatsApp Templates -->
+                    <div class="settings-card">
+                        <div class="settings-card-header">
+                            <h3 class="settings-card-title">WhatsApp Message Templates</h3>
+                            <p class="settings-card-desc">Customize messages sent to customers. Use <code style="background:var(--surface-raised);border:1px solid var(--border);padding:1px 5px;border-radius:4px;font-size:.72rem;">{{variables}}</code> as placeholders.</p>
+                        </div>
+                        <div class="settings-field">
+                            <label class="settings-label" for="settingWaOrderPlaced">Order Placed <span style="font-weight:400;text-transform:none;color:var(--text-muted);letter-spacing:0;">(sent by customer)</span></label>
+                            <textarea id="settingWaOrderPlaced" class="settings-textarea tall"></textarea>
+                            <div class="settings-help">Variables: <code>{{code}}</code>, <code>{{customer_name}}</code>, <code>{{items}}</code>, <code>{{qty}}</code>, <code>{{count}}</code></div>
+                        </div>
+                        <div class="settings-field">
+                            <label class="settings-label" for="settingWaQuotation">Quotation Ready</label>
+                            <textarea id="settingWaQuotation" class="settings-textarea"></textarea>
+                            <div class="settings-help">Variables: <code>{{name}}</code>, <code>{{link}}</code>, <code>{{valid_until}}</code></div>
+                        </div>
+                        <div class="settings-field">
+                            <label class="settings-label" for="settingWaConfirmed">Order Confirmed</label>
+                            <textarea id="settingWaConfirmed" class="settings-textarea"></textarea>
+                            <div class="settings-help">Variables: <code>{{name}}</code>, <code>{{code}}</code>, <code>{{trip_date}}</code></div>
+                        </div>
+                        <div class="settings-field">
+                            <label class="settings-label" for="settingWaPayment">Payment Reminder</label>
+                            <textarea id="settingWaPayment" class="settings-textarea"></textarea>
+                            <div class="settings-help">Variables: <code>{{name}}</code>, <code>{{code}}</code>, <code>{{amount}}</code></div>
                         </div>
                     </div>
-                    <div class="table-wrap" style="padding:1.5rem;">
-                        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.25rem;">
-                            <h3 style="font-size:1.1rem;color:var(--text);font-family:var(--font-display);font-weight:400;">Delivery Rates by Dzongkhag</h3>
-                            <button onclick="addDeliveryRateRow()" style="background:var(--text);color:#fff;border:none;padding:.35rem .7rem;border-radius:6px;font-size:.78rem;font-weight:600;cursor:pointer;transition:background .15s;font-family:var(--font-body);">+ Add Rate</button>
+
+                    <!-- Delivery Rates -->
+                    <div class="settings-card">
+                        <div class="settings-card-header" style="display:flex;justify-content:space-between;align-items:flex-start;gap:1rem;border-bottom:1px solid var(--border-light);padding-bottom:1rem;margin-bottom:1.25rem;">
+                            <div>
+                                <h3 class="settings-card-title">Delivery Rates by Dzongkhag</h3>
+                                <p class="settings-card-desc">Per-district shipping fees applied at checkout.</p>
+                            </div>
+                            <button onclick="addDeliveryRateRow()" class="btn-add-rate">+ Add Rate</button>
                         </div>
-                        <div style="max-height:320px;overflow-y:auto;border:1px solid var(--border-light);border-radius:8px;">
-                            <table style="font-size:.88rem;width:100%;">
-                                <thead style="position:sticky;top:0;background:var(--surface-raised);z-index:1;">
-                                    <tr><th style="text-align:left;padding:.6rem .75rem;border-bottom:1.5px solid var(--border);">Dzongkhag</th><th style="text-align:left;padding:.6rem .75rem;border-bottom:1.5px solid var(--border);">Rate (Nu.)</th><th style="width:50px;border-bottom:1.5px solid var(--border);"></th></tr>
+                        <div class="rates-wrap">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Dzongkhag</th>
+                                        <th>Rate (Nu.)</th>
+                                        <th style="width:50px;"></th>
+                                    </tr>
                                 </thead>
                                 <tbody id="deliveryRatesTableBody">
                                     <tr><td colspan="3" style="text-align:center;padding:1.5rem;color:var(--text-muted);">Loading rates…</td></tr>
@@ -1166,6 +1493,12 @@
                         <button onclick="saveDeliveryRates()" id="saveDeliveryRatesBtn" class="btn-primary" style="margin-top:1rem;width:100%;">Save Delivery Rates</button>
                     </div>
                 </div>
+            </div>
+
+            <!-- Sticky global save bar -->
+            <div class="settings-save-bar">
+                <span class="settings-save-bar-info">Saves store profile, charges, notifications, and message templates. Delivery rates save separately.</span>
+                <button onclick="saveSettings()" id="saveSettingsBtn" class="btn-primary">Save All Settings</button>
             </div>
         </div>
     </main>
@@ -1276,7 +1609,17 @@ function showSection(section) {
         drivers: 'Drivers',
         settings: 'Settings'
     };
+    const subtitles = {
+        orders: 'Track and manage all customer orders',
+        quotations: 'Build, send, and track customer quotations',
+        reviews: 'Verify, reject, or remove customer reviews',
+        payments: 'Verify incoming payments and process refunds',
+        drivers: 'Assign drivers and track deliveries',
+        settings: 'Configure store profile, billing, notifications, and message templates'
+    };
     document.getElementById('pageTitle').textContent = titles[section] || 'Dashboard';
+    const subtitleEl = document.getElementById('pageSubtitle');
+    if (subtitleEl) subtitleEl.textContent = subtitles[section] || '';
 
     if (typeof window.onSectionChange === 'function') {
         window.onSectionChange(section);
@@ -1406,9 +1749,18 @@ function toast(msg, type) {
         success: '<svg viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>',
         error: '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>',
         info: '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>',
-        warning: '<svg viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>'
+        warning: '<svg viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>',
+        order: '<svg viewBox="0 0 24 24"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>',
+        review: '<svg viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>',
+        payment: '<svg viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>',
+        quotation: '<svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="9" y1="13" x2="15" y2="13"/><line x1="9" y1="17" x2="15" y2="17"/></svg>',
+        notification: '<svg viewBox="0 0 24 24"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>'
     };
-    const titles = { success: 'Success', error: 'Error', info: 'Info', warning: 'Warning' };
+    const titles = {
+        success: 'Success', error: 'Error', info: 'Info', warning: 'Warning',
+        order: 'New Order', review: 'New Review', payment: 'Payment',
+        quotation: 'Quotation', notification: 'Notification'
+    };
     const t = type || 'default';
     const icon = icons[t] || icons.info;
     const title = titles[t] || '';
