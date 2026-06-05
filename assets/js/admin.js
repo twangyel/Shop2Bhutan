@@ -230,6 +230,7 @@ async function loadNotifications() {
         .from('notifications')
         .select('*')
         .eq('admin_id', currentAdminId)
+        .eq('read', false)                       // only unread — cleared/read items stay gone
         .order('created_at', { ascending: false })
         .limit(50);
 
@@ -432,14 +433,19 @@ window.clearNotifications = async function() {
     updateNotificationBadge();
     renderNotifications();
 
-    // Also clear from Supabase
+    // Mark as read in Supabase instead of deleting — survives RLS DELETE restrictions,
+    // and combined with the `read=false` filter in loadNotifications, cleared items
+    // don't come back. Previously a silently-failing DELETE caused them to reappear
+    // the next time the bell was clicked (because loadNotifications re-fetched them).
     if (supabase && currentAdminId) {
-        const { error } = await supabase
+        const { error, count } = await supabase
             .from('notifications')
-            .delete()
-            .eq('admin_id', currentAdminId);
+            .update({ read: true }, { count: 'exact' })
+            .eq('admin_id', currentAdminId)
+            .eq('read', false);
 
         if (error) console.error('Failed to clear notifications:', error);
+        else console.log(`[notifications] Marked ${count ?? '?'} as read`);
     }
 };
 
@@ -1392,18 +1398,52 @@ window.bulkUpdateStatus = async function(newStatus) {
     toast(`${selected.length} order(s) marked as ${newStatus.replace(/_/g, ' ')}`, 'success');
 };
 
-// ===== SETTINGS STATE =====
-let appSettings = null;
-let deliveryRates = [];
-
-// Default WhatsApp templates — used when DB column is empty/missing
 const DEFAULT_TEMPLATES = {
-    order_placed: '🛒 *New Order — Shop2Bhutan*\n\nHi! I just placed a new order and would like to confirm it.\n\n📋 *Order ID:* {{code}}\n👤 *Customer:* {{customer_name}}\n\n📦 *Items Ordered:*\n{{items}}\n\n🔢 *Total Quantity:* {{qty}}\n\nPlease confirm at your earliest convenience. Thank you! 🙏',
-    quotation: 'Hi {{name}}! 👋\n\nYour quotation is ready for review. Please click the link below:\n\n{{link}}\n\nThis link is valid until {{valid_until}}.\n\n- Shop2Bhutan',
-    order_confirmed: 'Hi {{name}},\n\nYour order {{code}} has been confirmed. Trip date: {{trip_date}}.\n\nThank you for shopping with us!\n\n- Shop2Bhutan',
-    payment_reminder: 'Hi {{name}},\n\nFriendly reminder for payment on order {{code}}.\n\nAmount due: Nu. {{amount}}\n\n- Shop2Bhutan'
-};
+    order_placed: `🛒 *New Order — Shop2Bhutan*
 
+Hi! I just placed a new order and would like to confirm it.
+
+📋 *Order ID:* {{code}}
+👤 *Customer:* {{customer_name}}
+
+📦 *Items Ordered:*
+{{items}}
+
+🔢 *Total Quantity:* {{qty}}
+
+Please confirm at your earliest convenience. Thank you! 🙏`,
+
+    quotation: `Hi {{name}} 👋
+
+Your quotation from *Shop2Bhutan* is ready for review.
+
+🔗 *View your quotation:*
+{{link}}
+
+⏰ Valid until: {{valid_until}}
+
+Reply to this message if you have any questions.
+
+— Shop2Bhutan`,
+
+    order_confirmed: `Hi {{name}} ✅
+
+Your order *{{code}}* has been confirmed.
+
+🚚 Trip date: {{trip_date}}
+
+Thank you for shopping with us!
+
+— Shop2Bhutan`,
+
+    payment_reminder: `Hi {{name}} 👋
+
+Friendly reminder for payment on order *{{code}}*.
+
+💰 Amount due: Nu. {{amount}}
+
+— Shop2Bhutan`
+};
 async function fetchSettings() {
     const { data, error } = await supabase.from('app_settings').select('*').limit(1).single();
     if (error) {
@@ -2245,9 +2285,9 @@ async function saveQuotation() {
         return;
     }
 
-    // If this save flipped the quotation to 'sent', auto-advance the parent order.
-    if (status === 'sent') {
-        await bumpOrderToPriceSent(orderId);
+    // If this save flipped the quotation to 'sent' or 'accepted', auto-advance the parent order.
+    if (status === 'sent' || status === 'accepted') {
+        await syncOrderStatusFromQuotation(orderId, status);
         fetchOrders();
     }
 
@@ -2360,20 +2400,57 @@ ${items.length === 0 ? '<p style="color:#888;font-size:0.9rem;">No items</p>' : 
     document.getElementById('orderModal').classList.add('active');
 };
 
-// When a quotation is sent to the customer, the parent order's workflow status
-// should advance from 'submitted' to 'price_sent' automatically. We only bump
-// from 'submitted' so this never moves a higher status (e.g. 'confirmed') backward.
-async function bumpOrderToPriceSent(orderId) {
+// When a quotation's status changes, the parent order's workflow status should
+// advance automatically:
+//   quotation 'sent'     → order 'price_sent'  (only from 'submitted')
+//   quotation 'accepted' → order 'confirmed'   (only from 'price_sent')
+// Guards prevent moving an order's status backward.
+const QUOTATION_TO_ORDER_STATUS = {
+    sent:     { newStatus: 'price_sent', fromStatus: 'submitted'  },
+    accepted: { newStatus: 'confirmed',  fromStatus: 'price_sent' }
+};
+
+async function syncOrderStatusFromQuotation(orderId, quotationStatus) {
     if (!orderId) return;
+    const mapping = QUOTATION_TO_ORDER_STATUS[quotationStatus];
+    if (!mapping) return;   // status we don't care about ('draft', 'rejected', 'expired')
+
     try {
-        const { error } = await supabase
+        const { data, error } = await supabase
             .from('orders')
-            .update({ status: 'price_sent', updated_at: new Date().toISOString() })
+            .update({ status: mapping.newStatus, updated_at: new Date().toISOString() })
             .eq('id', orderId)
-            .eq('status', 'submitted');   // guarded — only advances from submitted
-        if (error) console.warn('Order status auto-bump failed:', error);
+            .eq('status', mapping.fromStatus)   // guarded — only advances from expected prior status
+            .select();
+        if (error) console.warn('Order status sync failed:', error);
+        else if (data?.length) console.log(`[order-sync] ${orderId} → ${mapping.newStatus}`);
     } catch (e) {
-        console.warn('Order status auto-bump threw:', e);
+        console.warn('Order status sync threw:', e);
+    }
+}
+
+// Back-compat shim — old call sites kept working during the refactor.
+async function bumpOrderToPriceSent(orderId) {
+    return syncOrderStatusFromQuotation(orderId, 'sent');
+}
+
+// When a payment's status changes to 'completed', advance the parent order to 'confirmed'.
+// Allowed from 'submitted' or 'price_sent' — but never moves an already-further order backward
+// (e.g. won't touch 'shipped' or 'delivered').
+async function syncOrderStatusFromPayment(orderId, paymentStatus) {
+    if (!orderId || paymentStatus !== 'completed') return;
+
+    try {
+        const { data, error } = await supabase
+            .from('orders')
+            .update({ status: 'confirmed', updated_at: new Date().toISOString() })
+            .eq('id', orderId)
+            .in('status', ['submitted', 'price_sent'])   // guarded — only from earlier stages
+            .select();
+        if (error) console.warn('Order status sync (payment) failed:', error);
+        else if (data?.length) console.log(`[order-sync] payment completed → ${orderId} → confirmed`);
+    } catch (e) {
+        console.warn('Order status sync (payment) threw:', e);
     }
 }
 
@@ -2415,7 +2492,7 @@ window.sendQuotation = async function(id) {
     }
 
     // Advance the parent order from 'submitted' → 'price_sent' (guarded, idempotent).
-    await bumpOrderToPriceSent(quotation.order_id || quotation.order?.id);
+    await syncOrderStatusFromQuotation(quotation.order_id || quotation.order?.id, 'sent');
     fetchOrders();   // refresh the orders table so the badge updates in the UI
 
     // Build links
@@ -2430,8 +2507,8 @@ window.sendQuotation = async function(id) {
         ? new Date(quotation.valid_until).toLocaleDateString() 
         : '7 days from now';
     
-    // Use template from settings
-    let template = appSettings?.wa_template_quotation || 'Hi {{name}}! Your quotation is ready: {{link}}\n\nTrack anytime: {{track_link}}';
+    // Use template from settings — fall back to the well-formatted default
+    let template = appSettings?.wa_template_quotation || DEFAULT_TEMPLATES.quotation;
     let waMsg = template
         .replace(/{{name}}/g, cname)
         .replace(/{{link}}/g, oneTimeLink)
@@ -2718,6 +2795,12 @@ window.verifyPayment = async function(id) {
     if (!data || data.length === 0) {
         toast('Update blocked — check RLS policies on the payments table.', 'error');
         return;
+    }
+
+    // Auto-advance the parent order to 'confirmed' (guarded — only from 'submitted'/'price_sent').
+    const verifiedPayment = data[0];
+    if (verifiedPayment?.order_id) {
+        await syncOrderStatusFromPayment(verifiedPayment.order_id, 'completed');
     }
 
     toast('Payment verified', 'success');
