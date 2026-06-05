@@ -1398,6 +1398,16 @@ window.bulkUpdateStatus = async function(newStatus) {
     toast(`${selected.length} order(s) marked as ${newStatus.replace(/_/g, ' ')}`, 'success');
 };
 
+// ===== SETTINGS STATE =====
+let appSettings = null;
+let deliveryRates = [];
+
+// Default WhatsApp templates — used when DB column is empty/missing
+// NOTE on WhatsApp link clickability: WhatsApp auto-links URLs that (a) include
+// the http(s):// scheme, (b) sit on their own line, and (c) have no trailing
+// punctuation. Localhost URLs like http://127.0.0.1:5500/... are NOT auto-linked
+// by WhatsApp — that's a WhatsApp restriction, not a template issue. Once deployed
+// to a public domain (e.g. https://shop2bhutan.com) the link will be clickable.
 const DEFAULT_TEMPLATES = {
     order_placed: `🛒 *New Order — Shop2Bhutan*
 
@@ -1444,6 +1454,7 @@ Friendly reminder for payment on order *{{code}}*.
 
 — Shop2Bhutan`
 };
+
 async function fetchSettings() {
     const { data, error } = await supabase.from('app_settings').select('*').limit(1).single();
     if (error) {
@@ -1992,11 +2003,13 @@ window.openQuotationModal = async function(quotationId = null) {
         document.getElementById('quotationGstApplicable').checked = q.gst_applicable || false;
         recalculateQuotation();
     } else {
-        // New quotation — apply saved defaults from Settings
+        // New quotation — apply saved defaults from Settings (defensive: safe against
+        // ReferenceError if the settings module hasn't initialized yet).
         addQuotationItemRow();
-        if (appSettings) {
-            document.getElementById('quotationShipping').value = appSettings.default_shipping || '';
-            document.getElementById('quotationGstApplicable').checked = appSettings.gst_enabled || false;
+        const settings = (typeof appSettings !== 'undefined' && appSettings) || null;
+        if (settings) {
+            document.getElementById('quotationShipping').value = settings.default_shipping || '';
+            document.getElementById('quotationGstApplicable').checked = settings.gst_enabled || false;
         }
         recalculateQuotation();
     }
@@ -2025,6 +2038,9 @@ async function loadOrderDropdown(selectedId) {
     const select = document.getElementById('quotationOrderId');
     if (!select) return;
 
+    // Reset existing options except the placeholder
+    select.innerHTML = '<option value="">Select an order…</option>';
+
     (orders || []).forEach(o => {
         // Skip orders already linked to a quotation, unless we're editing that specific one
         if (existingOrderIds.has(o.id) && o.id !== selectedId) return;
@@ -2035,39 +2051,6 @@ async function loadOrderDropdown(selectedId) {
         opt.textContent = `${o.order_code || String(o.id).slice(0, 8).toUpperCase()} — ${c.name || 'Unknown'} (${c.phone || 'no phone'})`;
         if (o.id === selectedId) opt.selected = true;
         select.appendChild(opt);
-
-
-        async function loadOrderDropdown(selectedId) {
-    const { data: orders } = await supabase
-        .from('orders')
-        .select('id, order_code, customer:customers(name, phone)')
-        .order('created_at', { ascending: false })
-        .limit(100);
-
-    // Fetch existing quotation order_ids to exclude them (for NEW quotations only)
-    let existingOrderIds = new Set();
-    if (!currentQuotationId) {  // Only when creating NEW quotation
-        const { data: existingQuotations } = await supabase
-            .from('quotations')
-            .select('order_id');
-        existingOrderIds = new Set((existingQuotations || []).map(q => q.order_id));
-    }
-
-    const select = document.getElementById('quotationOrderId');
-    if (!select) return;
-
-    (orders || []).forEach(o => {
-        // Skip orders that already have quotations (unless editing current one)
-        if (existingOrderIds.has(o.id) && o.id !== selectedId) return;
-        
-        const c = o.customer || {};
-        const opt = document.createElement('option');
-        opt.value = o.id;
-        opt.textContent = `${o.order_code || String(o.id).slice(0, 8).toUpperCase()} — ${c.name || 'Unknown'} (${c.phone || 'no phone'})`;
-        if (o.id === selectedId) opt.selected = true;
-        select.appendChild(opt);
-    });
-}
     });
 }
 

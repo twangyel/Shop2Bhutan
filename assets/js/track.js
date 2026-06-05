@@ -34,7 +34,9 @@ const toastEl = document.getElementById('toast');
 let currentOrder = null;
 let currentQuotation = null;
 let selectedPaymentFile = null;
-let paymentMethod = 'qr';
+// DB-valid values matching the payments_payment_method_check constraint
+// and the quotation.html flow: 'mbob' | 'mpay' | 'bank_transfer'
+let paymentMethod = 'mbob';
 
 // ===== INIT =====
 document.addEventListener('DOMContentLoaded', () => {
@@ -60,37 +62,37 @@ document.addEventListener('DOMContentLoaded', () => {
     trackInput.addEventListener('keydown', (e) => {
         if (e.key === 'Enter') trackOrder();
     });
-});
 
     // Auto-capitalize and auto-format order ID as user types
     trackInput.addEventListener('input', (e) => {
         let val = e.target.value;
-        
+
         // Don't format if it looks like a phone number (digits only)
         if (/^\d*$/.test(val.replace(/\s/g, ''))) return;
-        
+
         // Convert to uppercase
         val = val.toUpperCase();
-        
+
         // Remove all existing hyphens first
         let raw = val.replace(/-/g, '');
-        
+
         // Auto-insert hyphens for S2B-XXXXXX-XXX-XXX format
         // Only apply if it starts with S2B (or partial match)
         if (raw.startsWith('S2B') || raw.length <= 3) {
             let parts = [];
-            if (raw.length > 0) parts.push(raw.slice(0, 3));           // S2B
+            if (raw.length > 0) parts.push(raw.slice(0, 3));            // S2B
             if (raw.length > 3) parts.push(raw.slice(3, 9));            // 6 digits
             if (raw.length > 9) parts.push(raw.slice(9, 12));           // 3 letters
             if (raw.length > 12) parts.push(raw.slice(12, 15));         // 3 digits
             val = parts.join('-');
         }
-        
+
         // Update value if changed
         if (val !== e.target.value) {
             e.target.value = val;
         }
     });
+});
 
 // ===== TRACKING =====
 async function trackOrder() {
@@ -732,11 +734,23 @@ window.respondToQuotation = async function(quotationId, action) {
 
 
 window.switchPaymentTab = function(method) {
+    // Accepts DB-valid values: 'mbob', 'mpay', or 'bank_transfer'.
+    // Maps to the existing tab/panel element IDs in track.html.
+    // (If your track.html still uses 'qr'/'bank' in onclick attrs, update them
+    //  to call switchPaymentTab('mbob') and switchPaymentTab('bank_transfer').)
+    const tabMap   = { mbob: 'tabQr',   mpay: 'tabQr',   bank_transfer: 'tabBank' };
+    const panelMap = { mbob: 'qrPanel', mpay: 'qrPanel', bank_transfer: 'bankPanel' };
+
+    // Back-compat: if an old caller still passes 'qr' or 'bank', translate it.
+    if (method === 'qr')   method = 'mbob';
+    if (method === 'bank') method = 'bank_transfer';
+
     paymentMethod = method;
     document.querySelectorAll('.payment-tab').forEach(t => t.classList.remove('active'));
-    document.getElementById(method === 'qr' ? 'tabQr' : 'tabBank').classList.add('active');
-    document.getElementById('qrPanel').style.display = method === 'qr' ? 'block' : 'none';
-    document.getElementById('bankPanel').style.display = method === 'bank' ? 'block' : 'none';
+    const tabEl = document.getElementById(tabMap[method]);
+    if (tabEl) tabEl.classList.add('active');
+    document.getElementById('qrPanel').style.display   = panelMap[method] === 'qrPanel'   ? 'block' : 'none';
+    document.getElementById('bankPanel').style.display = panelMap[method] === 'bankPanel' ? 'block' : 'none';
 };
 
 window.copyToClipboard = function(text) {
@@ -788,6 +802,7 @@ window.submitPayment = async function() {
                 status: 'pending',
                 payment_method: paymentMethod,
                 payment_type: currentOrder?.payment_method === '50_50' ? '50_50' : 'full',
+                proof_url: publicUrl,
                 screenshot_url: publicUrl,
                 notes: customerNote,
                 created_at: new Date().toISOString()

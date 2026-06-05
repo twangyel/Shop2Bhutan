@@ -496,6 +496,127 @@
         .toast.error { background: var(--danger); }
         .toast.success { background: var(--success); }
 
+
+        /* Modern Modal Dialog */
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(26, 26, 46, 0.6);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s ease, visibility 0.3s ease;
+            padding: 1.5rem;
+        }
+        .modal-overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+        .modal-dialog {
+            background: var(--surface);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow-xl), 0 0 0 1px rgba(255,255,255,0.1);
+            max-width: 420px;
+            width: 100%;
+            padding: 2rem 1.75rem;
+            text-align: center;
+            transform: scale(0.92) translateY(12px);
+            transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        .modal-overlay.active .modal-dialog {
+            transform: scale(1) translateY(0);
+        }
+        .modal-icon {
+            width: 64px;
+            height: 64px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 1.25rem;
+            font-size: 1.75rem;
+            background: #f3f4f6;
+        }
+        .modal-icon.info { background: #eff6ff; }
+        .modal-icon.warning { background: #fff7ed; }
+        .modal-icon.danger { background: #fef2f2; }
+        .modal-icon.success { background: #ecfdf5; }
+        .modal-title {
+            font-size: 1.15rem;
+            font-weight: 700;
+            color: var(--text);
+            margin-bottom: 0.5rem;
+        }
+        .modal-message {
+            font-size: 0.9rem;
+            color: var(--text-muted);
+            line-height: 1.6;
+            margin-bottom: 1.75rem;
+        }
+        .modal-actions {
+            display: flex;
+            gap: 0.75rem;
+        }
+        .modal-actions .btn {
+            flex: 1;
+            padding: 0.875rem;
+            font-size: 0.9rem;
+        }
+
+
+        .upload-content {
+            transition: opacity 0.2s ease;
+        }
+        .upload-area.has-file .upload-content {
+            display: none;
+        }
+        .preview-wrapper {
+            position: relative;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto;
+        }
+        .preview-wrapper .preview-img {
+            margin-top: 0;
+            max-width: 220px;
+            max-height: 220px;
+            border-radius: 10px;
+            box-shadow: var(--shadow);
+            display: block;
+        }
+        .delete-file-btn {
+            position: absolute;
+            top: -10px;
+            right: -10px;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: var(--danger);
+            color: #fff;
+            border: 3px solid #fff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            box-shadow: 0 2px 8px rgba(192, 57, 43, 0.35);
+            transition: var(--transition);
+            padding: 0;
+        }
+        .delete-file-btn:hover {
+            transform: scale(1.1);
+            background: #a93226;
+            box-shadow: 0 4px 12px rgba(192, 57, 43, 0.45);
+        }
+        .delete-file-btn:active {
+            transform: scale(0.95);
+        }
+
         /* Responsive */
         @media (max-width: 640px) {
             .actions { flex-direction: column; }
@@ -504,6 +625,7 @@
             .card-body { padding: 1rem; }
         }
     </style>
+<base target="_blank">
 </head>
 <body>
 
@@ -657,11 +779,20 @@
                         <label style="display:block;font-size:0.8rem;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;color:var(--text-muted);margin-bottom:0.75rem;">
                             Upload Payment Screenshot
                         </label>
-                        <div class="upload-area" id="uploadArea" onclick="document.getElementById('fileInput').click()">
-                            <div class="upload-icon">📤</div>
-                            <div class="upload-text">Click or drag payment screenshot here</div>
-                            <div class="upload-hint">JPG, PNG up to 5MB</div>
-                            <img id="previewImg" class="preview-img" style="display:none;">
+                        <div class="upload-area" id="uploadArea">
+                            <div class="upload-content" id="uploadContent">
+                                <div class="upload-icon">📤</div>
+                                <div class="upload-text">Click or drag payment screenshot here</div>
+                                <div class="upload-hint">JPG, PNG up to 5MB</div>
+                            </div>
+                            <div class="preview-wrapper" id="previewWrapper" style="display:none;">
+                                <img id="previewImg" class="preview-img">
+                                <button type="button" class="delete-file-btn" onclick="event.stopPropagation(); removeFile();" title="Remove screenshot">
+                                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                        <path d="M12 4L4 12M4 4L12 12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                                    </svg>
+                                </button>
+                            </div>
                         </div>
                         <input type="file" id="fileInput" accept="image/jpeg,image/png,image/jpg" onchange="handleFileSelect(event)">
                     </div>
@@ -694,6 +825,20 @@
                     3. Your order will be marked as "Confirmed"<br>
                     4. Track progress at <a href="/track.html" style="color:var(--primary);">shop2bhutan.com/track</a>
                 </div>
+            </div>
+        </div>
+    </div>
+
+    
+    <!-- Modern Modal Dialog -->
+    <div class="modal-overlay" id="modalOverlay">
+        <div class="modal-dialog" id="modalDialog">
+            <div class="modal-icon" id="modalIcon">⚠️</div>
+            <h3 class="modal-title" id="modalTitle">Confirm</h3>
+            <p class="modal-message" id="modalMessage">Are you sure?</p>
+            <div class="modal-actions" id="modalActions">
+                <button class="btn btn-secondary" id="modalCancelBtn">Cancel</button>
+                <button class="btn btn-primary" id="modalConfirmBtn">Confirm</button>
             </div>
         </div>
     </div>
@@ -908,7 +1053,8 @@
 
         // Accept quotation
         window.acceptQuotation = async function() {
-            if (!confirm('Accept this quotation and proceed to payment?')) return;
+            const confirmed = await showModal('confirm', 'Accept Quotation', 'Accept this quotation and proceed to payment?', '✓', 'info');
+            if (!confirmed) return;
 
             const btn = document.querySelector('#actionButtons .btn-primary');
             btn.disabled = true;
@@ -947,7 +1093,8 @@
 
         // Reject quotation
         window.rejectQuotation = async function() {
-            if (!confirm('Are you sure you want to decline this quotation?')) return;
+            const confirmed = await showModal('confirm', 'Decline Quotation', 'Are you sure you want to decline this quotation? This action cannot be undone.', '❌', 'warning');
+            if (!confirmed) return;
 
             const { error } = await supabase
                 .from('quotations')
@@ -1009,6 +1156,14 @@
 
         uploadArea.addEventListener('drop', handleDrop, false);
 
+        // Open the file picker on click (must live inside the module so it
+        // can see `selectedFile`; inline onclick can't, since module scope
+        // is not global).
+        uploadArea.addEventListener('click', (e) => {
+            if (e.target.closest('.delete-file-btn')) return; // ignore clicks on the X button
+            fileInput.click();
+        });
+
         function handleDrop(e) {
             const dt = e.dataTransfer;
             const files = dt.files;
@@ -1041,12 +1196,27 @@
                 const img = document.getElementById('previewImg');
                 img.src = e.target.result;
                 img.style.display = 'block';
+                document.getElementById('previewWrapper').style.display = 'inline-flex';
                 uploadArea.classList.add('has-file');
                 document.querySelector('.upload-text').textContent = file.name;
                 document.querySelector('.upload-hint').textContent = 'Click to change file';
             };
             reader.readAsDataURL(file);
+
+            // Reset input value so selecting the same file again still fires 'change'
+            fileInput.value = '';
         }
+
+        function removeFile() {
+            selectedFile = null;
+            fileInput.value = '';
+            document.getElementById('previewImg').src = '';
+            document.getElementById('previewWrapper').style.display = 'none';
+            uploadArea.classList.remove('has-file');
+            document.querySelector('.upload-text').textContent = 'Click or drag payment screenshot here';
+            document.querySelector('.upload-hint').textContent = 'JPG, PNG up to 5MB';
+        }
+        window.removeFile = removeFile;
 
         // Submit payment
        window.submitPayment = async function() {
@@ -1128,6 +1298,75 @@
         btn.innerHTML = '✅ I\'ve Paid — Submit Screenshot';
     }
 };
+        // Modern Modal Dialog
+        let modalResolve = null;
+
+        function showModal(type, title, message, icon = '⚠️', iconType = 'info') {
+            return new Promise((resolve) => {
+                modalResolve = resolve;
+                const overlay = document.getElementById('modalOverlay');
+                const dialog = document.getElementById('modalDialog');
+                const iconEl = document.getElementById('modalIcon');
+                const titleEl = document.getElementById('modalTitle');
+                const messageEl = document.getElementById('modalMessage');
+                const actionsEl = document.getElementById('modalActions');
+                const confirmBtn = document.getElementById('modalConfirmBtn');
+                const cancelBtn = document.getElementById('modalCancelBtn');
+
+                iconEl.textContent = icon;
+                iconEl.className = 'modal-icon ' + iconType;
+                titleEl.textContent = title;
+                messageEl.textContent = message;
+
+                if (type === 'alert') {
+                    actionsEl.innerHTML = `<button class="btn btn-primary" id="modalConfirmBtn" style="width:100%;">OK</button>`;
+                    document.getElementById('modalConfirmBtn').onclick = () => {
+                        closeModal();
+                        resolve(true);
+                    };
+                } else {
+                    actionsEl.innerHTML = `
+                        <button class="btn btn-secondary" id="modalCancelBtn">Cancel</button>
+                        <button class="btn btn-primary" id="modalConfirmBtn">Confirm</button>
+                    `;
+                    document.getElementById('modalCancelBtn').onclick = () => {
+                        closeModal();
+                        resolve(false);
+                    };
+                    document.getElementById('modalConfirmBtn').onclick = () => {
+                        closeModal();
+                        resolve(true);
+                    };
+                }
+
+                // Close on overlay click or Escape key
+                overlay.onclick = (e) => {
+                    if (e.target === overlay) {
+                        closeModal();
+                        resolve(type === 'alert' ? true : false);
+                    }
+                };
+
+                const escHandler = (e) => {
+                    if (e.key === 'Escape') {
+                        closeModal();
+                        resolve(type === 'alert' ? true : false);
+                        document.removeEventListener('keydown', escHandler);
+                    }
+                };
+                document.addEventListener('keydown', escHandler);
+
+                overlay.classList.add('active');
+                document.body.style.overflow = 'hidden';
+            });
+        }
+
+        function closeModal() {
+            const overlay = document.getElementById('modalOverlay');
+            overlay.classList.remove('active');
+            document.body.style.overflow = '';
+        }
+
         // Utilities
         window.copyToClipboard = function(text) {
             navigator.clipboard.writeText(text).then(() => {
@@ -1156,6 +1395,7 @@
         window.handleFileSelect = handleFileSelect;
         window.submitPayment = submitPayment;
         window.copyToClipboard = copyToClipboard;
+        window.removeFile = removeFile;
     </script>
 </body>
 </html>
