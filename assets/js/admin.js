@@ -22,6 +22,28 @@ function formatWhatsAppPhone(phone) {
     return digits.startsWith('975') ? digits : '975' + digits;
 }
 
+// Build the WhatsApp deep-link used by the row "WhatsApp" action button on the
+// admin orders table. The message is professional and complete — no trailing
+// "...regarding your order X..." ellipsis like the old version.
+function buildAdminWaLink(customer, order) {
+    const phone = formatWhatsAppPhone(customer?.phone);
+    if (!phone) return '#';
+    const name = (customer?.name || '').trim();
+    const code = order?.order_code || (order?.id ? String(order.id).slice(0, 8).toUpperCase() : '');
+    const statusRaw = (order?.status || 'submitted').replace(/_/g, ' ');
+    const status = statusRaw.charAt(0).toUpperCase() + statusRaw.slice(1);
+
+    const msg =
+        'Hi' + (name ? ' ' + name : '') + '! 👋\n\n' +
+        'This is Shop2Bhutan getting in touch about your order.\n\n' +
+        '📋 *Order ID:* ' + code + '\n' +
+        '📦 *Current Status:* ' + status + '\n\n' +
+        'Please let us know if you have any questions — happy to help.\n\n' +
+        '— Shop2Bhutan';
+
+    return 'https://wa.me/' + phone + '?text=' + encodeURIComponent(msg);
+}
+
 // Admin-role gate. Flip REQUIRE_ADMIN_ROLE to true once admin users have been
 // granted a role. To grant: in Supabase dashboard → Authentication → Users →
 // select user → raw_app_meta_data → add { "role": "admin" }.
@@ -187,6 +209,19 @@ function _alertNewNotification(notif) {
    Notifications now survive logout/login and page reloads.
    ============================================================ */
 
+// Functions can't be stored in the DB, so derive a linkAction from
+// the notification's type. Used both for in-memory notifications and
+// for ones rehydrated from Supabase on reload.
+function defaultLinkActionFor(type) {
+    const map = {
+        order:     () => showSection('orders'),
+        review:    () => showSection('reviews'),
+        quotation: () => showSection('quotations'),
+        payment:   () => showSection('payments')
+    };
+    return map[type] || null;
+}
+
 // Fetch notifications from Supabase for current admin
 async function loadNotifications() {
     if (!supabase || !currentAdminId) return;
@@ -206,7 +241,8 @@ async function loadNotifications() {
     unreadNotifications = (data || []).map(n => ({
         ...n,
         seen: n.read,        // Map DB 'read' to local 'seen'
-        time: new Date(n.created_at)
+        time: new Date(n.created_at),
+        linkAction: defaultLinkActionFor(n.type)   // re-derive on load (functions don't persist)
     }));
     updateNotificationBadge();
     renderNotifications();
@@ -214,6 +250,8 @@ async function loadNotifications() {
 
 // Create a new notification in Supabase (persists across sessions)
 async function createNotification(title, message, type = 'info', linkAction = null) {
+    // If caller didn't pass an explicit handler, derive one from type
+    if (!linkAction) linkAction = defaultLinkActionFor(type);
     if (!supabase || !currentAdminId) {
         // Fallback: in-memory only if Supabase not ready
         const notif = {
@@ -347,7 +385,13 @@ function renderNotifications() {
         const timeStr = n.created_at
             ? new Date(n.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
             : (n.time ? n.time.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '');
-        const dotColor = n.type === 'review' ? '#e94560' : (n.type === 'order' ? '#2980b9' : '#888');
+        const dotColors = {
+            order:     '#2980b9',
+            review:    '#e94560',
+            quotation: '#06b6d4',
+            payment:   '#10b981'
+        };
+        const dotColor = dotColors[n.type] || '#888';
         const isRead = n.read || n.seen;
         return `
         <div class="notif-item" data-id="${n.id}" style="${isRead ? 'opacity:0.7;' : ''}cursor:pointer;">
@@ -632,7 +676,7 @@ window.onSectionChange = function(section) {
 async function fetchOrders() {
     const { data, error } = await supabase
         .from('orders')
-        .select(`*, customer:customers(*), items:order_items(*), history:order_status_history(*), trip:trips(*), payments:payments(*)`)
+        .select(`*, customer:customers(*), items:order_items(*), history:order_status_history(*), trip:trips(*), payments:payments(*), quotations:quotations(id,status)`)
         .order('created_at', { ascending: false });
 
     if (error) {
@@ -643,10 +687,33 @@ async function fetchOrders() {
     }
 
     allOrders = data || [];
+
+    // Self-heal: any order still in 'submitted' that already has a non-draft
+    // quotation must be advanced to 'price_sent'. This catches quotations that
+    // were sent before the auto-bump code shipped, and survives any future
+    // drift between order and quotation tables.
+    await reconcileOrderStatuses();
+
     if (currentSection === 'orders') {
         renderOrders();
         updateStats();
     }
+}
+
+// Bump any 'submitted' order whose linked quotation is already non-draft.
+// Updates both DB and the in-memory allOrders so the UI reflects new state
+// without an extra round-trip.
+async function reconcileOrderStatuses() {
+    const stale = allOrders.filter(o =>
+        o.status === 'submitted' &&
+        Array.isArray(o.quotations) &&
+        o.quotations.some(q => q && q.status && q.status !== 'draft')
+    );
+    if (stale.length === 0) return;
+    await Promise.all(stale.map(async o => {
+        await bumpOrderToPriceSent(o.id);
+        o.status = 'price_sent'; // mutate in-memory so the table renders correctly
+    }));
 }
 
 // ===== REVIEWS =====
@@ -967,7 +1034,7 @@ function setupRealtime() {
                 addNotification(
                     'New Quotation Created',
                     `Quotation ${payload.new.id?.slice(0, 8).toUpperCase() || ''}`,
-                    'info',
+                    'quotation',
                     () => { showSection('quotations'); }
                 );
                 toast('New quotation created!', 'quotation');
@@ -981,7 +1048,7 @@ function setupRealtime() {
                 addNotification(
                     'New Payment Received',
                     `Nu. ${payment.amount || 0} — ${payment.payment_method || 'unknown'}`,
-                    'info',
+                    'payment',
                     () => { showSection('payments'); }
                 );
                 toast('New payment received!', 'payment');
@@ -1092,12 +1159,11 @@ window.renderOrders = function() {
             </td>
             <td>${o.trip_date ? escapeHtml(new Date(o.trip_date).toLocaleDateString()) : '-'}</td>
             <td><span class="badge badge-${escapeHtml(o.status || 'submitted')}">${escapeHtml((o.status || 'submitted').replace(/_/g,' '))}</span></td>
-            <td>${o.total_price ? 'Nu. ' + escapeHtml(o.total_price) : '-'}</td>
             <td>${paymentBadge}</td>
-            <td>
-                <div class="actions">
+            <td style="text-align:right">
+                <div class="actions" style="justify-content:flex-end">
                     <button class="btn-icon btn-edit" onclick="openOrderDetail('${escapeHtml(o.id)}')" title="Edit"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>
-                    ${c.phone ? `<a class="btn-icon btn-wa" href="https://wa.me/${formatWhatsAppPhone(c.phone)}?text=Hi%20${encodeURIComponent(c.name || '')},%20regarding%20your%20order%20${encodeURIComponent(o.order_code || o.id.slice(0,8).toUpperCase())}" target="_blank" rel="noopener" title="WhatsApp"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg></a>` : ''}
+                    ${c.phone ? `<a class="btn-icon btn-wa" href="${buildAdminWaLink(c, o)}" target="_blank" rel="noopener" title="WhatsApp"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg></a>` : ''}
                 </div>
             </td>
         </tr>
@@ -2179,6 +2245,12 @@ async function saveQuotation() {
         return;
     }
 
+    // If this save flipped the quotation to 'sent', auto-advance the parent order.
+    if (status === 'sent') {
+        await bumpOrderToPriceSent(orderId);
+        fetchOrders();
+    }
+
     toast(currentQuotationId ? 'Quotation updated' : 'Quotation created', 'success');
     closeOrderModal();
     await fetchQuotations();
@@ -2288,6 +2360,23 @@ ${items.length === 0 ? '<p style="color:#888;font-size:0.9rem;">No items</p>' : 
     document.getElementById('orderModal').classList.add('active');
 };
 
+// When a quotation is sent to the customer, the parent order's workflow status
+// should advance from 'submitted' to 'price_sent' automatically. We only bump
+// from 'submitted' so this never moves a higher status (e.g. 'confirmed') backward.
+async function bumpOrderToPriceSent(orderId) {
+    if (!orderId) return;
+    try {
+        const { error } = await supabase
+            .from('orders')
+            .update({ status: 'price_sent', updated_at: new Date().toISOString() })
+            .eq('id', orderId)
+            .eq('status', 'submitted');   // guarded — only advances from submitted
+        if (error) console.warn('Order status auto-bump failed:', error);
+    } catch (e) {
+        console.warn('Order status auto-bump threw:', e);
+    }
+}
+
 window.sendQuotation = async function(id) {
     const quotation = allQuotations.find(q => q.id === id);
     if (!quotation) {
@@ -2324,6 +2413,10 @@ window.sendQuotation = async function(id) {
         toast('Could not send — already sent or check RLS', 'error');
         return;
     }
+
+    // Advance the parent order from 'submitted' → 'price_sent' (guarded, idempotent).
+    await bumpOrderToPriceSent(quotation.order_id || quotation.order?.id);
+    fetchOrders();   // refresh the orders table so the badge updates in the UI
 
     // Build links
     const baseUrl = window.location.origin.replace('/admin', '').replace('/admin.html', '');
